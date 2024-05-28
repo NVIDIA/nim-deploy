@@ -1,0 +1,10 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+Your NVIDIA Inference Microservice image version is: {{ .Values.image.tag | default .Chart.AppVersion }}
+
+To learn more about this install about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}

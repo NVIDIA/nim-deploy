@@ -1,0 +1,42 @@
+image:
+    tag: latest
+model:
+  ngcAPISecret: ngc-api
+resources:
+  limits:
+    nvidia.com/gpu: 1
+  requests:
+    nvidia.com/gpu: 1
+persistence:
+  enabled: true
+  size: 30Gi
+  storageClass: local-nfs
+  accessMode: ReadWriteMany
+imagePullSecrets:
+  - name: gitlab-imagepull
+metrics:
+  serviceMonitor:
+    enabled: true
+service:
+  name: foobar
+  annotations:
+    blue.com/example: "no"
+ingress:
+  enabled: true
+  className: ingress-awesome
+serviceAccount:
+  create: true
+  name: test-svc-account
+autoscaling:
+  enabled: true
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+containerSecurityContext:
+  capabilities:
+  drop:
+    - ALL

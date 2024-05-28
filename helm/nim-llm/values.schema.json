@@ -1,0 +1,504 @@
+{
+    "title": "Chart Values",
+    "type": "object",
+    "properties": {
+        "customCommand": {
+            "type": "array",
+            "description": "overrides command line options sent to the NeMo Inference service with the array listed here. ",
+            "default": "[]",
+            "items": {
+                "type": "string"
+            }
+        },
+        "env": {
+            "type": "array",
+            "description": "Adds arbitrary environment variables to the main container",
+            "default": "[]",
+            "items": {
+                "type": "object"
+            }
+        },
+        "image": {
+            "type": "object",
+            "properties": {
+                "repository": {
+                    "type": "string",
+                    "description": "NIM-LLM Image Repository",
+                    "default": "\"\""
+                },
+                "tag": {
+                    "type": "string",
+                    "description": "Image tag",
+                    "default": "\"\""
+                },
+                "pullPolicy": {
+                    "type": "string",
+                    "description": "Image pull policy",
+                    "default": "\"\""
+                }
+            }
+        },
+        "healthPort": {
+            "type": "number",
+            "description": "Specify health check port. -- for use with models.legacyCompat only since current NIMs have no separate port",
+            "default": "\"\""
+        },
+        "podSecurityContext": {
+            "type": "object",
+            "properties": {
+                "runAsUser": {
+                    "type": "number",
+                    "description": "Specify user UID for pod.",
+                    "default": 1000
+                },
+                "runAsGroup": {
+                    "type": "number",
+                    "description": "Specify group ID for pod.",
+                    "default": 1000
+                },
+                "fsGroup": {
+                    "type": "number",
+                    "description": "Specify file system owner group id.",
+                    "default": 1000
+                }
+            }
+        },
+        "replicaCount": {
+            "type": "number",
+            "description": "Specify replica count for deployment.",
+            "default": 1
+        },
+        "serviceAccount": {
+            "type": "object",
+            "properties": {
+                "create": {
+                    "type": "boolean",
+                    "description": "Specifies whether a service account should be created.",
+                    "default": false
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Specify name of the service account to use. If it is not set and create is true, a name is generated using a fullname template.",
+                    "default": ""
+                }
+            }
+        },
+        "statefulSet": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enables statefulset deployment. Enabling statefulSet allows PVC templates for scaling. If using central PVC with RWX accessMode, this isn't needed.",
+                    "default": true
+                }
+            }
+        },
+        "autoscaling": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable horizontal pod autoscaler.",
+                    "default": false
+                },
+                "minReplicas": {
+                    "type": "number",
+                    "description": "Specify minimum replicas for autoscaling.",
+                    "default": 1
+                },
+                "maxReplicas": {
+                    "type": "number",
+                    "description": "Specify maximum replicas for autoscaling.",
+                    "default": 10
+                },
+                "metrics": {
+                    "type": "array",
+                    "description": "Array of metrics for autoscaling.",
+                    "default": [],
+                    "items": {}
+                }
+            }
+        },
+        "ingress": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enables ingress.",
+                    "default": false
+                },
+                "className": {
+                    "type": "string",
+                    "description": "Specify class name for Ingress.",
+                    "default": ""
+                },
+                "annotations": {
+                    "type": "object",
+                    "description": "Specify additional annotations for ingress.",
+                    "default": {}
+                },
+                "hosts": {
+                    "type": "array",
+                    "description": "Specify name of host.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "host": {
+                                "type": "string",
+                                "description": "Specify name of host."
+                            },
+                            "paths": {
+                                "type": "array",
+                                "description": "Specify ingress path. ",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "type": "string",
+                                            "description": "Specify ingress path. "
+                                        },
+                                        "pathType": {
+                                            "type": "string",
+                                            "description": "Specify path type."
+                                        },
+                                        "serviceType": {
+                                            "type": "string",
+                                            "description": "Specify service type. It can be can be nemo or openai -- make sure your model serves the appropriate port(s)."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tls": {
+                    "type": "array",
+                    "description": "Specify list of pairs of TLS secretName and hosts.",
+                    "default": [],
+                    "items": {}
+                }
+            }
+        },
+        "livenessProbe": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable livenessProbe",
+                    "default": true
+                },
+                "method": {
+                    "type": "string",
+                    "description": "LivenessProbe http or script, but no script is currently provided",
+                    "default": "http"
+                },
+                "command": {
+                    "type": "array",
+                    "description": "LivenessProbe script command to use (unsupported at this time)",
+                    "default": [
+                        "myscript.sh"
+                    ],
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "path": {
+                    "type": "string",
+                    "description": "LivenessProbe endpoint path",
+                    "default": "/v1/health/live"
+                },
+                "initialDelaySeconds": {
+                    "type": "number",
+                    "description": "Initial delay seconds for livenessProbe",
+                    "default": 15
+                },
+                "timeoutSeconds": {
+                    "type": "number",
+                    "description": "Timeout seconds for livenessProbe",
+                    "default": 1
+                },
+                "periodSeconds": {
+                    "type": "number",
+                    "description": "Period seconds for livenessProbe",
+                    "default": 10
+                },
+                "successThreshold": {
+                    "type": "number",
+                    "description": "Success threshold for livenessProbe",
+                    "default": 1
+                },
+                "failureThreshold": {
+                    "type": "number",
+                    "description": "Failure threshold for livenessProbe",
+                    "default": 3
+                }
+            }
+        },
+        "readinessProbe": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable readinessProbe",
+                    "default": true
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Readiness Endpoint Path",
+                    "default": "/v1/health/ready"
+                },
+                "initialDelaySeconds": {
+                    "type": "number",
+                    "description": "Initial delay seconds for readinessProbe",
+                    "default": 15
+                },
+                "timeoutSeconds": {
+                    "type": "number",
+                    "description": "Timeout seconds for readinessProbe",
+                    "default": 1
+                },
+                "periodSeconds": {
+                    "type": "number",
+                    "description": "Period seconds for readinessProbe",
+                    "default": 10
+                },
+                "successThreshold": {
+                    "type": "number",
+                    "description": "Success threshold for readinessProbe",
+                    "default": 1
+                },
+                "failureThreshold": {
+                    "type": "number",
+                    "description": "Failure threshold for readinessProbe",
+                    "default": 3
+                }
+            }
+        },
+        "startupProbe": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable startupProbe",
+                    "default": true
+                },
+                "path": {
+                    "type": "string",
+                    "description": "StartupProbe Endpoint Path",
+                    "default": "/v1/health/ready"
+                },
+                "initialDelaySeconds": {
+                    "type": "number",
+                    "description": "Initial delay seconds for startupProbe",
+                    "default": 40
+                },
+                "timeoutSeconds": {
+                    "type": "number",
+                    "description": "Timeout seconds for startupProbe",
+                    "default": 1
+                },
+                "periodSeconds": {
+                    "type": "number",
+                    "description": "Period seconds for startupProbe",
+                    "default": 10
+                },
+                "successThreshold": {
+                    "type": "number",
+                    "description": "Success threshold for startupProbe",
+                    "default": 1
+                },
+                "failureThreshold": {
+                    "type": "number",
+                    "description": "Failure threshold for startupProbe",
+                    "default": 180
+                }
+            }
+        },
+        "metrics": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enables metrics endpoint -- for legacyCompat only since current NIMs serve metrics on the OpenAI API port always",
+                    "default": true
+                },
+                "serviceMonitor": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enables serviceMonitor creation.",
+                            "default": false
+                        }
+                    }
+                }
+            }
+        },
+        "model": {
+            "type": "object",
+            "properties": {
+                "nimCache": {
+                    "type": "string",
+                    "description": "Path to mount writeable storage or pre-filled model cache for the NIM",
+                    "default": "\"\""
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Specify name of the model in the API (name of the NIM). Mostly used for tests (optional otherwise). This must match the name from `/v1/models` to allow `helm test <release-name>` to work. In legacyCompat, this is required and sets the name of the model in /v1/models",
+                    "default": "my-model"
+                },
+                "ngcAPISecret": {
+                    "type": "string",
+                    "description": "Name of pre-existing secret with a key named NGC_CLI_API_KEY that contains an API key for NGC model downloads",
+                    "default": "\"\""
+                },
+                "openaiPort": {
+                    "type": "number",
+                    "description": "Specify Open AI Port.",
+                    "default": 8000
+                },
+                "jsonLogging": {
+                    "type": "boolean",
+                    "description": "Turn jsonl logging on or off. Defaults to true.",
+                    "default": true
+                },
+                "logLevel": {
+                    "type": "string",
+                    "description": "log level of NIM services. Defaults to INFO",
+                    "default": "INFO"
+                },
+                "legacyCompat": {
+                    "type": "boolean",
+                    "description": "Set `true` to enable compatiblity with pre-release NIM versions prior to 24.05.",
+                    "default": false
+                },
+                "numGpus": {
+                    "type": "number",
+                    "description": "(deprecated) Specify GPU requirements for the model.",
+                    "default": 1
+                },
+                "subPath": {
+                    "type": "string",
+                    "description": "(deprecated) Specify path within the model volume to mount if not the root -- default works with ngcInit and persistent volume. (legacyCompat only)",
+                    "default": "model-store"
+                },
+                "modelStorePath": {
+                    "type": "string",
+                    "description": "(deprecated) Specify location of unpacked model.",
+                    "default": ""
+                }
+            }
+        },
+        "persistence": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable persistent volumes.",
+                    "default": false
+                },
+                "existingClaim": {
+                    "type": "string",
+                    "description": "Secify existing claim. If using existingClaim, run only one replica or use a ReadWriteMany storage setup.",
+                    "default": ""
+                },
+                "storageClass": {
+                    "type": "string",
+                    "description": "Specify persistent volume storage class. If set to \"-\", storageClassName: \"\", which disables dynamic provisioning. If undefined (the default) or set to null, no storageClassName spec is  set, choosing the default provisioner.",
+                    "default": "",
+                    "nullable": true
+                },
+                "accessMode": {
+                    "type": "string",
+                    "description": "Specify accessModes. If using an NFS or similar setup, you can use ReadWriteMany.",
+                    "default": "ReadWriteOnce"
+                },
+                "stsPersistentVolumeClaimRetentionPolicy": {
+                    "type": "object",
+                    "properties": {
+                        "whenDeleted": {
+                            "type": "string",
+                            "description": "Specify persistent volume claim retention policy when deleted. Only used with Stateful Set volume templates.",
+                            "default": "Retain"
+                        },
+                        "whenScaled": {
+                            "type": "string",
+                            "description": "Specifypersistent volume claim retention policy when scaled. Only used with Stateful Set volume templates.",
+                            "default": "Retain"
+                        }
+                    }
+                },
+                "size": {
+                    "type": "string",
+                    "description": "Specify size of claim (e.g. 8Gi).",
+                    "default": "50Gi"
+                }
+            }
+        },
+        "hostPath": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable hostPath.",
+                    "default": false
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Specify path to the local model-store. ",
+                    "default": "/model-store"
+                }
+            }
+        },
+        "nfs": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable nfs mount",
+                    "default": false
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Specify path on NFS server to mount",
+                    "default": "/exports"
+                },
+                "server": {
+                    "type": "string",
+                    "description": "Specify NFS server address",
+                    "default": "nfs-server.example.com"
+                },
+                "readOnly": {
+                    "type": "boolean",
+                    "description": "Set to true to use readOnly",
+                    "default": false
+                }
+            }
+        },
+        "service": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "Specify service type for the deployment.",
+                    "default": "ClusterIP"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Override the default service name",
+                    "default": ""
+                },
+                "openaiPort": {
+                    "type": "number",
+                    "description": "Specify Open AI Port for the service.",
+                    "default": 8000
+                },
+                "labels": {
+                    "type": "object",
+                    "description": "Specify additional labels to be added to service.",
+                    "default": {}
+                }
+            }
+        }
+    }
+}

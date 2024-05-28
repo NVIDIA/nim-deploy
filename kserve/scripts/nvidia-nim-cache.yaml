@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nvidia-nim-pv
+spec:
+  capacity:
+    storage: 300Gi  # Specify the size of the PV
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain  # Retain or Delete as per your requirement
+  storageClassName: local-storage  # Ensure this matches the storage class expected by PVC
+  local:
+    path: /raid/nvidia-nim
+  nodeAffinity:  # This ensures the PV is only available to nodes that match these criteria
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - dgx01 # XXX: Update this to match your hostname
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nvidia-nim-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: local-storage
+  # storageClassName: microk8s-hostpath
+  resources:
+    requests:
+      storage: 300G

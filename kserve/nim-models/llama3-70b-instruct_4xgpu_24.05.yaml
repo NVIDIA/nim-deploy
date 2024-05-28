@@ -1,0 +1,20 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    autoscaling.knative.dev/target: "10"
+  name: llama3-70b-instruct-4xgpu
+spec:
+  predictor:
+    minReplicas: 1
+    model:
+      modelFormat:
+        name: nvidia-nim-llama3-70b-instruct
+      resources:
+        limits:
+          nvidia.com/gpu: "4"
+        requests:
+          nvidia.com/gpu: "4"
+      runtime: nvidia-nim-llama3-70b-instruct-24.05
+      storageUri: pvc://nvidia-nim-pvc/
+
