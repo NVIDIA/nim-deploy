@@ -17,7 +17,7 @@ If you have not set up NGC, see the [NGC Setup](https://ngc.nvidia.com/setup) to
 Add the helm repo with:
 
 ```bash
-helm repo add nim-demo "https://nim.github.io/nvidia/nim"
+helm repo add nim-demo "https://nim-deploy.github.io/nvidia/nim-llm"
 ```
 If using pre-release NIM, change the repo URL accordingly.
 
@@ -55,7 +55,7 @@ Here is an example using meta/llama-3-8b-instruct.
 ```yaml
 image:
   # Adjust to the actual location of the image and version you want
-  repository: nvcr.io/nvidia/nim/meta/llama3-8b-instruct
+  repository: nvcr.io/nim/meta/llama3-8b-instruct
   tag: 24.05
 imagePullSecrets:
   - name: registry-secret
