@@ -50,7 +50,7 @@ image:
   repository: nvcr.io/nvidia/nim/nim_llm
   pullPolicy: IfNotPresent
   # Tag overrides the image tag whose default is the chart appVersion.
-  # tag: "24.04"
+  # tag: "1.0.0"
 
 ## @extra imagePullSecrets Specify list of secret names that are needed for the main container and any init containers.
 ## @skip imagePullSecrets[0].name
@@ -270,7 +270,7 @@ metrics:
 ## @param model.jsonLogging Turn jsonl logging on or off. Defaults to true.
 ## @param model.logLevel log level of NIM services. Defaults to INFO
 ## @section Deprecated and Legacy Model parameters
-## @param model.legacyCompat Set `true` to enable compatiblity with pre-release NIM versions prior to 24.05.
+## @param model.legacyCompat Set `true` to enable compatiblity with pre-release NIM versions prior to 1.0.0.
 ## @param model.numGpus (deprecated) Specify GPU requirements for the model.
 ## @param model.subPath (deprecated) Specify path within the model volume to mount if not the root -- default works with ngcInit and persistent volume. (legacyCompat only)
 ## @param model.modelStorePath (deprecated) Specify location of unpacked model.

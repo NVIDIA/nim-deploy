@@ -369,7 +369,7 @@
                 },
                 "legacyCompat": {
                     "type": "boolean",
-                    "description": "Set `true` to enable compatiblity with pre-release NIM versions prior to 24.05.",
+                    "description": "Set `true` to enable compatiblity with pre-release NIM versions prior to 1.0.0.",
                     "default": false
                 },
                 "numGpus": {

@@ -14,12 +14,7 @@ export NGC_CLI_API_KEY="key from ngc"
 If you have not set up NGC, see the [NGC Setup](https://ngc.nvidia.com/setup) topic.
 
 [comment]: <> (TODO: update the repo with th real location)
-Add the helm repo with:
-
-```bash
-helm repo add nim-demo "https://nim-deploy.github.io/nvidia/nim-llm"
-```
-If using pre-release NIM, change the repo URL accordingly.
+Clone this repo to have this heml chart locally. Make sure you are in `nemo-deploy/helm`.
 
 ## Select a NIM to use in your helm release
 
@@ -30,7 +25,7 @@ Each NIM contains an AI model, application, or workflow. All files necessary to 
 Available helm values can be discoved by running the `helm` command after the repo has been added.
 
 ```bash
-helm show values nim-demo/nim-llm
+helm show values nim-llm
 ```
 
 The chart requires certain [Kubernetes secrets](https://kubernetes.io/docs/concepts/configuration/secret/) to be configured in the cluster.
@@ -56,7 +51,7 @@ Here is an example using meta/llama-3-8b-instruct.
 image:
   # Adjust to the actual location of the image and version you want
   repository: nvcr.io/nim/meta/llama3-8b-instruct
-  tag: 24.05
+  tag: 1.0.0
 imagePullSecrets:
   - name: registry-secret
 model:
@@ -93,7 +88,7 @@ kubectl create namespace inference-ms
 A command like the one below will then use the latest chart version to install the version of NIM defined in the values file into the `inference-ms` namespace in your Kubernetes cluster. Modify it as required.
 
 ```bash
-helm --namespace inference-ms install my-nim nim-demo/nim-llm -f path/to/your/custom-values.yaml
+helm --namespace inference-ms install my-nim nim-llm -f path/to/your/custom-values.yaml
 ```
 
 ### A Note on Storage
