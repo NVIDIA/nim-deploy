@@ -47,7 +47,7 @@ extraVolumeMounts: {}
 ## @param image.tag [string] Image tag
 ## @param image.pullPolicy [string] Image pull policy
 image:
-  repository: nvcr.io/nvidia/nim/nim_llm
+  repository: nvcr.io/nim/meta/llama3-8b-instruct
   pullPolicy: IfNotPresent
   # Tag overrides the image tag whose default is the chart appVersion.
   # tag: "24.04"
