@@ -11,8 +11,8 @@ spec:
   containers:
   - env:
     - name: NIM_CACHE_PATH
-      value: /tmp
-      # value: /mnt/models/cache    - name: HF_TOKEN
+      value: /mnt/models/cache
+    - name: HF_TOKEN
       valueFrom:
         secretKeyRef:
           name: nvidia-nim-secrets
@@ -22,7 +22,7 @@ spec:
         secretKeyRef:
           name: nvidia-nim-secrets
           key: NGC_API_KEY
-    image: nvcr.io/mphexwv2ysej/meta-llama3-70b-instruct:24.05.rc11
+    image: nvcr.io/nim/meta/llama3-70b-instruct:1.0.0
     name: kserve-container
     ports:
     - containerPort: 8000
