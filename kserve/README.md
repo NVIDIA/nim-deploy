@@ -1,4 +1,4 @@
-# NIM Deploy on KServe
+# NIVIDA NIM Deploy on KServe
 [KServe](https://github.com/kserve/kserve) provides a serverless environment on Kubernetes that is purpose-built for AI inference. This repo describes what is necessary to deploy NVIDIA NIMs onto a running KServe installation.
 
 # Setup

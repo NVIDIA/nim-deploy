@@ -1,4 +1,4 @@
-# Using the NIM LLM helm chart
+# Using the NVIDIA NIM for LLMs helm chart
 
 The NIM Helm chart requires a Kubernetes cluster with appropriate GPU nodes and the [GPU Operator](https://github.com/NVIDIA/gpu-operator) installed.
 
@@ -23,11 +23,19 @@ Each NIM contains an AI model, application, or workflow. All files necessary to 
 
 ## Setting up your helm values file
 
-Available helm values can be discoved by running the `helm` command after the repo has been added.
+All available helm values can be discoved by running the `helm` command after downloading the repo.
 
 ```bash
 helm show values nim-llm/
 ```
+
+To start a new value file for a particular cluster, run
+
+```bash
+helm show values nim-llm/ > custom-values.yaml
+```
+
+and edit for the specific configuration. While all values may require editting, pay particular attention to the image.repository which specifies which model the NIM will run. 
 
 The chart requires certain [Kubernetes secrets](https://kubernetes.io/docs/concepts/configuration/secret/) to be configured in the cluster.
 
@@ -89,7 +97,7 @@ kubectl create namespace inference-ms
 A command like the one below will then use the latest chart version to install the version of NIM defined in the values file into the `inference-ms` namespace in your Kubernetes cluster. Modify it as required.
 
 ```bash
-helm --namespace inference-ms install my-nim nim-llm/ -f path/to/your/custom-values.yaml
+helm --namespace inference-ms install my-nim nim-llm/ -f ./custom-values.yaml
 ```
 
 ### A Note on Storage
