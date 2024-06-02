@@ -11,7 +11,7 @@ To deploy a NIM, some custom values are generally required. Typically, this look
 ```yaml
 image:
     repository: "nvcr.io/nvidia/nim/nim-llm/meta-llama3-8b-instruct" # container location
-    tag: 24.05 # NIM version you want to deploy
+    tag: 1.0.0 # NIM version you want to deploy
 model:
   ngcAPISecret: ngc-api  # name of a secret in the cluster that includes a key named NGC_CLI_API_KEY and is an NGC API key
 resources:
@@ -158,7 +158,7 @@ Standard metrics of CPU and memory are of limited use in scaling NIM
 
 | Name                   | Description                                                                                                                                         | Value         |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `model.legacyCompat`   | Set `true` to enable compatiblity with pre-release NIM versions prior to 24.05.                                                                     | `false`       |
+| `model.legacyCompat`   | Set `true` to enable compatiblity with pre-release NIM versions prior to 1.0.0.                                                                     | `false`       |
 | `model.numGpus`        | (deprecated) Specify GPU requirements for the model.                                                                                                | `1`           |
 | `model.subPath`        | (deprecated) Specify path within the model volume to mount if not the root -- default works with ngcInit and persistent volume. (legacyCompat only) | `model-store` |
 | `model.modelStorePath` | (deprecated) Specify location of unpacked model.                                                                                                    | `""`          |
