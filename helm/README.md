@@ -118,7 +118,7 @@ And check that the pods have become "Ready".
 Once that is true, you can try something like:
 
 ```bash
-helm -n inference-ms helm test my-nim
+helm -n inference-ms test my-nim --logs
 ```
 
 Which will run some simple inference requests. If the three tests pass, you'll know the deployment was successful.
