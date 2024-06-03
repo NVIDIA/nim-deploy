@@ -140,10 +140,10 @@ statefulSet:
 ## @skip tolerations[0].key
 ## @skip tolerations[0].operator
 ## @skip tolerations[0].effect
-tolerations:
-  - key: "nvidia.com/gpu"
-    operator: "Exists"
-    effect: "NoSchedule"
+#tolerations:
+#  - key: "nvidia.com/gpu"
+#    operator: "Exists"
+#    effect: "NoSchedule"
 
 
 ## @section Autoscaling parameters
