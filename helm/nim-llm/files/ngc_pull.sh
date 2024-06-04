@@ -31,48 +31,47 @@ fi
 directory="${STORE_MOUNT_PATH}/${NGC_MODEL_NAME}_v${NGC_MODEL_VERSION}"
 echo "Directory is $directory"
 ready_file="$directory/.ready"
-lock_file="$directory/.lock"
+lockdir="$directory/.lock"
 mkdir -p "$directory"
-touch "$lock_file"
-{
-  if flock -xn 200; then
-    trap 'rm -f $lock_file' EXIT
-    if [ ! -e "$ready_file" ]; then
-      $NGC_EXE registry model download-version --dest "$STORE_MOUNT_PATH" "${NGC_CLI_ORG}/${NGC_CLI_TEAM}/${NGC_MODEL_NAME}:${NGC_MODEL_VERSION}"
-      # decrypt the model - if needed (conditions met)
-      if [ -n "${NGC_DECRYPT_KEY:+''}" ] && [ -f "$directory/${MODEL_NAME}.enc" ]; then
-        echo "Decrypting $directory/${MODEL_NAME}.enc"
-        # untar if necessary
-        if [ -n "${TARFILE:+''}" ]; then
-          echo "TARFILE enabled, unarchiving..."
-          openssl enc -aes-256-cbc -d -pbkdf2 -in "$directory/${MODEL_NAME}.enc" -out "$directory/${MODEL_NAME}.tar" -k "${NGC_DECRYPT_KEY}"
-          tar -xvf "$directory/${MODEL_NAME}.tar" -C "$STORE_MOUNT_PATH"
-          rm "$directory/${MODEL_NAME}.tar"
-        else
-          openssl enc -aes-256-cbc -d -pbkdf2 -in "$directory/${MODEL_NAME}.enc" -out "$directory/${MODEL_NAME}" -k "${NGC_DECRYPT_KEY}"
-        fi
-        rm "$directory/${MODEL_NAME}.enc"
+set -o noclobber &&
+if { mkdir "$lockdir"; }; then
+  trap 'rm -f $lockdir' EXIT
+  if [ ! -e "$ready_file" ]; then
+    $NGC_EXE registry model download-version --dest "$STORE_MOUNT_PATH" "${NGC_CLI_ORG}/${NGC_CLI_TEAM}/${NGC_MODEL_NAME}:${NGC_MODEL_VERSION}"
+    # decrypt the model - if needed (conditions met)
+    if [ -n "${NGC_DECRYPT_KEY:+''}" ] && [ -f "$directory/${MODEL_NAME}.enc" ]; then
+      echo "Decrypting $directory/${MODEL_NAME}.enc"
+      # untar if necessary
+      if [ -n "${TARFILE:+''}" ]; then
+        echo "TARFILE enabled, unarchiving..."
+        openssl enc -aes-256-cbc -d -pbkdf2 -in "$directory/${MODEL_NAME}.enc" -out "$directory/${MODEL_NAME}.tar" -k "${NGC_DECRYPT_KEY}"
+        tar -xvf "$directory/${MODEL_NAME}.tar" -C "$STORE_MOUNT_PATH"
+        rm "$directory/${MODEL_NAME}.tar"
       else
-        echo "No decryption key provided, or encrypted file found. Skipping decryption.";
-        if [ -n "${TARFILE:+''}" ]; then
-          echo "TARFILE enabled, unarchiving..."
-          tar -xvf "$directory/${NGC_MODEL_VERSION}.tar.gz" -C "$STORE_MOUNT_PATH"
-          rm "$directory/${NGC_MODEL_VERSION}.tar.gz"
-        fi
+        openssl enc -aes-256-cbc -d -pbkdf2 -in "$directory/${MODEL_NAME}.enc" -out "$directory/${MODEL_NAME}" -k "${NGC_DECRYPT_KEY}"
       fi
-      touch "$ready_file"
-      echo "Done dowloading"
-      flock -u 200
+      rm "$directory/${MODEL_NAME}.enc"
     else
-      echo "Download was already complete"
-    fi;
+      echo "No decryption key provided, or encrypted file found. Skipping decryption.";
+      if [ -n "${TARFILE:+''}" ]; then
+        echo "TARFILE enabled, unarchiving..."
+        tar -xvf "$directory/${NGC_MODEL_VERSION}.tar.gz" -C "$STORE_MOUNT_PATH"
+        rm "$directory/${NGC_MODEL_VERSION}.tar.gz"
+      fi
+    fi
+    touch "$ready_file"
+    echo "Done dowloading"
+    rmdir "$lockdir"
   else
-    while [ ! -e "$ready_file" ]
-    do
-      echo "Did not get the download lock. Waiting for the pod holding the lock to download the files."
-      sleep 1
-    done;
-    echo "Done waiting"
-  fi
-} 200>"$lock_file"
+    echo "Download was already complete"
+  fi;
+else
+  while [ ! -e "$ready_file" ]
+  do
+    echo "Did not get the download lock. Waiting for the pod holding the lock to download the files."
+    sleep 1
+  done;
+  echo "Done waiting"
+fi
+set +o noclobber;
 ls -la "$directory"

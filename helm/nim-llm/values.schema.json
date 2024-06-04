@@ -352,6 +352,11 @@
                     "description": "Name of pre-existing secret with a key named NGC_CLI_API_KEY that contains an API key for NGC model downloads",
                     "default": "\"\""
                 },
+                "ngcAPIKey": {
+                    "type": "string",
+                    "description": "NGC API key literal to use as the API secret and image pull secret when set",
+                    "default": "\"\""
+                },
                 "openaiPort": {
                     "type": "number",
                     "description": "Specify Open AI Port.",

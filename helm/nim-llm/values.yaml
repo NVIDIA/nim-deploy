@@ -30,8 +30,6 @@ env: []
 # valueFrom:
 #   fieldRef:
 #     fieldPath: metadata.name
-# name: SERVER_PORT_INTERNAL
-# value: "9009"
 
 ## @param extraVolumes [object] Adds arbitrary additional volumes to the deployment set definition
 extraVolumes: {}
@@ -50,7 +48,7 @@ image:
   repository: nvcr.io/nim/meta/llama3-8b-instruct
   pullPolicy: IfNotPresent
   # Tag overrides the image tag whose default is the chart appVersion.
-  # tag: "1.0.0"
+  tag: ""
 
 ## @extra imagePullSecrets Specify list of secret names that are needed for the main container and any init containers.
 ## @skip imagePullSecrets[0].name
@@ -140,10 +138,10 @@ statefulSet:
 ## @skip tolerations[0].key
 ## @skip tolerations[0].operator
 ## @skip tolerations[0].effect
-#tolerations:
-#  - key: "nvidia.com/gpu"
-#    operator: "Exists"
-#    effect: "NoSchedule"
+tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Exists"
+    effect: "NoSchedule"
 
 
 ## @section Autoscaling parameters
@@ -265,10 +263,11 @@ metrics:
 ## @param model.nimCache [string] Path to mount writeable storage or pre-filled model cache for the NIM
 ## @param model.name Specify name of the model in the API (name of the NIM). Mostly used for tests (optional otherwise). This must match the name from `/v1/models` to allow `helm test <release-name>` to work. In legacyCompat, this is required and sets the name of the model in /v1/models
 ## @param model.ngcAPISecret [string] Name of pre-existing secret with a key named NGC_CLI_API_KEY that contains an API key for NGC model downloads
+## @param model.ngcAPIKey [string] NGC API key literal to use as the API secret and image pull secret when set
 ## @param model.openaiPort Specify Open AI Port.
 ## @param model.labels [object] Specify extra labels to be added on deployed pods.
 ## @param model.jsonLogging Turn jsonl logging on or off. Defaults to true.
-## @param model.logLevel log level of NIM services. Defaults to INFO
+## @param model.logLevel Log level of NIM service. Possible values of the variable are TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL. 
 ## @section Deprecated and Legacy Model parameters
 ## @param model.legacyCompat Set `true` to enable compatiblity with pre-release NIM versions prior to 1.0.0.
 ## @param model.numGpus (deprecated) Specify GPU requirements for the model.
@@ -277,13 +276,14 @@ metrics:
 model:  # most of these values only matter if not using customCommand
   nimCache: /model-store
   name: my-model # optionsl name of the model in the OpenAI API -- used in `helm test`
-  ngcAPISecret: ngc-api
+  ngcAPISecret: "ngc-api"
+  ngcAPIKey: ""
   openaiPort: 8000
   labels: {}  # any extra labels desired on deployed pods
   jsonLogging: true
   logLevel: INFO
   # All options below are deprecated
-  legacyCompat: false # enable compatiblity with pre-release NIM versions prior to 24.05
+  legacyCompat: false # enable compatiblity with pre-release NIM versions prior to 1.0.0
   numGpus: 1 # GPU requirements for the model
   subPath: model-store # legacyCompat only -- path within the model volume to mount if not the root -- default works with ngcInit and persistent volume
   # openai_port: 8005 # deprecated for of openaiPort for backward legacy compatibility

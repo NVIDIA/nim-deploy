@@ -32,11 +32,9 @@ spec:
       targetPort: metrics
       name: metrics
     {{- end }}
-    {{- if or .Values.model.openaiPort .Values.model.openai_port }}
-    - port: {{ .Values.service.openaiPort | default .Values.service.openai_port }}
+    - port: {{ .Values.service.openai_port | default .Values.service.openaiPort }}
       targetPort: http-openai
       name: http-openai
-    {{- end }}
     {{- if and .Values.model.legacyCompat .Values.model.nemo_port }}
     - port: {{ .Values.service.nemo_port }}
       targetPort: http-nemo

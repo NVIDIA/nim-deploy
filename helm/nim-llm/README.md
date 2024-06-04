@@ -10,7 +10,7 @@ To deploy a NIM, some custom values are generally required. Typically, this look
 
 ```yaml
 image:
-    repository: "nvcr.io/nvidia/nim/nim-llm/meta-llama3-8b-instruct" # container location
+    repository: "nvcr.io/nim/meta/llama3-8b-instruct" # container location
     tag: 1.0.0 # NIM version you want to deploy
 model:
   ngcAPISecret: ngc-api  # name of a secret in the cluster that includes a key named NGC_CLI_API_KEY and is an NGC API key
@@ -149,10 +149,11 @@ Standard metrics of CPU and memory are of limited use in scaling NIM
 | `model.nimCache`     | Path to mount writeable storage or pre-filled model cache for the NIM                                                                                                                                                                                                      | `""`       |
 | `model.name`         | Specify name of the model in the API (name of the NIM). Mostly used for tests (optional otherwise). This must match the name from `/v1/models` to allow `helm test <release-name>` to work. In legacyCompat, this is required and sets the name of the model in /v1/models | `my-model` |
 | `model.ngcAPISecret` | Name of pre-existing secret with a key named NGC_CLI_API_KEY that contains an API key for NGC model downloads                                                                                                                                                              | `""`       |
+| `model.ngcAPIKey`    | NGC API key literal to use as the API secret and image pull secret when set                                                                                                                                                                                                | `""`       |
 | `model.openaiPort`   | Specify Open AI Port.                                                                                                                                                                                                                                                      | `8000`     |
 | `model.labels`       | Specify extra labels to be added on deployed pods.                                                                                                                                                                                                                         | `{}`       |
 | `model.jsonLogging`  | Turn jsonl logging on or off. Defaults to true.                                                                                                                                                                                                                            | `true`     |
-| `model.logLevel`  | Log level of NIM service. Possible values of the variable are TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL. Mostly, the effect of DEBUG, INFO, WARNING, ERROR, CRITICAL is described in Python 3 logging [docs](https://docs.python.org/3/howto/logging.html). Underlying log levels of TRT-LLM backend are different from `model.logLevel` in some cases. `TRACE` log level enables printing of diagnostic information for debugging purposes in TRT-LLM and in `uvicorn`. When `model.logLevel` is `INFO`, TRT-LLM log level is `WARNING`. When `model.logLevel` is `CRITICAL` TRT-LLM log level is `ERROR`. | `true`     |
+| `model.logLevel`     | Log level of NIM service. Possible values of the variable are TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL.                                                                                                                                                                | `INFO`     |
 
 ### Deprecated and Legacy Model parameters
 
