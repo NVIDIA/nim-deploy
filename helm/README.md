@@ -21,7 +21,7 @@ Clone this repository and change directories into `nim-deploy/helm`. The followi
 
 Each NIM contains an AI model, application, or workflow. All files necessary to run the NIM are encapsulated in the container that is available on [NGC](https://ngc.nvidia.com/). The [NVIDIA API Catalog](https://build.nvidia.com) provides a sandbox to experiment with NIM APIs prior to container and model download.
 
-## Setting up your helm values file
+## Setting up your helm values
 
 All available helm values can be discoved by running the `helm` command after downloading the repo.
 
@@ -29,32 +29,39 @@ All available helm values can be discoved by running the `helm` command after do
 helm show values nim-llm/
 ```
 
-To start a new value file for a particular cluster, run
+See the chart's [readme](nim-llm/README.md) for information about the options, including their default values. Pay particular attention to the image.repository and image.tag options if you do not want to deploy the default image for this chart.
+
+You don't need a values file to run llama3-8b-instruct using the NIM 1.0.0 release. For an example, see [Launching a default NIM with minimal values](#Launching-a-default-NIM-with-minimal-values).
+
+## Create a namespace
+
+For the rest of this guide, we will use the namespace `nim`.
 
 ```bash
-helm show values nim-llm/ > custom-values.yaml
+kubectl create namespace nim
 ```
 
-and edit for the specific configuration. While all values may require editting, pay particular attention to the image.repository which specifies which model the NIM will run. 
+## Launching a NIM with a minimal configuration
 
-The chart requires certain [Kubernetes secrets](https://kubernetes.io/docs/concepts/configuration/secret/) to be configured in the cluster.
+You can launch `llama3-8b-instruct` using a default configuration while only setting the NGC API key and persistence in one line with no extra files. Set `persistence.enabled` to **true** to ensure that permissions are set correctly and the container runtime filesystem isn't filled by downloading models.
 
-* NGC container downloads require an image pull secret (in this case named `registry-secret`).
-* NGC model downloads require an NGC API key (a secret `ngc-api` that has the value stored in a key named `NGC_CLI_API_KEY`).
-
-These secrets can be created with the following command:
 ```bash
-kubectl create secret docker-registry registry-secret --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_CLI_API_KEY
-
-kubectl create secret generic ngc-api --from-literal=NGC_CLI_API_KEY=$NGC_CLI_API_KEY
+helm --namespace nim install my-nim nim-llm/ --set model.ngcAPIKey=$NGC_CLI_API_KEY --set persistence.enabled=true
 ```
 
-### Values
+## Using a custom values file
 
 When deploying NIMs there are several values that can be customized to control factors such as scaling, metrics collection, resource use, and most general AI model selection.
 
-Here is an example using meta/llama-3-8b-instruct.
+The following example uses meta/llama-3-8b-instruct with an existing secret as the value of the NGC API key, sets the persistent value stores to maintain the model cache and a specific non-default image pull secret, and disables the StatefulSet setup so that it deploys a Deployment object instead.
 
+If you specify secrets as shown in this example, you cannot set the API key directly in the file or on the CLI. Instead, first create the secrets, as shown in the following example:
+
+```bash
+kubectl -n nim create secret docker-registry registry-secret --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_CLI_API_KEY
+
+kubectl -n nim create secret generic ngc-api --from-literal=NGC_CLI_API_KEY=$NGC_CLI_API_KEY
+```
 
 ```yaml
 image:
@@ -85,48 +92,45 @@ resources:
     nvidia.com/mig-4g.24gb: 1
 ```
 
-After creating the `values.yaml` file, create a `namespace`.
+### Launching NIM in Kubernetes with a values file
 
-
-```bash
-kubectl create namespace inference-ms
-```
-
-## Launching NIM in Kubernetes
-
-A command like the one below will then use the latest chart version to install the version of NIM defined in the values file into the `inference-ms` namespace in your Kubernetes cluster. Modify it as required.
+Then use a command like the following, which uses the latest chart version to install the version of NIM that is defined in the values file into the `nim` namespace in your Kubernetes cluster.
 
 ```bash
-helm --namespace inference-ms install my-nim nim-llm/ -f ./custom-values.yaml
+helm --namespace nim install my-nim nim-llm/ -f ./custom-values.yaml
 ```
 
-### A Note on Storage
+## A Note on Storage
 
 The image and the model files are fairly large (> 10GB, typically), so ensure that however you are managing the storage for your helm release, you
 have enough space to host both the image. If you have a persistent volume setup available to you, as you do in most cloud
-providers, we recommend you use it. If you need to be able to deploy pods quickly and would like to be able to skip the model download step, there is an advantage to using a shared volume such as NFS as your storage setup. To try this out, it is simplest to use a normal persistent volume claim. See the Kubernetes [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) documentation for more information.
+providers, it is recommended that you use it. If you need to be able to deploy pods quickly and would like to be able to skip the model download step, there is an advantage to using a shared volume such as NFS as your storage setup. To try this out, it is simplest to use a normal persistent volume claim. See the Kubernetes [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) documentation for more information.
+
+Another strategy for scaling is to deploy the chart with StatefulSet enabled (default) and persistence enabled, scale the resulting StatefulSet to the maximum number of replicas you would like to use and then, after the pods become ready, scale down again. This will retain the PVCs to be used when you scale the set up again.
 
 ## Running inference
 
 If you are operating on a fresh persistent volume or similar, you may have to wait a little while for the model to download. You can check the status of your deployment by running
 
 ```bash
-kubectl get pods -n inference-ms
+kubectl get pods -n nim
 ```
 And check that the pods have become "Ready".
 
 Once that is true, you can try something like:
 
 ```bash
-helm -n inference-ms test my-nim --logs
+helm -n nim test my-nim --logs
 ```
 
 Which will run some simple inference requests. If the three tests pass, you'll know the deployment was successful.
 
+Avoid setting up external ingress without adding an authentication layer. This is because NIM doesn't provide authentication on its own. The chart provides options for basic ingress.
+
 Since this example assumes you aren't using an ingress controller, simply port-forward the service so that you can try it out directly.
 
 ```bash
-kubectl -n inference-ms port-forward service/my-nim-nim-llm 8000:8000
+kubectl -n nim port-forward service/my-nim-nim-llm 8000:8000
 ```
 
 Then try a request:
