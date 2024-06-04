@@ -112,10 +112,8 @@ spec:
             - --nemo_port
             - {{ .Values.model.nemo_port | quote }}
             {{- end }}
-            {{- if or .Values.model.openai_port .Values.model.openai_port }}
             - --openai_port
-            - {{ .Values.model.openaiPort | default .Values.model.openai_port | quote }}
-            {{- end }}
+            - {{ .Values.model.openai_port | default .Values.model.openaiPort | quote }}
             {{- if .Values.model.openai_host }}
             - --host
             - {{ .Values.model.openai_host | quote }}
@@ -193,7 +191,7 @@ spec:
               name: metrics
             {{- end }}
             {{- if or .Values.model.openaiPort .Values.model.openai_port }}
-            - containerPort: {{ .Values.model.openaiPort | default .Values.model.openai_port }}
+            - containerPort: {{ .Values.model.openai_port | default .Values.model.openaiPort }}
               name: http-openai
             {{- end }}
             {{- if or .Values.model.nemoPort .Values.model.nemo_port }}

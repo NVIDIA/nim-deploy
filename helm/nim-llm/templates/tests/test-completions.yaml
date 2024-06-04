@@ -14,7 +14,7 @@ spec:
       args:
         - -X
         - "POST"
-        - 'http://{{ .Values.service.name | default (include "nim-llm.fullname" .) }}:{{ .Values.service.openaiPort | default .Values.service.openai_port }}/v1/completions'
+        - 'http://{{ .Values.service.name | default (include "nim-llm.fullname" .) }}:{{ .Values.service.openai_port | default .Values.service.openaiPort }}/v1/completions'
         - -H
         - 'accept: application/json'
         - -H

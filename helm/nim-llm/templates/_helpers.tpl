@@ -60,3 +60,12 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+For inline NGC key, create image pull secret
+*/}}
+{{- define "nim-llm.generatedImagePullSecret" -}}
+{{- if .Values.model.ngcAPIKey }}
+{{- printf "{\"auths\":{\"nvcr.io\":{\"username\":\"$oauthtoken\",\"password\":\"%s\"}}}" .Values.model.ngcAPIKey | b64enc }}
+{{- end }}
+{{- end }}
