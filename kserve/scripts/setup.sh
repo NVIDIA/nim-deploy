@@ -15,5 +15,5 @@ for runtime in `ls -d ${KSERVE_DIR}/runtimes/*yaml`; do
 done
 
 NODE_NAME=${NODE_NAME:-"$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' | head -n1)"}
-sed -i "/# XXX: Update this to match your hostname/c               - ${NODE_NAME} # XXX: Update this to match your hostname/" scripts/nvidia-nim-cache.yaml
+sed -i "/# XXX: Update this to match your hostname/c\               - ${NODE_NAME} # XXX: Update this to match your hostname/" scripts/nvidia-nim-cache.yaml
 kubectl create -f ${SCRIPT_DIR}/nvidia-nim-cache.yaml
