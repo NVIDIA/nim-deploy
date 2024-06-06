@@ -36,57 +36,73 @@ Please work with the NVIDIA team through GitHub issues to determine appropriate 
 ## <a name="signing"></a>Signing your work
 
 Want to hack on the NVIDIA NIM Deploy Project? Awesome!
-We only require that developers sign their work, the below section describes this!
 
-The sign-off is a simple line at the end of the explanation for the patch. Your
-signature certifies that you wrote the patch or otherwise have the right to pass
-it on as an open-source patch. The rules are pretty simple: if you can certify
-the below (from [developercertificate.org](http://developercertificate.org/)):
+We require that all contributions are certified under the terms of the Developer Certificate of Origin (DCO), Version 1.1.
 
-```
-Developer Certificate of Origin
-Version 1.1
+This certifies that the contribution is your original work or you have the right to submit it under the same or compatible license. Any public contribution that contains commits that are not signed off will not be accepted.
 
-Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
-1 Letterman Drive
-Suite D4700
-San Francisco, CA, 94129
+To simplify the process, we accept GPG-signed commits as fulfilling the requirements of the DCO.
 
-Everyone is permitted to copy and distribute verbatim copies of this
-license document, but changing it is not allowed.
+### Why GPG Signatures?
 
-Developer's Certificate of Origin 1.1
+A GPG-signed commit provides cryptographic assurance that the commit was made by the holder of the corresponding private key. By configuring your commits to be signed by GPG, you not only enhance the security of the repository but also implicitly certify that you have the rights to submit the work under the project's license and agree to the DCO terms.
 
-By making a contribution to this project, I certify that:
+### Setting Up Git for Signed Commits
 
-(a) The contribution was created in whole or in part by me and I
-    have the right to submit it under the open source license
-    indicated in the file; or
+1. **Generate a GPG key pair**:
 
-(b) The contribution is based upon previous work that, to the best
-    of my knowledge, is covered under an appropriate open source
-    license and I have the right under that license to submit that
-    work with modifications, whether created in whole or in part
-    by me, under the same open source license (unless I am
-    permitted to submit under a different license), as indicated
-    in the file; or
+    If you don't already have a GPG key, you can generate a new GPG key pair by following the instructions here: [Generating a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key).
 
-(c) The contribution was provided directly to me by some other
-    person who certified (a), (b) or (c) and I have not modified
-    it.
+2. **Add your GPG key to your GitHub/GitLab account**:
 
-(d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all
-    personal information I submit with it, including my sign-off) is
-    maintained indefinitely and may be redistributed consistent with
-    this project or the open source license(s) involved.
-```
+   After generating your GPG key, add it to your GitHub account by following these steps: [Adding a new GPG key to your GitHub account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
 
-Then you just add a line to every git commit message:
+3. **Configure Git to sign commits:**
 
-    Signed-off-by: Joe Smith <joe.smith@email.com>
+   Tell Git to use your GPG key by default for signing your commits:
+   ```bash
+   git config --global user.signingkey YOUR_GPG_KEY_ID
+   ```
+4. **Sign commits**:
 
-Use your real name (sorry, no pseudonyms or anonymous contributions.)
+   Sign individual commits using the `-S` flag
+   ```bash
+   git commit -S -m "Your commit message"
+   ```
+   Or, enable commit signing by default (recommended):
+   ```bash
+   git config --global commit.gpgsign true
+   ```
 
-If you set your `user.name` and `user.email` git configs, you can sign your
-commit automatically with `git commit -s`.
+**Troubleshooting and Help**: If you encounter any issues or need help with setting up commit signing, please refer to the [GitHub documentation on signing commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits).
+Feel free to contact the project maintainers if you need further assistance.
+
+### Developer Certificate of Origin (DCO)
+
+To ensure the quality and legality of the code base, all contributors are required to certify the origin of their contributions under the terms of the Developer Certificate of Origin (DCO), Version 1.1:
+
+  ```
+  Developer Certificate of Origin
+  Version 1.1
+
+  Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
+  1 Letterman Drive
+  Suite D4700
+  San Francisco, CA, 94129
+
+  Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
+
+  Developer's Certificate of Origin 1.1
+
+  By making a contribution to this project, I certify that:
+
+  (a) The contribution was created in whole or in part by me and I have the right to submit it under the open source license indicated in the file; or
+
+  (b) The contribution is based upon previous work that, to the best of my knowledge, is covered under an appropriate open source license and I have the right under that license to submit that work with modifications, whether created in whole or in part by me, under the same open source license (unless I am permitted to submit under a different license), as indicated in the file; or
+
+  (c) The contribution was provided directly to me by some other person who certified (a), (b) or (c) and I have not modified it.
+
+  (d) I understand and agree that this project and the contribution are public and that a record of the contribution (including all personal information I submit with it, including my sign-off) is maintained indefinitely and may be redistributed consistent with this project or the open source license(s) involved.
+  ```
+
+We look forward to your contributions to the NVIDIA NIM Deploy Project!
