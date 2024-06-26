@@ -6,7 +6,7 @@ import boto3
 import subprocess
 import logging
 import time
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from botocore.exceptions import ClientError
 from docker import APIClient, errors
 
@@ -281,11 +281,25 @@ def create_shim_endpoint():
     logger.info(f"Creating and deploying shim endpoint took {total_duration:.2f} seconds.")
 
 def render_template(template_file, output_file, context):
-    env = Environment(loader=FileSystemLoader('templates'))
-    template = env.get_template(template_file)
-    rendered_content = template.render(context)
-    with open(output_file, 'w') as f:
-        f.write(rendered_content)
+    # Determine the directory and filename for the template
+    template_dir = os.path.dirname(template_file)
+    template_name = os.path.basename(template_file)
+
+    # Set up the Jinja2 environment with the determined template directory
+    env = Environment(loader=FileSystemLoader(template_dir))
+    
+    try:
+        # Load and render the template
+        template = env.get_template(template_name)
+        rendered_content = template.render(context)
+        
+        # Write the rendered content to the output file
+        with open(output_file, 'w') as f:
+            f.write(rendered_content)
+        logger.info(f"Successfully rendered template {template_file} to {output_file}")
+    except TemplateNotFound:
+        logger.error(f"Template not found: {template_file}")
+        sys.exit(1)
 
 def test_endpoint():
     # Render test payload template
