@@ -8,7 +8,7 @@ import logging
 import time
 from jinja2 import Environment, FileSystemLoader
 from botocore.exceptions import ClientError
-from docker import APIClient
+from docker import APIClient, errors
 
 # Default values for environment variables
 DEFAULT_SRC_IMAGE_PATH = 'nvcr.io/nim/meta/llama3-70b-instruct:latest'
@@ -43,31 +43,64 @@ def docker_pull(image):
         logger.info(line.get('status', ''))
 
 def docker_build_and_push(dockerfile, tags):
+    # Ensure necessary files exist in the current working directory
+    required_files = ['launch.sh', 'caddy-config.json']
+    missing_files = [f for f in required_files if not os.path.exists(f)]
+    if missing_files:
+        logger.error(f"Missing required files for Docker build: {missing_files}")
+        sys.exit(1)
+    
+    logger.info("All required files are present for Docker build.")
+
     # Build the Docker image
     logger.info("Building Docker image...")
     build_start_time = time.time()
-    build_logs = client.build(path='.', dockerfile=dockerfile, tag=tags[0], rm=True, decode=True)
-    for log in build_logs:
-        if 'stream' in log:
-            logger.info(log['stream'].strip())
-    build_duration = time.time() - build_start_time
-    logger.info(f"Building Docker image took {build_duration:.2f} seconds.")
+    try:
+        build_logs = client.build(path='.', dockerfile=dockerfile, tag=tags[0], rm=True, decode=True)
+        image_built = False
+        for log in build_logs:
+            if 'stream' in log:
+                logger.info(log['stream'].strip())
+            if 'aux' in log and 'ID' in log['aux']:
+                image_built = True
+            if 'errorDetail' in log:
+                logger.error(f"ErrorDetail: {log['errorDetail']}")
+                sys.exit(1)
+        build_duration = time.time() - build_start_time
+        if not image_built:
+            logger.error("Failed to build Docker image.")
+            sys.exit(1)
+        logger.info(f"Building Docker image took {build_duration:.2f} seconds.")
+    except errors.BuildError as e:
+        logger.error(f"BuildError: {e}")
+        sys.exit(1)
+    except errors.APIError as e:
+        logger.error(f"APIError: {e}")
+        sys.exit(1)
 
     # Tag the Docker image with additional tags
     for tag in tags[1:]:
-        client.tag(tags[0], repository=tag)
+        try:
+            client.tag(tags[0], tag)
+        except errors.APIError as e:
+            logger.error(f"Failed to tag image: {e}")
+            sys.exit(1)
 
     # Push the Docker image to the registry
     logger.info("Pushing Docker image to registry...")
     push_start_time = time.time()
-    for tag in tags:
-        push_logs = client.push(tag, stream=True, decode=True)
-        for log in push_logs:
-            status = log.get('status', '')
-            if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
-                logger.info(status)
-    push_duration = time.time() - push_start_time
-    logger.info(f"Pushing Docker image took {push_duration:.2f} seconds.")
+    try:
+        for tag in tags:
+            push_logs = client.push(tag, stream=True, decode=True)
+            for log in push_logs:
+                status = log.get('status', '')
+                if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
+                    logger.info(status)
+        push_duration = time.time() - push_start_time
+        logger.info(f"Pushing Docker image took {push_duration:.2f} seconds.")
+    except errors.APIError as e:
+        logger.error(f"Failed to push image: {e}")
+        sys.exit(1)
 
 def validate_prereq():
     start_time = time.time()
@@ -119,25 +152,80 @@ def delete_sagemaker_resources(endpoint_name):
     duration = time.time() - start_time
     logger.info(f"Deleting SageMaker resources took {duration:.2f} seconds.")
 
-# Proper create_shim_image function
 def create_shim_image():
     start_time = time.time()
     # Docker login and pull
     docker_login_ecr(AWS_REGION, DST_REGISTRY)
     docker_pull(SRC_IMAGE_PATH)
 
-    # Build shimmed image
-    dockerfile_content = f"""
-    FROM {SRC_IMAGE_PATH}
-    USER 0
-    RUN apt-get update && apt-get install -y curl
-    ENTRYPOINT ["sh", "-c", "curl -L https://bit.ly/nimshim-launch | bash -xe -s -- -c https://bit.ly/nimshim-caddy -e /opt/nim/start-server.sh"]
-    """
+    # Load Dockerfile template and replace placeholder
+    env = Environment(loader=FileSystemLoader('.'))
+    template = env.get_template('Dockerfile')  # Ensure your template is named Dockerfile.j2
+    dockerfile_content = template.render(SRC_IMAGE=SRC_IMAGE_PATH)
 
     with open('Dockerfile.nim', 'w') as f:
         f.write(dockerfile_content)
 
-    docker_build_and_push('Dockerfile.nim', [SG_EP_CONTAINER, 'nim-shim:latest'])
+    # Ensure necessary files exist in the current working directory
+    required_files = ['launch.sh', 'caddy-config.json']
+    missing_files = [f for f in required_files if not os.path.exists(f)]
+    if missing_files:
+        logger.error(f"Missing required files for Docker build: {missing_files}")
+        sys.exit(1)
+    
+    logger.info("All required files are present for Docker build.")
+    logger.info("Dockerfile.nim content:")
+    with open('Dockerfile.nim', 'r') as f:
+        logger.info(f.read())
+
+    # Build the Docker image
+    logger.info("Building Docker image...")
+    build_start_time = time.time()
+    try:
+        build_logs = client.build(path='.', dockerfile='Dockerfile.nim', tag='nim-shim:latest', rm=True, decode=True)
+        image_built = False
+        for log in build_logs:
+            if 'stream' in log:
+                logger.info(log['stream'].strip())
+            if 'aux' in log and 'ID' in log['aux']:
+                image_built = True
+            if 'errorDetail' in log:
+                logger.error(f"ErrorDetail: {log['errorDetail']}")
+                sys.exit(1)
+        build_duration = time.time() - build_start_time
+        if not image_built:
+            logger.error("Failed to build Docker image.")
+            sys.exit(1)
+        logger.info(f"Building Docker image took {build_duration:.2f} seconds.")
+    except errors.BuildError as e:
+        logger.error(f"BuildError: {e}")
+        sys.exit(1)
+    except errors.APIError as e:
+        logger.error(f"APIError: {e}")
+        sys.exit(1)
+
+    # Tag the Docker image with the additional tag
+    try:
+        client.tag('nim-shim:latest', repository=SG_EP_CONTAINER)
+    except errors.APIError as e:
+        logger.error(f"Failed to tag image: {e}")
+        sys.exit(1)
+
+    # Push the Docker image to the registry
+    logger.info("Pushing Docker image to registry...")
+    push_start_time = time.time()
+    try:
+        push_logs = client.push(SG_EP_CONTAINER, stream=True, decode=True)
+        for log in push_logs:
+            status = log.get('status', '')
+            if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
+                logger.info(status)
+        push_duration = time.time() - push_start_time
+        logger.info(f"Pushing Docker image took {push_duration:.2f} seconds.")
+    except errors.APIError as e:
+        logger.error(f"Failed to push image: {e}")
+        sys.exit(1)
+
     duration = time.time() - start_time
     logger.info(f"Creating and pushing shim image took {duration:.2f} seconds.")
 
@@ -171,8 +259,7 @@ def create_shim_endpoint():
             "ModelName": SG_EP_NAME,
             "InstanceType": SG_INST_TYPE,
             "InitialInstanceCount": 1,
-            "InitialVariantWeight": 1.0,
-            "ContainerStartupHealthCheckTimeoutInSeconds": SG_CONTAINER_STARTUP_TIMEOUT
+            "InitialVariantWeight": 1.0
         }
     ]
 

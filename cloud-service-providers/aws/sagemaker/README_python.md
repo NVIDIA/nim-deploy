@@ -7,6 +7,7 @@ This documentation provides a guide on how to use the CLI script to easily add a
 Before using the script, ensure the following:
 - Docker is installed and running.
 - AWS CLI is installed and configured with appropriate permissions.
+  - `apt install -y awscli`
 - Docker is logged into AWS ECR.
 - Python and required packages are installed (`boto3`, `docker`, `jinja2`).
   - `pip install -r requirements.txt`

@@ -40,7 +40,8 @@ docker login ${DST_REGISTRY}
 docker pull ${SRC_IMAGE}
 
 # Build shimmed image
-envsubst < Dockerfile > Dockerfile.nim
+sed 's/{{ SRC_IMAGE }}/$SRC_IMAGE/g' Dockerfile > Dockerfile.tmp
+envsubst < Dockerfile.tmp > Dockerfile.nim
 docker build -f Dockerfile.nim -t ${DST_REGISTRY}:${SRC_IMAGE_NAME} -t nim-shim:latest .
 docker push ${DST_REGISTRY}:${SRC_IMAGE_NAME}
 
