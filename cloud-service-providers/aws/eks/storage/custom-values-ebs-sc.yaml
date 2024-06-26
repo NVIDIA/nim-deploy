@@ -1,0 +1,47 @@
+image:
+  repository: nvcr.io/nim/meta/llama3-8b-instruct
+imagePullSecrets:
+  - name: registry-secret
+model:
+  name: meta/llama3-8b-instruct
+  ngcAPISecret: ngc-api
+  nimCache: /nim-cache
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+persistence:
+  enabled: true
+  storageClass: "ebs-sc"
+  accessMode: ReadWriteOnce
+  stsPersistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
+statefulSet:
+  enabled: true
+resources:
+  limits:
+    nvidia.com/gpu: 1
+service:
+  openaiPort: 8000
+  name: "nim-llm-service"
+metrics:
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: prometheus
+      app: prometheus
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 2
+  scaleDownStabilizationSecs: 300
+  metrics:
+  - type: Pods
+    pods:
+      metric:
+        name: num_requests_running
+      target:
+        type: Value
+        averageValue: 5
+  
