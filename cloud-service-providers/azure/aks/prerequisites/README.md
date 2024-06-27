@@ -1,7 +1,7 @@
 # Pre-requirement
 
 The keys to create AKS for NIM is to create proper GPU nodepool.  The proper GPU nodepool should have up to date driver.  This is only achievable via a preview cli extension.
-We cannot create AKS via Azure Portal GUI and we need to create it using CLI.  We need to setup our terminal with a lot of cli to perform the AKS creation cia CLI.  Following is the detail instructions.
+We cannot create AKS via Azure Portal GUI and we need to create it using CLI.  We need to setup our terminal with a several cli to perform the AKS creation.  Following is the detail instructions.
 
 ## Azure Portal Account
 
@@ -13,33 +13,20 @@ Click "Use + Quota"
 
 ![](./images/UsageQuota.jpg)
 
-Search for 'NCADS_A100_v4 Family' and looking for region has enough quota
+Search for 'NDAMSv4_A100' or 'NDSH100v5' for llama3-70b or 'NCADS_A100_v4' 'NDASv4_A100' 'NCadsH100v5' for llama3-8b and looking for region has enough quota.
+If no region has enough quota make click the edit icon at the right to reqest it.
 
 ![](./images/region.jpg)
 
 
 ### write down the reqion you want to use
 
-## NGC Account
-
-Login into NGC portal and choose nemo-microservice/ea-participants then click setup
-
-![](./images/ngc.jpg)
-
-Click Generate API Key
-
-![](./images/ngcgenapi.jpg)
-
-Click Generate API Key again and write down the api key
-
-![](./images/ngcgenapi2.jpg)
-
-
 ## Install Azure CLI
 
 ```
 curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
+For more detail, Please reference this [link.](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 
 ## Install AKS Preview extension
 
@@ -47,6 +34,9 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 az extension add --name aks-preview
 az extension update --name aks-preview
 ```
+
+For more detail, Please reference this [link.](https://learn.microsoft.com/en-us/azure/aks/draft)
+
 
 ## Install NGC CLI
 
@@ -58,6 +48,8 @@ chmod u+x ngc-cli/ngc
 echo "export PATH=\"\$PATH:$(pwd)/ngc-cli\"" >> ~/.bash_profile && source ~/.bash_profile
 ngc config set
 ```
+
+For more detail, Please reference this [link.](https://org.ngc.nvidia.com/setup/installers/cli)
 
 ## Install kubectl
 
