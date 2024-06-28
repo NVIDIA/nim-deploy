@@ -1,6 +1,6 @@
-# Setup AKS
+# Setup Azure Kubernetes Service (AKS)
 
-The keys to create AKS for NIM is to create proper GPU nodepool.  Details are in the following table. 
+The keys to create Azure Kubernetes Service (AKS) for NIM is to create proper GPU nodepool.  The following steps guide you how to find it.
 
 ## Connect to Azure
 
@@ -85,3 +85,5 @@ helm repo add nvidia https://helm.ngc.nvidia.com/nvidia --pass-credentials
 helm repo update
 helm install --create-namespace --namespace gpu-operator nvidia/gpu-operator --wait --generate-name
 ```
+
+Official instruction are [here](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html)

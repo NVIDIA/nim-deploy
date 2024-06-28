@@ -1,7 +1,7 @@
 # Pre-requirement
 
-The keys to create AKS for NIM is to create proper GPU nodepool.  The proper GPU nodepool should have up to date driver.  This is only achievable via a preview cli extension.
-We cannot create AKS via Azure Portal GUI and we need to create it using CLI.  We need to setup our terminal with a several cli to perform the AKS creation.  Following is the detail instructions.
+The keys to create Azure Kubernetes Service (AKS) for NIM is to create proper GPU nodepool because NIM not work on ALL GPU, only A100, H100, L40S and A10.  The proper GPU nodepool should have GPU driver meet NIM minimum requirement.  This is only achievable via a preview cli extension.
+Following is the detail instructions to install from a bash. 
 
 ## Install Azure CLI
 
@@ -18,20 +18,6 @@ az extension update --name aks-preview
 ```
 
 For more detail, Please reference this [link.](https://learn.microsoft.com/en-us/azure/aks/draft)
-
-
-## Install NGC CLI
-
-```
-wget --content-disposition https://api.ngc.nvidia.com/v2/resources/nvidia/ngc-apps/ngc_cli/versions/3.44.0/files/ngccli_linux.zip -O ngccli_linux.zip && unzip ngccli_linux.zip
-find ngc-cli/ -type f -exec md5sum {} + | LC_ALL=C sort | md5sum -c ngc-cli.md5
-sha256sum ngccli_linux.zip
-chmod u+x ngc-cli/ngc
-echo "export PATH=\"\$PATH:$(pwd)/ngc-cli\"" >> ~/.bash_profile && source ~/.bash_profile
-ngc config set
-```
-
-For more detail, Please reference this [link.](https://org.ngc.nvidia.com/setup/installers/cli)
 
 ## Install kubectl
 
