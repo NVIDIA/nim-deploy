@@ -8,7 +8,11 @@ mkdir -p /raid/nvidia-nim/cache
 
 bash ${SCRIPT_DIR}/create-secrets.sh
 
+# NIMs require enabling NodeSelectors to specify GPU types
 kubectl patch configmap config-features -n knative-serving --type merge -p '{"data":{"kubernetes.podspec-nodeselector":"enabled"}}'
+
+# NIMs require enabling EmptyDir for use with shared memory
+kubectl patch configmap config-features -n knative-serving --type merge -p '{"data":{"kubernetes.podspec-volumes-emptydir":"enabled"}}'
 
 for runtime in `ls -d ${KSERVE_DIR}/runtimes/*yaml`; do
   kubectl create -f $runtime
