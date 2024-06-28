@@ -23,7 +23,18 @@ bash scripts/setup.sh
 
 3. Modify the cluster's prometheus configuration to scrape `/metrics` on port `80` and port `9091` for all inference pods # TODO: provide example configuration
 
-6. Create a NIM by instationating the InferenceService corresponding to the NIM model you want to run. Note that the NIMs are a triple of (model, version, gpu type+quantity), be sure to select the right yaml file. 
+6. Create a NIM by instationating the InferenceService corresponding to the NIM model you want to run. See the NIM  `InferenceService` [README](nim-models/README.md) for selecting the correct yaml spec of yaml customization. Note that the NIMs are a combination of model, version, gpu type/quantity, be sure to select the right yaml file for the available cluster hardware. 
+
+```
+# Create an InferenceService for Llama3-8b running on any 1 GPU
+kubectl create -f nim-models/llama3-8b-instruct_1xgpu_24.05.yaml
+
+# Create an InferenceService for Llama3-8b running on 2 A100-80GB GPUs
+kubectl create -f nim-models/llama3-8b-instruct_2xa100_24.05.yaml
+
+# Create an InferenceService for Llama3-70b running on 4 H100-80GB GPUs
+kubectl create -f nim-models/llama3-70b-instruct_4xh100_24.05.yaml
+```
 
  > *Note: The NIM YAML files  provides are just an example, a user could create more configurations than listed by specifying different GPU quantities or architectures referencing the same NIM containers and `pvc` configurations.
 
