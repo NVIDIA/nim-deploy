@@ -3,24 +3,6 @@
 The keys to create AKS for NIM is to create proper GPU nodepool.  The proper GPU nodepool should have up to date driver.  This is only achievable via a preview cli extension.
 We cannot create AKS via Azure Portal GUI and we need to create it using CLI.  We need to setup our terminal with a several cli to perform the AKS creation.  Following is the detail instructions.
 
-## Azure Portal Account
-
-Login into Azure Portal and click the subscription you want to use.
-
-![](./images/AzurePortal.jpg)
-
-Click "Use + Quota" 
-
-![](./images/UsageQuota.jpg)
-
-Search for 'NDAMSv4_A100' or 'NDSH100v5' for llama3-70b or 'NCADS_A100_v4' 'NDASv4_A100' 'NCadsH100v5' for llama3-8b and looking for region has enough quota.
-If no region has enough quota make click the edit icon at the right to reqest it.
-
-![](./images/region.jpg)
-
-
-### write down the reqion you want to use
-
 ## Install Azure CLI
 
 ```
