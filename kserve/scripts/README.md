@@ -19,4 +19,4 @@ This script will do basic setup of a KServe cluster, including the following ste
 
 An example PVC is provided in the `scripts` directory using `local-storage`, it is recommended to use a better `StorageClass` that can share model files across nodes.
 
-5. TODO: Automate teh NIM Cache creation
+5. TODO: Automate the NIM Cache creation
