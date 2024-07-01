@@ -1,7 +1,7 @@
 apiVersion: serving.kserve.io/v1alpha1
 kind: ClusterServingRuntime
 metadata:
-  name: nvidia-nim-llama3-8b-instruct-24.05
+  name: nvidia-nim-llama3-8b-instruct-1.0.0
 spec:
   annotations:
     prometheus.kserve.io/path: /metrics
@@ -46,7 +46,7 @@ spec:
   - autoSelect: true
     name: nvidia-nim-llama3-8b-instruct
     priority: 1
-    version: "24.05"
+    version: "1.0.0"
   volumes:
   - emptyDir:
       medium: Memory

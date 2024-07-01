@@ -33,13 +33,13 @@ The default `setup.sh` script creates a PV that points to the local hostpath at 
 
 ```
 # Create an InferenceService for Llama3-8b running on any 1 GPU
-kubectl create -f nim-models/llama3-8b-instruct_1xgpu_24.05.yaml
+kubectl create -f nim-models/llama3-8b-instruct_1xgpu_1.0.0.yaml
 
 # Create an InferenceService for Llama3-8b running on 2 A100-80GB GPUs
-kubectl create -f nim-models/llama3-8b-instruct_2xa100_24.05.yaml
+kubectl create -f nim-models/llama3-8b-instruct_2xa100_1.0.0.yaml
 
 # Create an InferenceService for Llama3-70b running on 4 H100-80GB GPUs
-kubectl create -f nim-models/llama3-70b-instruct_4xh100_24.05.yaml
+kubectl create -f nim-models/llama3-70b-instruct_4xh100_1.0.0.yaml
 ```
 
  > **Note**: The NIM YAML files  provides are just an example, a user could create more configurations than listed by specifying different GPU quantities or architectures referencing the same NIM containers and `pvc` configurations.

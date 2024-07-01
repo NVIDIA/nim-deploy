@@ -3,18 +3,20 @@ kind: InferenceService
 metadata:
   annotations:
     autoscaling.knative.dev/target: "10"
-  name: llama3-70b-instruct-4xgpu
+  name: llama3-8b-instruct-2xa100
 spec:
   predictor:
     minReplicas: 1
     model:
       modelFormat:
-        name: nvidia-nim-llama3-70b-instruct
+        name: nvidia-nim-llama3-8b-instruct
       resources:
         limits:
-          nvidia.com/gpu: "4"
+          nvidia.com/gpu: "2"
         requests:
-          nvidia.com/gpu: "4"
-      runtime: nvidia-nim-llama3-70b-instruct-24.05
+          nvidia.com/gpu: "2"
+      runtime: nvidia-nim-llama3-8b-instruct-1.0.0
       storageUri: pvc://nvidia-nim-pvc/
+    nodeSelector:
+      nvidia.com/gpu.product: A100-SXM4-80GB
 
