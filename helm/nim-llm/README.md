@@ -164,6 +164,16 @@ Standard metrics of CPU and memory are of limited use in scaling NIM
 | `model.subPath`        | (deprecated) Specify path within the model volume to mount if not the root -- default works with ngcInit and persistent volume. (legacyCompat only) | `model-store` |
 | `model.modelStorePath` | (deprecated) Specify location of unpacked model.                                                                                                    | `""`          |
 
+### PEFT parameters
+
+| Name                   | Description                                                                                                                                         | Value         |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `peft.volumeClaimName` | Name of persistent volume claim with PEFT adapters. If undefined (the default) or set to null, other peft parameters have no effect.                | `""`          |
+| `peft.maxLoraRank`     | Specify the max LoRA rank.                                                                                                                          | `32`          |
+| `peft.maxGpuLoras`     | Specify number of LoRAs that can fit in GPU PEFT cache.                                                                                             | `8`           |
+| `peft.maxCpuLoras`     | Specify number of LoRAs that can fit in CPU PEFT cache.                                                                                             | `16`          |
+| `peft.refreshInterval` | Specify how often to check `peft.volumeClaimName` for new models in seconds. If not set, PEFT cache will not refresh.                               | `0`           |
+
 ### Storage parameters
 
 | Name                                                              | Description                                                                                                                                                                                                                       | Value                    |
