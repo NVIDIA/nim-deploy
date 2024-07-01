@@ -1,0 +1,14 @@
+{
+    "ModelName": "${SG_EP_NAME}",
+    "Containers": [
+        {
+            "Image": "${SG_EP_CONTAINER}",
+            "Mode": "SingleModel",
+            "Environment": {
+                "NGC_API_KEY": "${NGC_API_KEY}"
+            }
+        }
+    ],
+    "ExecutionRoleArn": "${SG_EXEC_ROLE_ARN}",
+    "EnableNetworkIsolation": false
+}

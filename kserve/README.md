@@ -23,11 +23,28 @@ bash scripts/setup.sh
 
 3. Modify the cluster's prometheus configuration to scrape `/metrics` on port `80` and port `9091` for all inference pods # TODO: provide example configuration
 
-6. Create a NIM by instationating the InferenceService corresponding to the NIM model you want to run. Note that the NIMs are a triple of (model, version, gpu type+quantity), be sure to select the right yaml file. 
+4. Create the NIM cache locally. KServe currently requires that PVCs are mounted to a Pod in ReadOnly mode (see this [issue](https://github.com/kserve/kserve/issues/3687)), because of this the NIM cache must be created outside of NIM `InferenceService` deployment.
+
+> For faster testing purposes this step can be bypassed by setting the NIM to re-download the model each time by setting `NIM_CACHE_PATH` to `/tmp` in the runtime files.
+
+The default `setup.sh` script creates a PV that points to the local hostpath at `/raid/nvidia-nim`. NIM can be run locally following the [official docs](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#launch-nvidia-nim-for-llms) to initially populate this cache. The NIM container can be run locally with Docker or in the cluster as a Pod, Job, or Deployment. The best method for cache creation will depend on the type of distributed storage being used to back the PVC.
+
+5. Create a NIM by instationating the InferenceService corresponding to the NIM model you want to run. See the NIM  `InferenceService` [README](nim-models/README.md) for selecting the correct yaml spec of yaml customization. Note that the NIMs are a combination of model, version, gpu type/quantity, be sure to select the right yaml file for the available cluster hardware.
+
+```
+# Create an InferenceService for Llama3-8b running on any 1 GPU
+kubectl create -f nim-models/llama3-8b-instruct_1xgpu_24.05.yaml
+
+# Create an InferenceService for Llama3-8b running on 2 A100-80GB GPUs
+kubectl create -f nim-models/llama3-8b-instruct_2xa100_24.05.yaml
+
+# Create an InferenceService for Llama3-70b running on 4 H100-80GB GPUs
+kubectl create -f nim-models/llama3-70b-instruct_4xh100_24.05.yaml
+```
 
  > *Note: The NIM YAML files  provides are just an example, a user could create more configurations than listed by specifying different GPU quantities or architectures referencing the same NIM containers and `pvc` configurations.
 
-7. Validate that the NIM is running by posting a query against the KServe endpoint. Additional KServe metrics are available internally on the `ClusterIP` at port `9091` on `/metrics/`
+6. Validate that the NIM is running by posting a query against the KServe endpoint. Additional KServe metrics are available internally on the `ClusterIP` at port `9091` on `/metrics/`
 
 ```
 # KServe URL can be obtained from `kubectl get inferenceservice` or the cluster-ip from the private predictor on `kubectl get svc` depending on KServe setup.
