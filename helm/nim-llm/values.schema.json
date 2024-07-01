@@ -394,6 +394,36 @@
                 }
             }
         },
+        "peft": {
+            "type": "object",
+            "properties": {
+                "volumeClaimName": {
+                    "type": "string",
+                    "description": "Name of persistent volume claim with PEFT adapters. If undefined (the default) or set to null, other peft parameters have no effect.",
+                    "default": "\"\""
+                },
+                "maxLoraRank": {
+                    "type": "number",
+                    "description": "Specify the max LoRA rank.",
+                    "default": 32
+                },
+                "maxGpuLoras": {
+                    "type": "number",
+                    "description": "Specify number of LoRAs that can fit in GPU PEFT cache.",
+                    "default": 8
+                },
+                "maxCpuLoras": {
+                    "type": "number",
+                    "description": "Specify number of LoRAs that can fit in CPU PEFT cache.",
+                    "default": 16
+                },
+                "refreshInterval": {
+                    "type": "number",
+                    "description": "Specify how often to check peft.volumeClaimName for new models in seconds. If not set, PEFT cache will not refresh.",
+                    "default": 0
+                }
+            }
+        },
         "persistence": {
             "type": "object",
             "properties": {
