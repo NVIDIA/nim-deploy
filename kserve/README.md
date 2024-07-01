@@ -21,13 +21,13 @@ bash scripts/setup.sh
 
 > *Note: It may be necessary to run with `root` privileges if the default `/raid/nim` is not accessible.
 
-`NOTE:` If you have StorageClass and plan to use that please follow the below steps, please make sure run the below steps before run `bash scripts/setup.sh`
+`NOTE:` Follow the below steps if there is a existing Storage Class on the cluster and also run the below steps before before run the `bash scripts/setup.sh`
 
   Run the below command to back up the `nvidia-nim-cache.yaml`
   ```
   mv scripts/nvidia-nim-cache.yaml scrips/nvidia-nim-cache-backup.yaml
   ```
-  create a new file with PersistenceVolumeClaim with below command and update the storageClassName accordingly
+  Create a new file with PersistenceVolumeClaim with below command and update the storageClassName accordingly
   
   `Note:` Storage Class should have an accessModes option as `ReadWriteMany`
 
@@ -46,6 +46,11 @@ bash scripts/setup.sh
          storage: 200G
    EOF
    ```
+   Run the below command to know the available StorageClass on the cluster 
+
+  ```
+  kubectl get sc
+  ```
 
 3. Modify the cluster's prometheus configuration to scrape `/metrics` on port `80` and port `9091` for all inference pods # TODO: provide example configuration
 
