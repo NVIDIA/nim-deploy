@@ -1,13 +1,13 @@
 # NIVIDA NIM Deploy on KServe
-[KServe](https://github.com/kserve/kserve) provides a serverless environment on Kubernetes that is purpose-built for AI inference. This repo describes what is necessary to deploy NVIDIA NIMs onto a running KServe installation.
+[KServe](https://github.com/kserve/kserve) provides a serverless environment on Kubernetes that is purpose-built for AI inference. This project describes what is necessary to deploy NVIDIA NIMs onto a running KServe installation.
 
 # Setup
 
 The following steps assumes a running K8s cluster with KServe installed, kubectl access, and NIM access on NGC. The cluster will need a StorageClass that can provide a PV large enough to download and unpack the models (200GB+ for larger models), a LoadBalancer configured in the platform, and supported GPUs for the class of NIM being deployed.
 
-A single instance of KServe can support many NIMs running the same or different models. The first few installation steps are only required once, after initial setup a new NIM can be deployed by creating a single `InferenceService` using the YAML files in (nim-models)[nim-models].
+A single instance of KServe can support many NIMs running the same or different models. The first few installation steps are only required once, after initial setup a new NIM can be deployed by creating a single `InferenceService` using the YAML files in [nim-models](https://github.com/NVIDIA/nim-deploy/tree/main/kserve/nim-models).
 
-1. Ensure access to the NIM models and the NIM containers by logging into [NGC](ngc.nvidia.com) and browsing to the desired NIM artifacts.
+1. Ensure access to the NIM models and the NIM containers by logging into [NGC](https://ngc.nvidia.com/) and browsing to the desired NIM artifacts.
 
 2. Perform the NVIDIA NIM KServe setup by exporting user tokens and running the setup script. Optionally set secret values in the secrets.env file to avoid entering them on the command line.
 ```
@@ -19,7 +19,7 @@ export NODE_NAME=
 bash scripts/setup.sh
 ```
 
-> *Note: It may be necessary to run with `root` privileges if the default `/raid/nim` is not accessible.
+> **Note**: It may be necessary to run with `root` privileges if the default `/raid/nim` is not accessible.
 
 3. Modify the cluster's prometheus configuration to scrape `/metrics` on port `80` and port `9091` for all inference pods # TODO: provide example configuration
 
@@ -29,7 +29,7 @@ bash scripts/setup.sh
 
 The default `setup.sh` script creates a PV that points to the local hostpath at `/raid/nvidia-nim`. NIM can be run locally following the [official docs](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#launch-nvidia-nim-for-llms) to initially populate this cache. The NIM container can be run locally with Docker or in the cluster as a Pod, Job, or Deployment. The best method for cache creation will depend on the type of distributed storage being used to back the PVC.
 
-5. Create a NIM by instationating the InferenceService corresponding to the NIM model you want to run. See the NIM  `InferenceService` [README](nim-models/README.md) for selecting the correct yaml spec of yaml customization. Note that the NIMs are a combination of model, version, gpu type/quantity, be sure to select the right yaml file for the available cluster hardware.
+5. Create a NIM by instationating the InferenceService corresponding to the NIM model you want to run. See the NIM  `InferenceService` [README](https://github.com/NVIDIA/nim-deploy/blob/main/kserve/nim-models/README.md) for selecting the correct yaml spec of yaml customization. Note that the NIMs are a combination of model, version, gpu type/quantity, be sure to select the right yaml file for the available cluster hardware.
 
 ```
 # Create an InferenceService for Llama3-8b running on any 1 GPU
@@ -42,7 +42,7 @@ kubectl create -f nim-models/llama3-8b-instruct_2xa100_24.05.yaml
 kubectl create -f nim-models/llama3-70b-instruct_4xh100_24.05.yaml
 ```
 
- > *Note: The NIM YAML files  provides are just an example, a user could create more configurations than listed by specifying different GPU quantities or architectures referencing the same NIM containers and `pvc` configurations.
+ > **Note**: The NIM YAML files  provides are just an example, a user could create more configurations than listed by specifying different GPU quantities or architectures referencing the same NIM containers and `pvc` configurations.
 
 6. Validate that the NIM is running by posting a query against the KServe endpoint. Additional KServe metrics are available internally on the `ClusterIP` at port `9091` on `/metrics/`
 
