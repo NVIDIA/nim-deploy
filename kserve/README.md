@@ -21,6 +21,32 @@ bash scripts/setup.sh
 
 > *Note: It may be necessary to run with `root` privileges if the default `/raid/nim` is not accessible.
 
+`NOTE:` If you have StorageClass and plan to use that please follow the below steps, please make sure run the below steps before run `bash scripts/setup.sh`
+
+  Run the below command to back up the `nvidia-nim-cache.yaml`
+  ```
+  mv scripts/nvidia-nim-cache.yaml scrips/nvidia-nim-cache-backup.yaml
+  ```
+  create a new file with PersistenceVolumeClaim with below command and update the storageClassName accordingly
+  
+  `Note:` Storage Class should have an accessModes option as `ReadWriteMany`
+
+   ```
+   cat <<EOF | tee scripts/nvidia-nim-cache.yaml
+   apiVersion: v1
+   kind: PersistentVolumeClaim
+   metadata:
+     name: nvidia-nim-pvc
+   spec:
+     accessModes:
+       - ReadWriteMany
+     storageClassName: <storage-class-name>
+     resources:
+       requests:
+         storage: 200G
+   EOF
+   ```
+
 3. Modify the cluster's prometheus configuration to scrape `/metrics` on port `80` and port `9091` for all inference pods # TODO: provide example configuration
 
 4. Create the NIM cache locally. KServe currently requires that PVCs are mounted to a Pod in ReadOnly mode (see this [issue](https://github.com/kserve/kserve/issues/3687)), because of this the NIM cache must be created outside of NIM `InferenceService` deployment.

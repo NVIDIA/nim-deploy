@@ -4,7 +4,7 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 KSERVE_DIR="${SCRIPT_DIR}/.."
 
 # Setup location of NIM Cache on local system
-mkdir -p /raid/nvidia-nim/cache
+sudo mkdir -p /raid/nvidia-nim/cache
 
 bash ${SCRIPT_DIR}/create-secrets.sh
 
