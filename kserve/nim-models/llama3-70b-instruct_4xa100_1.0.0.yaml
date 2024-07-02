@@ -18,5 +18,5 @@ spec:
       runtime: nvidia-nim-llama3-70b-instruct-1.0.0
       storageUri: pvc://nvidia-nim-pvc/
     nodeSelector:
-      nvidia.com/gpu.product: A100-SXM4-80GB
+      nvidia.com/gpu.product: NVIDIA-A100-SXM4-80GB
 
