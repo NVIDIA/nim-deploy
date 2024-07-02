@@ -27,3 +27,7 @@ Session.vim
 
 # example values file
 custom-values.yaml
+
+# promptflow generated files
+.promptflow/
+__pycache__
