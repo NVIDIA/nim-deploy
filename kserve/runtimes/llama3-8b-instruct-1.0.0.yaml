@@ -30,10 +30,10 @@ spec:
     resources:
       limits:
         cpu: "12"
-        memory: 256Gi
+        memory: 32Gi
       requests:
         cpu: "12"
-        memory: 128Gi
+        memory: 32Gi
     volumeMounts:
     - mountPath: /dev/shm
       name: dshm
@@ -50,5 +50,5 @@ spec:
   volumes:
   - emptyDir:
       medium: Memory
-      sizeLimit: 128Gi
+      sizeLimit: 16Gi
     name: dshm
