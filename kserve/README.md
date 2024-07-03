@@ -48,8 +48,11 @@ kubectl create -f nim-models/llama3-70b-instruct_4xh100_1.0.0.yaml
 
 ```
 # KServe URL can be obtained from `kubectl get inferenceservice` or the cluster-ip from the private predictor on `kubectl get svc` depending on KServe setup.
+
+# Validate the NIM Models List API
 curl http://${KSERVE_URL}/v1/models
 
+# Validate the LLM NIM Chat Completions API
 curl http://${KSERVE_URL}/v1/chat/completions  \
   -H "Content-Type: application/json" \
   -d '{
@@ -61,6 +64,18 @@ curl http://${KSERVE_URL}/v1/chat/completions  \
     "stream": false 
     }'
 
+# Validate the Embedding NIM Embeddings API
+curl -X POST  http://${KSERVE_URL}/v1/embeddings  \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": ["What is the capital of France?"],
+    "model": "nv-embedqa-e5-v5",
+    "input_type": "query",
+    "encoding_format": "float",
+    "truncate": "NONE"
+  }'
+
+# Validate the LLM NIM Metrics API
 curl http://${KSERVE_URL}/metrics
 
 ```
