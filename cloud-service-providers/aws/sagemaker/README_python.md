@@ -1,6 +1,6 @@
-# NIM Shim Layer for AWS SageMaker CLI Script Documentation
+# NVIDIA NIM on AWS Sagemaker
 
-This documentation provides a guide on how to use the CLI script to easily add a "shim" layer to an existing NVIDIA Inference Microservice (NIM) image so it can be run on AWS SageMaker.
+This documentation provides a guide on how to use the included Python CLI script to easily add a "shim" layer to an existing NVIDIA Inference Microservice (NIM) image so it can be run on AWS SageMaker.
 
 ## Prerequisites
 
@@ -9,7 +9,7 @@ Before using the script, ensure the following:
 - AWS CLI is installed and configured with appropriate permissions.
   - `apt install -y awscli`
 - Docker is logged into AWS ECR.
-- Python and required packages are installed (`boto3`, `docker`, `jinja2`).
+- Python (tested with v3.10) and required packages are installed (`boto3`, `docker`, `jinja2`).
   - `pip install -r requirements.txt`
 
 ## Script Overview
