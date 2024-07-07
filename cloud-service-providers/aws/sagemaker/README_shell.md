@@ -1,5 +1,12 @@
 # NVIDIA NIM on AWS Sagemaker
 
+## Overview
+
+NVIDIA NIM, a component of NVIDIA AI Enterprise, enhances your applications with the power of state-of-the-art large language models (LLMs), providing unmatched natural language processing and understanding capabilities. Whether you're developing chatbots, content analyzers, or any application that needs to understand and generate human language, NVIDIA NIM for LLMs has you covered.
+
+In this example we show how to build & deploy an AWS Sagemaker-compatible NIM image for `LLaMa-3 70B` or `LLaMa-3 8B` via Python CLI helper script.
+
+## Contents
 
 - [Preparation](#preparation)
 - [Usage](#usage)
