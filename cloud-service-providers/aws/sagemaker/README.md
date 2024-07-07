@@ -7,5 +7,5 @@ NVIDIA NIM, a component of NVIDIA AI Enterprise, enhances your applications with
 
 - [Launch a NIM on Sagemaker via Jupyter Notebook](nim_llama3.ipynb)
 - [Build & Launch a NIM on Sagemaker via Python CLI](README_python.md)
-- [Build & Launch a NIM on Sagemaker via via shell][README_shell.md]
+- [Build & Launch a NIM on Sagemaker via via shell](README_shell.md)
 
