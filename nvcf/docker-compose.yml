@@ -1,0 +1,12 @@
+services:
+  nvcf-nim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BASE_IMAGE=${NIM_IMAGE}
+        - BASE_TAG=${NIM_TAG}
+        - NGC_KEY=${NIM_NGC_KEY}
+    image: nvcr.io/${NIM_NGC_ORG}/${NIM_CONTAINER_NAME}:${NIM_CONTAINER_TAG}
+    env_file:
+      - .env
