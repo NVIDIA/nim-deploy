@@ -53,6 +53,21 @@ def docker_pull(image):
         logger.info(line.get('status', ''))
 
 def docker_build_and_push(dockerfile, tags, registries):
+    # Build the Docker image
+    logger.info("Building Docker image...")
+    start_time = time.time()
+    # Docker login and pull
+    docker_login_ecr(AWS_REGION, DST_REGISTRY)
+    docker_pull(SRC_IMAGE_PATH)
+
+    # Load Dockerfile template and replace placeholder
+    env = Environment(loader=FileSystemLoader('.'))
+    template = env.get_template('Dockerfile')  # Ensure your template is named Dockerfile.j2
+    dockerfile_content = template.render(SRC_IMAGE=SRC_IMAGE_PATH)
+
+    with open('Dockerfile.nim', 'w') as f:
+        f.write(dockerfile_content)
+
     # Ensure necessary files exist in the current working directory
     required_files = ['launch.sh', 'caddy-config.json']
     missing_files = [f for f in required_files if not os.path.exists(f)]
@@ -61,12 +76,15 @@ def docker_build_and_push(dockerfile, tags, registries):
         sys.exit(1)
     
     logger.info("All required files are present for Docker build.")
+    logger.info("Dockerfile.nim content:")
+    with open('Dockerfile.nim', 'r') as f:
+        logger.info(f.read())
 
     # Build the Docker image
     logger.info("Building Docker image...")
     build_start_time = time.time()
     try:
-        build_logs = client.build(path='.', dockerfile=dockerfile, tag=tags[0], rm=True, decode=True)
+        build_logs = client.build(path='.', dockerfile='Dockerfile.nim', tag=tags[0], rm=True, decode=True)
         image_built = False
         for log in build_logs:
             if 'stream' in log:
@@ -113,6 +131,9 @@ def docker_build_and_push(dockerfile, tags, registries):
         except errors.APIError as e:
             logger.error(f"Failed to push image to {registry}: {e}")
             sys.exit(1)
+
+    duration = time.time() - start_time
+    logger.info(f"Creating and pushing shim image took {duration:.2f} seconds.")
 
 def validate_prereq():
     start_time = time.time()
