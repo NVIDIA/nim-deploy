@@ -14,13 +14,29 @@
                     {
                       "handle": [
                         {
+                          "handler": "request_id",
+                          "header": "X-Request-ID"
+                        },
+                        {
                           "handler": "rewrite",
                           "uri": "/v1/chat/completions{uri}"
                         },
                         {
                           "handler": "reverse_proxy",
                           "upstreams": [{"dial": "127.0.0.1:${BACKEND_PORT}"}],
-                          "flush_interval": -1
+                          "flush_interval": -1,
+                          "headers": {
+                            "request": {
+                              "add": {
+                                "X-Request-ID": "{http.request.header.X-Request-ID}"
+                              }
+                            },
+                            "response": {
+                              "add": {
+                                "X-Request-ID": "{http.request.header.X-Request-ID}"
+                              }
+                            }
+                          }
                         }
                       ]
                     }
@@ -51,6 +67,22 @@
               ]
             }
           ]
+        }
+      }
+    },
+    "logging": {
+      "logs": {
+        "default": {
+          "level": "INFO",
+          "writer": {
+            "output": "stdout"
+          },
+          "encoder": {
+            "format": "json",
+            "fields": {
+              "request_id": "{http.request.header.X-Request-ID}"
+            }
+          }
         }
       }
     }
