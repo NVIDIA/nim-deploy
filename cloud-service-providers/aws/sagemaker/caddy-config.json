@@ -69,22 +69,6 @@
           ]
         }
       }
-    },
-    "logging": {
-      "logs": {
-        "default": {
-          "level": "INFO",
-          "writer": {
-            "output": "stdout"
-          },
-          "encoder": {
-            "format": "json",
-            "fields": {
-              "request_id": "{http.request.header.X-Request-ID}"
-            }
-          }
-        }
-      }
     }
   }
 }
