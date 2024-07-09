@@ -569,7 +569,7 @@ def main():
     elif args.create_shim_endpoint:
         create_shim_endpoint()
     elif args.create_shim_image:
-        docker_build_and_push('Dockerfile.nim', [SG_EP_CONTAINER], image_registries)
+        docker_build_and_push('Dockerfile', [SG_EP_CONTAINER], image_registries)
     elif args.test_endpoint:
         test_endpoint(args.print_raw)
     elif args.test_api_catalog_endpoint:
