@@ -1,6 +1,7 @@
 # Pre-requirement
 
-The keys to create Azure Kubernetes Service (AKS) for NIM is to create proper GPU nodepool because NIM not work on ALL GPU, only A100, H100, L40S and A10.  The proper GPU nodepool should have GPU driver meet NIM minimum requirement.  This is only achievable via a preview cli extension.
+The GPU nodepool should have GPU and GPU driver meet NIM minimum requirement.  This is only achievable via a preview cli extension.
+
 Following is the detail instructions to install from a bash. 
 
 ## Install Azure CLI

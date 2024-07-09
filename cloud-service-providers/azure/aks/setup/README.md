@@ -1,6 +1,6 @@
 # Setup Azure Kubernetes Service (AKS)
 
-The keys to create Azure Kubernetes Service (AKS) for NIM is to create proper GPU nodepool.  The following steps guide you how to find it.
+The key to creating Azure Kubernetes Service (AKS) for NIM is to create proper GPU nodepool.  The following steps guide you how to find it.
 
 ## Connect to Azure
 
