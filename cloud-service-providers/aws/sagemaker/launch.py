@@ -52,7 +52,7 @@ def docker_pull(image):
     for line in client.pull(image, stream=True, decode=True):
         logger.info(line.get('status', ''))
 
-def docker_build_and_push(dockerfile, tags):
+def docker_build_and_push(dockerfile, tags, registries):
     # Ensure necessary files exist in the current working directory
     required_files = ['launch.sh', 'caddy-config.json']
     missing_files = [f for f in required_files if not os.path.exists(f)]
@@ -96,21 +96,23 @@ def docker_build_and_push(dockerfile, tags):
             logger.error(f"Failed to tag image: {e}")
             sys.exit(1)
 
-    # Push the Docker image to the registry
-    logger.info("Pushing Docker image to registry...")
-    push_start_time = time.time()
-    try:
-        for tag in tags:
-            push_logs = client.push(tag, stream=True, decode=True)
-            for log in push_logs:
-                status = log.get('status', '')
-                if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
-                    logger.info(status)
-        push_duration = time.time() - push_start_time
-        logger.info(f"Pushing Docker image took {push_duration:.2f} seconds.")
-    except errors.APIError as e:
-        logger.error(f"Failed to push image: {e}")
-        sys.exit(1)
+    # Push the Docker image to multiple registries
+    for registry in registries:
+        docker_login_ecr(AWS_REGION, registry)
+        logger.info(f"Pushing Docker image to registry {registry}...")
+        push_start_time = time.time()
+        try:
+            for tag in tags:
+                push_logs = client.push(tag, stream=True, decode=True)
+                for log in push_logs:
+                    status = log.get('status', '')
+                    if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
+                        logger.info(status)
+            push_duration = time.time() - push_start_time
+            logger.info(f"Pushing Docker image to {registry} took {push_duration:.2f} seconds.")
+        except errors.APIError as e:
+            logger.error(f"Failed to push image to {registry}: {e}")
+            sys.exit(1)
 
 def validate_prereq():
     start_time = time.time()
@@ -379,7 +381,6 @@ def test_endpoint(print_raw):
     duration = time.time() - start_time
     print(f"\nInvocation of endpoint took {duration:.2f} seconds.", flush=True)
 
-
 def test_apicat_endpoint(print_raw, api_url, api_key):
     # Render test payload template
     context = {
@@ -529,6 +530,7 @@ def main():
 
     parser.add_argument('--src-image-path', default=os.getenv('SRC_IMAGE_PATH', DEFAULT_SRC_IMAGE_PATH), help='Source image path')
     parser.add_argument('--dst-registry', default=os.getenv('DST_REGISTRY', DEFAULT_DST_REGISTRY), help='Destination registry')
+    parser.add_argument('--image-registry', default=None, help='Comma-separated list of additional image registries')
     parser.add_argument('--sg-ep-name', default=None, help='SageMaker endpoint name')
     parser.add_argument('--sg-inst-type', default=os.getenv('SG_INST_TYPE', DEFAULT_SG_INST_TYPE), help='SageMaker instance type')
     parser.add_argument('--sg-exec-role-arn', default=os.getenv('SG_EXEC_ROLE_ARN', DEFAULT_SG_EXEC_ROLE_ARN), help='SageMaker execution role ARN')
@@ -554,6 +556,11 @@ def main():
     TEST_PAYLOAD_FILE = args.test_payload_file
     SG_MODEL_NAME = args.sg_model_name
 
+    # Parse additional registries
+    image_registries = [DST_REGISTRY]
+    if args.image_registry:
+        image_registries.extend(args.image_registry.split(','))
+
     sagemaker_client = init_boto3_client('sagemaker', AWS_REGION)
     sagemaker_runtime_client = init_boto3_client('sagemaker-runtime', AWS_REGION)
 
@@ -562,9 +569,8 @@ def main():
     elif args.create_shim_endpoint:
         create_shim_endpoint()
     elif args.create_shim_image:
-        create_shim_image()
+        docker_build_and_push('Dockerfile.nim', [SG_EP_CONTAINER], image_registries)
     elif args.test_endpoint:
-
         test_endpoint(args.print_raw)
     elif args.test_api_catalog_endpoint:
         api_key = os.environ.get('NV_API_KEY')
