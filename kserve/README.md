@@ -53,7 +53,7 @@ curl http://${KSERVE_URL}/v1/models
 curl http://${KSERVE_URL}/v1/chat/completions  \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "meta-llama3-8b-instruct",
+    "model": "meta/llama3-8b-instruct",
     "messages": [{"role":"user","content":"What is KServe?"}],
     "temperature": 0.5,   
     "top_p": 1,
