@@ -1,7 +1,7 @@
 apiVersion: serving.kserve.io/v1alpha1
 kind: ClusterServingRuntime
 metadata:
-  name: nvidia-nim-nv-embedqa-e5-v5-1.0.0
+  name: nvidia-nim-nv-rerankqa-mistral-4b-v3-1.0.0
 spec:
   annotations:
     prometheus.kserve.io/path: /metrics
@@ -22,7 +22,7 @@ spec:
         secretKeyRef:
           name: nvidia-nim-secrets
           key: NGC_API_KEY
-    image: nvcr.io/nvstaging/nim/nv-embedqa-e5-v5:1.0.0-rc13
+    image: nvcr.io/nvstaging/nim/nv-rerankqa-mistral-4b-v3:1.0.0-rc13
     name: kserve-container
     ports:
     - containerPort: 8000
@@ -44,7 +44,7 @@ spec:
   - grpc-v2
   supportedModelFormats:
   - autoSelect: true
-    name:  nvidia-nim-nv-embedqa-e5-v5
+    name:  nvidia-nim-nv-rerankqa-mistral-4b-v3
     priority: 1
     version: "1.0.0"
   volumes:
