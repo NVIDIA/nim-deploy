@@ -22,19 +22,19 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # AzureML Workspace and corresponding container registry related information
-subscription_id="b7d41fc8-d35d-41db-92ed-1f7f1d32d4d9"
-resource_group="vikalluru-nim-demo"
-workspace="nim-ga-demo"
+subscription_id="XXXXXXXXXXXX"
+resource_group="nim-rg"
+workspace="nim-test"
 location="westeurope" # eg: "southcentralus", "westeurope" etc.
 
 # Azure keyvault creation related information
-ngc_api_key="c3BxM3JzYnExcW5xbWtlb3QxY3BnOGNsOG46YTEwNjMzYjEtYTQ0OS00ZDkyLTk2MWQtMmVhMjA1ZDVhMjk5"
-keyvault_name="vikalluru-key-test"
-email_address="vikalluru@nvidia.com"
+ngc_api_key="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+keyvault_name="nim-key-test"
+email_address="nim@nvidia.com"
 
 # Container related information
  # NOTE: Verify that your AML workspace can access this ACR
-acr_registry_name="nimdemocr"
+acr_registry_name="nimtestcr"
 image_name="nim-meta-llama3-8b-instruct"
 ngc_container="nvcr.io/nim/meta/llama3-8b-instruct:1.0.0"
 
