@@ -2,6 +2,15 @@
 
  ![tl:dr](./images/contoso-chat-nim.png)
 
+[Azure AI Studio](https://learn.microsoft.com/en-us/azure/ai-studio/what-is-ai-studio) is a trusted platform that empowers developers to drive innovation and shape the future with AI in a safe, secure, and responsible way.  One of the key features of Azure AI studio is its' complete AI toolchain 
+
+- Azure AI Search
+- Fine-tuning
+- Prompt flow
+- Open frameworks
+- Tracing and debugging
+- Evaluations
+
 **Table Of Contents**
 
 1. [Pre-Requisites](#1-pre-requisites)
@@ -29,11 +38,12 @@
 
 ## 2. Environment
 
-1. Clone the repo and open it in VS code
+1.  We will be using the [Azure-Sample/contoso-chat](https://github.com/Azure-Samples/contoso-chat?tab=readme-ov-file) repository as our reference example and then add NIM bits on top of it. The first step is to clone that repository and open it in VS code
 
     ```bash
-    git clone ssh://git@gitlab-master.nvidia.com:12051/ai-sae/nim-on-azure.git
-    cd nim_promptflow
+    git clone https://github.com/Azure-Samples/contoso-chat.git
+    cd contoso-chat
+    git checkout cc2e808
     code .
     ```
 
@@ -149,7 +159,16 @@ Refresh main Connections list screen to verify that you now have all three requi
 In this step we want to populate the required data for our application use case.
 
 1. **Populate Search Index** in Azure AI Search
-    - Run the code in the `data/product_info/create-azure-search.ipynb` notebook.
+    -  We will use the `NV-Embed-QA` model from NVIDIA API catalog for creating vector embeddings which will then be used to populate the Search Index. In order to do that, let's clone the `nim-deploy` repository as well since we will be copying some scripts from this repository inside the `contoso-chat` repository. Run the code in the `data/product_info/create-nv-embedd-search.ipynb` notebook.
+    
+    ```bash
+    $ cd ~  # navigate to home directory
+    $ git clone https://github.com/NVIDIA/nim-deploy.git
+    cp nim-deploy/cloud-service-providers/azure/promptflow/data/create-nv-embedd-search.ipynb contoso-chat/data/create-nv-embedd-search.ipynb
+    $ cd contoso-chat
+
+    ```
+    - Run the jupyter notebook and then you should have the index created
     - Visit the Azure AI Search resource in the Azure Portal
     - Click on "Indexes" and verify that a new index was created
 1. **Populate Customer Data** in Azure Cosmos DB
@@ -164,7 +183,12 @@ We are now ready to begin building our prompt flow! The repository comes with a 
 ### 5.1. Explore the `contoso-chat` Prompt Flow
 
 A prompt flow is a DAG (directed acyclic graph) that is made up of nodes that are connected together to form a flow. Each node in the flow is a python function tool that can be edited and customized to fit your needs. 
+- In order to run the `contoso-chat` with NIMs, we need to copy over some files from `nim-deploy` repository to the contoso-chat repository using following commands
 
+```bash
+cp ~/nim-deploy/cloud-service-providers/azure/promptflow/contoso-chat-api-catlog/* ~/contoso-chat/contoso-chat/
+```
+- The above copying files will replace the original `flow.dag.yml` with the one from `nim-deploy` which has the steps to use NIM LLMs.
 - Click on the `contoso-chat/flow.dag.yaml` file in the Visual Studio Code file explorer. 
 - You should get a view _similar to_ what is shown below.
 - Click the `Visual editor` text line shown underlined below.
