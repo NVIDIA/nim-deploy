@@ -1,15 +1,19 @@
-# NIM Shim Layer for AWS SageMaker CLI Script Documentation
+# NVIDIA NIM on AWS Sagemaker
 
-This documentation provides a guide on how to use the CLI script to easily add a "shim" layer to an existing NVIDIA Inference Microservice (NIM) image so it can be run on AWS SageMaker.
+## Overview
+
+NVIDIA NIM, a component of NVIDIA AI Enterprise, enhances your applications with the power of state-of-the-art large language models (LLMs), providing unmatched natural language processing and understanding capabilities. Whether you're developing chatbots, content analyzers, or any application that needs to understand and generate human language, NVIDIA NIM for LLMs has you covered.
+
+In this example we show how to build & deploy an AWS Sagemaker-compatible NIM image for `LLaMa-3 70B` or `LLaMa-3 8B` via Python CLI helper script.
 
 ## Prerequisites
 
 Before using the script, ensure the following:
-- Docker is installed and running.
-- AWS CLI is installed and configured with appropriate permissions.
+- Docker is installed and running
+- AWS CLI is installed and configured with appropriate permissions
   - `apt install -y awscli`
-- Docker is logged into AWS ECR.
-- Python and required packages are installed (`boto3`, `docker`, `jinja2`).
+- Docker is logged into AWS ECR and NVIDIA Container Registry
+- Python (tested with v3.10) and required packages are installed (`boto3`, `docker`, `jinja2`)
   - `pip install -r requirements.txt`
 
 ## Script Overview
