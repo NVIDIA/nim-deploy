@@ -1,0 +1,23 @@
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+name: deployment_name_placeholder
+endpoint_name: endpoint_name_placeholder
+# Model is not used.
+model: azureml://registries/azureml-meta/models/Meta-Llama-3-8B-Instruct/versions/5
+model_mount_path: /triton-models
+environment: 
+  name: image_name_placeholder-env
+  image: acr_registry_placeholder.azurecr.io/image_name_placeholder:v1
+  inference_config:
+      liveness_route:
+          path: /v1/health/ready
+          port: 8000
+      readiness_route:
+          path: /v1/health/ready
+          port: 8000
+      scoring_route:
+          path: /
+          port: 8000
+instance_type: instance_type_placeholder
+instance_count: 1
+environment_variables:
+    NGC_API_KEY: ngc_api_key_placeholder

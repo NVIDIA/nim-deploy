@@ -1,0 +1,4 @@
+$schema: https://azuremlschemas.azureedge.net/latest/workspace.schema.json
+name: nim-deploy-azureml
+location: westeurope
+display_name: Deploying NIMs on AzureML
