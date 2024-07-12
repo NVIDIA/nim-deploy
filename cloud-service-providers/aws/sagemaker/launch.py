@@ -13,7 +13,6 @@ from sagemaker.session import Session
 from sagemaker.serializers import JSONSerializer
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from botocore.exceptions import ClientError
-from docker import APIClient, errors
 
 # Default values for environment variables
 DEFAULT_SRC_IMAGE_PATH = 'nvcr.io/nim/meta/llama3-70b-instruct:latest'
@@ -34,33 +33,29 @@ def init_boto3_client(service_name, region_name=DEFAULT_AWS_REGION):
         region_name=region_name
     )
 
-try:
-    client = APIClient(base_url='unix://var/run/docker.sock')
-except errors.DockerException as e:
-    logger.error(f"Error initializing Docker API client: {e}")
-    sys.exit(1)
-
 sagemaker_client = None
 sagemaker_runtime_client = None
 
-# Docker operations
+# Docker operations using shell commands
 def docker_login_ecr(region, registry):
+    start_time = time.time()
     login_command = f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry}"
     subprocess.run(login_command, shell=True, check=True)
+    end_time = time.time()
+    logger.info(f"Docker login ECR completed in {end_time - start_time:.2f} seconds")
 
 def docker_pull(image):
-    for line in client.pull(image, stream=True, decode=True):
-        logger.info(line.get('status', ''))
+    start_time = time.time()
+    pull_command = f"docker pull {image}"
+    subprocess.run(pull_command, shell=True, check=True)
+    end_time = time.time()
+    logger.info(f"Docker pull completed in {end_time - start_time:.2f} seconds")
 
 def docker_build_and_push(dockerfile, tags, registries):
-    # Build the Docker image
-    logger.info("Building Docker image...")
     start_time = time.time()
-    # Docker login and pull
     docker_login_ecr(AWS_REGION, DST_REGISTRY)
     docker_pull(SRC_IMAGE_PATH)
 
-    # Load Dockerfile template and replace placeholder
     env = Environment(loader=FileSystemLoader('.'))
     template = env.get_template('Dockerfile')  # Ensure your template is named Dockerfile.j2
     dockerfile_content = template.render(SRC_IMAGE=SRC_IMAGE_PATH)
@@ -68,7 +63,6 @@ def docker_build_and_push(dockerfile, tags, registries):
     with open('Dockerfile.nim', 'w') as f:
         f.write(dockerfile_content)
 
-    # Ensure necessary files exist in the current working directory
     required_files = ['launch.sh', 'caddy-config.json']
     missing_files = [f for f in required_files if not os.path.exists(f)]
     if missing_files:
@@ -80,65 +74,25 @@ def docker_build_and_push(dockerfile, tags, registries):
     with open('Dockerfile.nim', 'r') as f:
         logger.info(f.read())
 
-    # Build the Docker image
-    logger.info("Building Docker image...")
-    build_start_time = time.time()
-    try:
-        build_logs = client.build(path='.', dockerfile='Dockerfile.nim', tag=tags[0], rm=True, decode=True)
-        image_built = False
-        for log in build_logs:
-            if 'stream' in log:
-                logger.info(log['stream'].strip())
-            if 'aux' in log and 'ID' in log['aux']:
-                image_built = True
-            if 'errorDetail' in log:
-                logger.error(f"ErrorDetail: {log['errorDetail']}")
-                sys.exit(1)
-        build_duration = time.time() - build_start_time
-        if not image_built:
-            logger.error("Failed to build Docker image.")
-            sys.exit(1)
-        logger.info(f"Building Docker image took {build_duration:.2f} seconds.")
-    except errors.BuildError as e:
-        logger.error(f"BuildError: {e}")
-        sys.exit(1)
-    except errors.APIError as e:
-        logger.error(f"APIError: {e}")
-        sys.exit(1)
+    build_command = f"docker build -t {tags[0]} -f Dockerfile.nim ."
+    subprocess.run(build_command, shell=True, check=True)
 
-    # Tag the Docker image with additional tags
     for tag in tags[1:]:
-        try:
-            client.tag(tags[0], tag)
-        except errors.APIError as e:
-            logger.error(f"Failed to tag image: {e}")
-            sys.exit(1)
+        tag_command = f"docker tag {tags[0]} {tag}"
+        subprocess.run(tag_command, shell=True, check=True)
 
-    # Push the Docker image to multiple registries
     for registry in registries:
         docker_login_ecr(AWS_REGION, registry)
-        logger.info(f"Pushing Docker image to registry {registry}...")
-        push_start_time = time.time()
-        try:
-            for tag in tags:
-                push_logs = client.push(tag, stream=True, decode=True)
-                for log in push_logs:
-                    status = log.get('status', '')
-                    if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
-                        logger.info(status)
-            push_duration = time.time() - push_start_time
-            logger.info(f"Pushing Docker image to {registry} took {push_duration:.2f} seconds.")
-        except errors.APIError as e:
-            logger.error(f"Failed to push image to {registry}: {e}")
-            sys.exit(1)
-
-    duration = time.time() - start_time
-    logger.info(f"Creating and pushing shim image took {duration:.2f} seconds.")
+        for tag in tags:
+            push_command = f"docker push {tag}"
+            subprocess.run(push_command, shell=True, check=True)
+    
+    end_time = time.time()
+    logger.info(f"Docker build and push completed in {end_time - start_time:.2f} seconds")
 
 def validate_prereq():
     start_time = time.time()
     try:
-        # Validate Docker source registry login
         docker_login_ecr(AWS_REGION, DST_REGISTRY)
         logger.info("Docker credentials are valid.")
     except Exception as e:
@@ -146,19 +100,19 @@ def validate_prereq():
         sys.exit(1)
 
     try:
-        # Validate AWS credentials
         sts_client = boto3.client('sts', region_name=AWS_REGION)
         sts_client.get_caller_identity()
         logger.info("AWS credentials are valid.")
     except ClientError as e:
         logger.error(f"Error validating AWS credentials: {e}")
         sys.exit(1)
-    duration = time.time() - start_time
-    logger.info(f"Validation of prerequisites took {duration:.2f} seconds.")
+
+    end_time = time.time()
+    logger.info(f"Prerequisite validation completed in {end_time - start_time:.2f} seconds")
 
 def delete_sagemaker_resources(endpoint_name):
-    start_time = time.time()
     def delete_resource(delete_func, resource_type, resource_name):
+        start_time = time.time()
         try:
             delete_func()
             logger.info(f"Deleted {resource_type}: {resource_name}")
@@ -167,6 +121,8 @@ def delete_sagemaker_resources(endpoint_name):
                 logger.info(f"{resource_type} {resource_name} does not exist.")
             else:
                 logger.error(f"Error deleting {resource_type} {resource_name}: {e}")
+        end_time = time.time()
+        logger.info(f"Deletion of {resource_type} {resource_name} completed in {end_time - start_time:.2f} seconds")
 
     delete_resource(
         lambda: sagemaker_client.delete_endpoint(EndpointName=endpoint_name),
@@ -182,16 +138,12 @@ def delete_sagemaker_resources(endpoint_name):
         lambda: sagemaker_client.delete_model(ModelName=endpoint_name),
         "model", endpoint_name
     )
-    duration = time.time() - start_time
-    logger.info(f"Deleting SageMaker resources took {duration:.2f} seconds.")
 
 def create_shim_image():
     start_time = time.time()
-    # Docker login and pull
     docker_login_ecr(AWS_REGION, DST_REGISTRY)
     docker_pull(SRC_IMAGE_PATH)
 
-    # Load Dockerfile template and replace placeholder
     env = Environment(loader=FileSystemLoader('.'))
     template = env.get_template('Dockerfile')  # Ensure your template is named Dockerfile.j2
     dockerfile_content = template.render(SRC_IMAGE=SRC_IMAGE_PATH)
@@ -199,7 +151,6 @@ def create_shim_image():
     with open('Dockerfile.nim', 'w') as f:
         f.write(dockerfile_content)
 
-    # Ensure necessary files exist in the current working directory
     required_files = ['launch.sh', 'caddy-config.json']
     missing_files = [f for f in required_files if not os.path.exists(f)]
     if missing_files:
@@ -211,62 +162,21 @@ def create_shim_image():
     with open('Dockerfile.nim', 'r') as f:
         logger.info(f.read())
 
-    # Build the Docker image
-    logger.info("Building Docker image...")
-    build_start_time = time.time()
-    try:
-        build_logs = client.build(path='.', dockerfile='Dockerfile.nim', tag='nim-shim:latest', rm=True, decode=True)
-        image_built = False
-        for log in build_logs:
-            if 'stream' in log:
-                logger.info(log['stream'].strip())
-            if 'aux' in log and 'ID' in log['aux']:
-                image_built = True
-            if 'errorDetail' in log:
-                logger.error(f"ErrorDetail: {log['errorDetail']}")
-                sys.exit(1)
-        build_duration = time.time() - build_start_time
-        if not image_built:
-            logger.error("Failed to build Docker image.")
-            sys.exit(1)
-        logger.info(f"Building Docker image took {build_duration:.2f} seconds.")
-    except errors.BuildError as e:
-        logger.error(f"BuildError: {e}")
-        sys.exit(1)
-    except errors.APIError as e:
-        logger.error(f"APIError: {e}")
-        sys.exit(1)
+    build_command = f"docker build -t nim-shim:latest -f Dockerfile.nim ."
+    subprocess.run(build_command, shell=True, check=True)
 
-    # Tag the Docker image with additional tags
-    try:
-        client.tag('nim-shim:latest', repository=SG_EP_CONTAINER)
-    except errors.APIError as e:
-        logger.error(f"Failed to tag image: {e}")
-        sys.exit(1)
+    tag_command = f"docker tag nim-shim:latest {SG_EP_CONTAINER}"
+    subprocess.run(tag_command, shell=True, check=True)
 
-    # Push the Docker image to the registry
-    logger.info("Pushing Docker image to registry...")
-    push_start_time = time.time()
-    try:
-        push_logs = client.push(SG_EP_CONTAINER, stream=True, decode=True)
-        for log in push_logs:
-            status = log.get('status', '')
-            if 'Waiting' not in status and 'Preparing' not in status and 'Layer already exists' not in status:
-                logger.info(status)
-        push_duration = time.time() - push_start_time
-        logger.info(f"Pushing Docker image took {push_duration:.2f} seconds.")
-    except errors.APIError as e:
-        logger.error(f"Failed to push image: {e}")
-        sys.exit(1)
+    push_command = f"docker push {SG_EP_CONTAINER}"
+    subprocess.run(push_command, shell=True, check=True)
 
-    duration = time.time() - start_time
-    logger.info(f"Creating and pushing shim image took {duration:.2f} seconds.")
+    end_time = time.time()
+    logger.info(f"Shim image creation completed in {end_time - start_time:.2f} seconds")
 
 def create_shim_endpoint():
     start_time = time.time()
-    create_shim_image()
 
-    # Create Model JSON
     model_json = {
         "ModelName": SG_EP_NAME,
         "PrimaryContainer": {
@@ -280,12 +190,8 @@ def create_shim_endpoint():
         "EnableNetworkIsolation": False
     }
 
-    with open('sg-model.json', 'w') as f:
-        json.dump(model_json, f)
-
     sagemaker_client.create_model(ModelName=SG_EP_NAME, PrimaryContainer=model_json['PrimaryContainer'], ExecutionRoleArn=SG_EXEC_ROLE_ARN)
 
-    # Create Production Variant JSON
     prod_variant_json = [
         {
             "VariantName": "AllTraffic",
@@ -296,52 +202,39 @@ def create_shim_endpoint():
         }
     ]
 
-    # Create Endpoint Config
     sagemaker_client.create_endpoint_config(EndpointConfigName=SG_EP_NAME, ProductionVariants=prod_variant_json)
 
-    # Create Endpoint
     sagemaker_client.create_endpoint(EndpointName=SG_EP_NAME, EndpointConfigName=SG_EP_NAME)
 
-    # Wait for endpoint to be in service
     logger.info("Waiting for endpoint to be in service...")
     waiter = sagemaker_client.get_waiter('endpoint_in_service')
-    waiter_start_time = time.time()
     waiter.wait(EndpointName=SG_EP_NAME, WaiterConfig={'Delay': 30, 'MaxAttempts': 60})
-    waiter_duration = time.time() - waiter_start_time
-    logger.info(f"Waiting for endpoint to be in service took {waiter_duration:.2f} seconds.")
 
-    total_duration = time.time() - start_time
-    logger.info(f"Creating and deploying shim endpoint took {total_duration:.2f} seconds.")
+    end_time = time.time()
+    logger.info(f"Shim endpoint creation completed in {end_time - start_time:.2f} seconds")
 
 def render_template(template_file, output_file, context):
-    # Determine the directory and filename for the template
-    template_dir = os.path.dirname(template_file)
-    template_name = os.path.basename(template_file)
-
-    # Set up the Jinja2 environment with the determined template directory
-    env = Environment(loader=FileSystemLoader(template_dir))
-    
+    start_time = time.time()
+    env = Environment(loader=FileSystemLoader(os.path.dirname(template_file)))
     try:
-        # Load and render the template
-        template = env.get_template(template_name)
+        template = env.get_template(os.path.basename(template_file))
         rendered_content = template.render(context)
-        
-        # Write the rendered content to the output file
         with open(output_file, 'w') as f:
             f.write(rendered_content)
         logger.info(f"Successfully rendered template {template_file} to {output_file}")
     except TemplateNotFound:
         logger.error(f"Template not found: {template_file}")
         sys.exit(1)
+    end_time = time.time()
+    logger.info(f"Template rendering completed in {end_time - start_time:.2f} seconds")
 
 def test_endpoint(print_raw):
-    # Render test payload template
+    start_time = time.time()
     context = {
         'SG_MODEL_NAME': SG_MODEL_NAME,
     }
     render_template(TEST_PAYLOAD_FILE, 'sg-invoke-payload.json', context)
 
-    # Load test payload JSON from rendered file
     try:
         with open('sg-invoke-payload.json', 'r') as f:
             test_payload_json = json.load(f)
@@ -349,67 +242,95 @@ def test_endpoint(print_raw):
         logger.error(f"Failed to load JSON from sg-invoke-payload.json: {e}")
         sys.exit(1)
 
-    # Ensure the payload includes `stream: true`
     test_payload_json['stream'] = True
 
-    # Stream the response
-    def stream_response():
-        session = boto3.Session(region_name=AWS_REGION)
-        smr = session.client('sagemaker-runtime')
+    session = boto3.Session(region_name=AWS_REGION)
+    smr = session.client('sagemaker-runtime')
+    response = smr.invoke_endpoint_with_response_stream(
+        EndpointName=SG_EP_NAME,
+        Body=json.dumps(test_payload_json),
+        ContentType='application/json'
+    )
 
-        # Invoke endpoint with response stream
-        response = smr.invoke_endpoint_with_response_stream(
-            EndpointName=SG_EP_NAME,
-            Body=json.dumps(test_payload_json),
-            ContentType='application/json'
-        )
+    event_stream = response['Body']
+    accumulated_data = ""
+    start_marker = 'data:'
+    end_marker = '"finish_reason":null}]}'
 
-        event_stream = response['Body']
-        accumulated_data = ""
-        start_marker = 'data:'
-        end_marker = '"finish_reason":null}]}'
+    for event in event_stream:
+        try:
+            payload = event.get('PayloadPart', {}).get('Bytes', b'')
+            if payload:
+                data_str = payload.decode('utf-8')
+                if print_raw:
+                    print(data_str, flush=True)
 
-        for event in event_stream:
-            try:
-                payload = event.get('PayloadPart', {}).get('Bytes', b'')
-                if payload:
-                    data_str = payload.decode('utf-8')
-                    if print_raw:
-                        print(data_str, flush=True)
+                accumulated_data += data_str
 
-                    accumulated_data += data_str
+                while start_marker in accumulated_data and end_marker in accumulated_data:
+                    start_idx = accumulated_data.find(start_marker)
+                    end_idx = accumulated_data.find(end_marker) + len(end_marker)
+                    full_response = accumulated_data[start_idx + len(start_marker):end_idx]
+                    accumulated_data = accumulated_data[end_idx:]
 
-                    # Process accumulated data when a complete response is detected
-                    while start_marker in accumulated_data and end_marker in accumulated_data:
-                        start_idx = accumulated_data.find(start_marker)
-                        end_idx = accumulated_data.find(end_marker) + len(end_marker)
-                        full_response = accumulated_data[start_idx + len(start_marker):end_idx]
-                        accumulated_data = accumulated_data[end_idx:]
+                    try:
+                        data = json.loads(full_response)
+                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
+                        if content:
+                            print(content, end='', flush=True)
+                    except json.JSONDecodeError:
+                        continue
+        except Exception as e:
+            print(f"\nError processing event: {e}", flush=True)
+            continue
 
-                        try:
-                            data = json.loads(full_response)
-                            content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
-                            if content:
-                                print(content, end='', flush=True)
-                        except json.JSONDecodeError:
-                            continue
-            except Exception as e:
-                print(f"\nError processing event: {e}", flush=True)
-                continue
+    end_time = time.time()
+    logger.info(f"Endpoint test (stream) completed in {end_time - start_time:.2f} seconds")
 
+def test_endpoint_no_stream(print_raw):
     start_time = time.time()
-    stream_response()
-    duration = time.time() - start_time
-    print(f"\nInvocation of endpoint took {duration:.2f} seconds.", flush=True)
+    context = {
+        'SG_MODEL_NAME': SG_MODEL_NAME,
+    }
+    render_template(TEST_PAYLOAD_FILE, 'sg-invoke-payload.json', context)
+
+    try:
+        with open('sg-invoke-payload.json', 'r') as f:
+            test_payload_json = json.load(f)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to load JSON from sg-invoke-payload.json: {e}")
+        sys.exit(1)
+
+    session = boto3.Session(region_name=AWS_REGION)
+    smr = session.client('sagemaker-runtime')
+    response = smr.invoke_endpoint(
+        EndpointName=SG_EP_NAME,
+        Body=json.dumps(test_payload_json),
+        ContentType='application/json'
+    )
+
+    response_body = response['Body'].read().decode('utf-8')
+    if print_raw:
+        print(response_body, flush=True)
+
+    try:
+        data = json.loads(response_body)
+        content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
+        if content:
+            print(content, end='', flush=True)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse JSON response: {e}")
+
+    end_time = time.time()
+    logger.info(f"Endpoint test (no stream) completed in {end_time - start_time:.2f} seconds")
 
 def test_apicat_endpoint(print_raw, api_url, api_key):
-    # Render test payload template
+    start_time = time.time()
     context = {
         'SG_MODEL_NAME': SG_MODEL_NAME,
     }
     render_template(TEST_PAYLOAD_FILE, 'sg-invoke-payload.json', context)
 
-    # Load test payload JSON from rendered file
     try:
         with open('sg-invoke-payload.json', 'r') as f:
             test_payload_json = json.load(f)
@@ -417,67 +338,56 @@ def test_apicat_endpoint(print_raw, api_url, api_key):
         logger.error(f"Failed to load JSON from sg-invoke-payload.json: {e}")
         sys.exit(1)
 
-    # Ensure the payload includes `stream: true`
     test_payload_json['stream'] = True
 
-    # Stream the response
-    def stream_response():
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "authorization": f"Bearer {api_key}"
-        }
-        
-        start_time = time.time()
-        response = requests.post(api_url, json=test_payload_json, headers=headers, stream=True)
-        
-        if response.status_code != 200:
-            print(f"Error: {response.status_code} - {response.text}")
-            return
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {api_key}"
+    }
 
-        accumulated_data = ""
-        start_marker = 'data:'
-        end_marker = '"finish_reason":null}]}'
+    response = requests.post(api_url, json=test_payload_json, headers=headers, stream=True)
 
-        for chunk in response.iter_content(chunk_size=None):
-            if chunk:
-                data_str = chunk.decode('utf-8')
-                if print_raw:
-                    print(data_str, flush=True)
+    if response.status_code != 200:
+        print(f"Error: {response.status_code} - {response.text}")
+        return
 
-                accumulated_data += data_str
+    accumulated_data = ""
+    start_marker = 'data:'
+    end_marker = '"finish_reason":null}]}'
 
-                # Process accumulated data when a complete response is detected
-                while start_marker in accumulated_data and end_marker in accumulated_data:
-                    start_idx = accumulated_data.find(start_marker)
-                    end_idx = accumulated_data.find(end_marker) + len(end_marker)
-                    full_response = accumulated_data[start_idx + len(start_marker):end_idx]
-                    accumulated_data = accumulated_data[end_idx:]
+    for chunk in response.iter_content(chunk_size=None):
+        if chunk:
+            data_str = chunk.decode('utf-8')
+            if print_raw:
+                print(data_str, flush=True)
 
-                    try:
-                        data = json.loads(full_response)
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
-                        if content:
-                            print(content, end='', flush=True)
-                    except json.JSONDecodeError:
-                        continue
-        
-        duration = time.time() - start_time
-        print(f"\nInvocation of API endpoint took {duration:.2f} seconds.", flush=True)
+            accumulated_data += data_str
 
-    start_time = time.time()
-    stream_response()
-    duration = time.time() - start_time
-    print(f"\nInvocation of endpoint took {duration:.2f} seconds.", flush=True)
+            while start_marker in accumulated_data and end_marker in accumulated_data:
+                start_idx = accumulated_data.find(start_marker)
+                end_idx = accumulated_data.find(end_marker) + len(end_marker)
+                full_response = accumulated_data[start_idx + len(start_marker):end_idx]
+                accumulated_data = accumulated_data[end_idx:]
+
+                try:
+                    data = json.loads(full_response)
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
+                    if content:
+                        print(content, end='', flush=True)
+                except json.JSONDecodeError:
+                    continue
+
+    end_time = time.time()
+    logger.info(f"API Catalog endpoint test completed in {end_time - start_time:.2f} seconds")
 
 def test_local_endpoint(print_raw, api_url):
-    # Render test payload template
+    start_time = time.time()
     context = {
         'SG_MODEL_NAME': SG_MODEL_NAME,
     }
     render_template(TEST_PAYLOAD_FILE, 'sg-invoke-payload.json', context)
 
-    # Load test payload JSON from rendered file
     try:
         with open('sg-invoke-payload.json', 'r') as f:
             test_payload_json = json.load(f)
@@ -485,57 +395,47 @@ def test_local_endpoint(print_raw, api_url):
         logger.error(f"Failed to load JSON from sg-invoke-payload.json: {e}")
         sys.exit(1)
 
-    # Ensure the payload includes `stream: true`
     test_payload_json['stream'] = True
 
-    # Stream the response
-    def stream_response():
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json"
-        }
-        
-        start_time = time.time()
-        response = requests.post(api_url, json=test_payload_json, headers=headers, stream=True)
-        
-        if response.status_code != 200:
-            print(f"Error: {response.status_code} - {response.text}")
-            return
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json"
+    }
 
-        accumulated_data = ""
-        start_marker = 'data:'
-        end_marker = '"finish_reason":null}]}'
+    response = requests.post(api_url, json=test_payload_json, headers=headers, stream=True)
 
-        for chunk in response.iter_content(chunk_size=None):
-            if chunk:
-                data_str = chunk.decode('utf-8')
-                if print_raw:
-                    print(data_str, flush=True)
+    if response.status_code != 200:
+        print(f"Error: {response.status_code} - {response.text}")
+        return
 
-                accumulated_data += data_str
+    accumulated_data = ""
+    start_marker = 'data:'
+    end_marker = '"finish_reason":null}]}'
 
-                # Process accumulated data when a complete response is detected
-                while start_marker in accumulated_data and end_marker in accumulated_data:
-                    start_idx = accumulated_data.find(start_marker)
-                    end_idx = accumulated_data.find(end_marker) + len(end_marker)
-                    full_response = accumulated_data[start_idx + len(start_marker):end_idx]
-                    accumulated_data = accumulated_data[end_idx:]
+    for chunk in response.iter_content(chunk_size=None):
+        if chunk:
+            data_str = chunk.decode('utf-8')
+            if print_raw:
+                print(data_str, flush=True)
 
-                    try:
-                        data = json.loads(full_response)
-                        content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
-                        if content:
-                            print(content, end='', flush=True)
-                    except json.JSONDecodeError:
-                        continue
-        
-        duration = time.time() - start_time
-        print(f"\nInvocation of API endpoint took {duration:.2f} seconds.", flush=True)
+            accumulated_data += data_str
 
-    start_time = time.time()
-    stream_response()
-    duration = time.time() - start_time
-    print(f"\nInvocation of endpoint took {duration:.2f} seconds.", flush=True)
+            while start_marker in accumulated_data and end_marker in accumulated_data:
+                start_idx = accumulated_data.find(start_marker)
+                end_idx = accumulated_data.find(end_marker) + len(end_marker)
+                full_response = accumulated_data[start_idx + len(start_marker):end_idx]
+                accumulated_data = accumulated_data[end_idx:]
+
+                try:
+                    data = json.loads(full_response)
+                    content = data.get('choices', [{}])[0].get('delta', {}).get('content', "")
+                    if content:
+                        print(content, end='', flush=True)
+                except json.JSONDecodeError:
+                    continue
+
+    end_time = time.time()
+    logger.info(f"Local endpoint test completed in {end_time - start_time:.2f} seconds")
 
 def main():
     parser = argparse.ArgumentParser(description="Manage SageMaker endpoints and Docker images.")
@@ -543,6 +443,7 @@ def main():
     parser.add_argument('--create-shim-endpoint', action='store_true', help='Build shim image and deploy as an endpoint.')
     parser.add_argument('--create-shim-image', action='store_true', help='Build shim image locally.')
     parser.add_argument('--test-endpoint', action='store_true', help='Test the deployed endpoint with a sample invocation.')
+    parser.add_argument('--test-endpoint-nostream', action='store_true', help='Test the deployed endpoint with a sample invocation without streaming.')
     parser.add_argument('--test-api-catalog-endpoint', action='store_true', help='Test the deployed endpoint with a sample invocation.')
     parser.add_argument('--test-local-endpoint', action='store_true', help='Test a local NIM endpoint with a sample invocation.')
     parser.add_argument('--test-local-url', default="http://127.0.0.1:8080/invocations", help='Target a specific local endpoint URL')
@@ -556,8 +457,8 @@ def main():
     parser.add_argument('--sg-inst-type', default=os.getenv('SG_INST_TYPE', DEFAULT_SG_INST_TYPE), help='SageMaker instance type')
     parser.add_argument('--sg-exec-role-arn', default=os.getenv('SG_EXEC_ROLE_ARN', DEFAULT_SG_EXEC_ROLE_ARN), help='SageMaker execution role ARN')
     parser.add_argument('--sg-container-startup-timeout', type=int, default=int(os.getenv('SG_CONTAINER_STARTUP_TIMEOUT', DEFAULT_SG_CONTAINER_STARTUP_TIMEOUT)), help='SageMaker container startup timeout')
-    parser.add_argument('--aws-region', default=os.getenv('AWS_REGION', DEFAULT_AWS_REGION), help='AWS region')
-    parser.add_argument('--test-payload-file', default='sg-invoke-payload.json', help='Test payload template file')
+    parser.add_argument('--aws-region', default=os.getenv('DEFAULT_AWS_REGION', DEFAULT_AWS_REGION), help='AWS region')
+    parser.add_argument('--test-payload-file', default='templates/sg-test-payload.json.j2', help='Test payload template file')
     parser.add_argument('--sg-model-name', default=os.getenv('SG_MODEL_NAME', 'default-model-name'), help='SageMaker model name')
 
     args = parser.parse_args()
@@ -577,7 +478,6 @@ def main():
     TEST_PAYLOAD_FILE = args.test_payload_file
     SG_MODEL_NAME = args.sg_model_name
 
-    # Parse additional registries
     image_registries = [DST_REGISTRY]
     if args.image_registry:
         image_registries.extend(args.image_registry.split(','))
@@ -593,6 +493,8 @@ def main():
         docker_build_and_push('Dockerfile', [SG_EP_CONTAINER], image_registries)
     elif args.test_endpoint:
         test_endpoint(args.print_raw)
+    elif args.test_endpoint_nostream:
+        test_endpoint_no_stream(args.print_raw)
     elif args.test_api_catalog_endpoint:
         api_key = os.environ.get('NV_API_KEY')
         api_url = "https://integrate.api.nvidia.com/v1/chat/completions"

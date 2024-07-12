@@ -53,6 +53,20 @@ download_file() {
   fi
 }
 
+# Check if Caddy is already present
+if [ ! -f "/usr/local/bin/caddy" ]; then
+  echo "Caddy not found, downloading Caddy..."
+  download_file "https://caddyserver.com/api/download?os=linux&arch=amd64" "/tmp/caddy"
+
+  # Ensure the file is moved to its final destination
+  mv /tmp/caddy /usr/local/bin/caddy
+
+  # Make Caddy executable
+  chmod +x /usr/local/bin/caddy
+else
+  echo "Caddy already present."
+fi
+
 # Check if CONFIG_URL is a URL or a local file path
 if echo "$CONFIG_URL" | grep -qE '^https?://'; then
   # It's a URL, download the configuration file
