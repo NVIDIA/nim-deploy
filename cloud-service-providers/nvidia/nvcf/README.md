@@ -5,28 +5,44 @@
 NVCF is available via the [NGC Portal](https://ngc.nvidia.com/).
 
 ## 2. Quick Start
-In this approach, you will first build a image based on NIM container, add `NGC_API_KEY` environment variable, and then push to private register, from where NVCF can pull customized images.
+In this approach, first build a image based on NIM container, then push it to private register, from where NVCF can pull customized images.
 
-0. Run `docker login nvcr.io` with your personal key.
+0. Run `docker login nvcr.io` with **NGC personal key**.
 1. Modify following variables in `.env` accordingly
     - Set model image name/tag
     - Set organization ID
     - Set container name and tag which will be pushed to private registry 
-    - Set your personal key
+    - Set NGC personal key
 2. Build the image and push to NGC private registry
     ```shell
     docker compose build nvcf-nim
     docker compose push nvcf-nim
     ```
-3. Run `ngc config set` with your **personal key**, then run following shell cmd to create a NVCF function.
+3. Run `ngc config set` with **NGC personal key**, then run following shell cmd to create a NVCF function.
     ```shell
     source _nvcf_creation.sh
     ```
-4. After running the command, you should be able to identify ID and VERSION of the created function.
+4. After running the command, a Cloud Function is created.
     ![pic](./img/creation.png)
-5. Modify `_nvcf_deploy.sh` with function ID and VERSION and run following script the deploy the function. You can also deploy the function in the NVCF console
+5. The next script will get the function ID and VERSION and deploy the function. You can also deploy the function in the NVCF console
     ```shell
     source _nvcf_deploy.sh
     ```
     ![pic](./img/console.png)
 6. After the function is active, use the `nvcf_test.ipynb` to test out the hosted endpoint with proper key and function id.
+   ```shell
+   curl -X POST "https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/${FUNCTION_ID}" \
+    -H "Authorization: Bearer ${NGC_API_KEY}" \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -d '{
+            "model": "meta/llama3-8b-instruct",
+            "messages": [
+                {
+                    "role":"user",
+                    "content":"Can you write me a happysong?"
+                }
+            ],
+            "max_tokens": 32
+        }'
+   ``` 
