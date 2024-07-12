@@ -1,4 +1,4 @@
 # Deploying NIMs on AzureML
 
-- **Using Azure CLI method** [AZ CLI](./cli)
-- **Python method** [Python SDK](./python_sdk/)
+- **Using Azure CLI method** [README](./cli/README.md)
+- **Jupyter notebook method** [README](./python_sdk/README.md)
