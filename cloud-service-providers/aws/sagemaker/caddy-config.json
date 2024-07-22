@@ -1,9 +1,25 @@
 {
+  "logging": {
+    "logs": {
+      "default": {
+        "level": "INFO",
+        "writer": {
+          "output": "stdout"
+        },
+        "encoder": {
+          "format": "json"
+        }
+      }
+    }
+  },
   "apps": {
     "http": {
       "servers": {
         "srv0": {
           "listen": [":${PORT}"],
+          "logs": {
+            "default_logger_name": "default"
+          },
           "routes": [
             {
               "match": [{"path": ["/invocations*"]}],
@@ -13,6 +29,19 @@
                   "routes": [
                     {
                       "handle": [
+                        {
+                          "handler": "headers",
+                          "request": {
+                            "set": {
+                              "X-Request-ID": ["{http.request.uuid}"]
+                            }
+                          },
+                          "response": {
+                            "set": {
+                              "X-Request-ID": ["{http.request.uuid}"]
+                            }
+                          }
+                        },
                         {
                           "handler": "rewrite",
                           "uri": "/v1/chat/completions{uri}"
@@ -47,6 +76,15 @@
                       ]
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "status_code": 404,
+                  "body": "404 Not Found"
                 }
               ]
             }

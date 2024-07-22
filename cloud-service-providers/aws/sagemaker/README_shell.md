@@ -130,7 +130,7 @@ curl -X GET 127.0.0.1:8080/ping -vvv
 
 #### Non-streaming
 ```bash
-curl -X 'POST' \
+curl -v -X 'POST' \
 'http://127.0.0.1:8080/invocations' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \

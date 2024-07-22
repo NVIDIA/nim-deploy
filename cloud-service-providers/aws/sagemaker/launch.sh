@@ -5,7 +5,7 @@ usage() {
   echo "Usage: $0 [-p PORT] [-b BACKEND_PORT] [-c CONFIG_URL] [-e ORIGINAL_ENTRYPOINT] [-a ORIGINAL_CMD]"
   echo "  -p PORT                Port to listen on (default: 8080)"
   echo "  -b BACKEND_PORT        Backend port (default: 80)"
-  echo "  -c CONFIG_URL          URL or path of the configuration file (default: /opt/cadd-config.json)"
+  echo "  -c CONFIG_URL          URL or path of the configuration file (default: /opt/caddy-config.json)"
   echo "  -e ORIGINAL_ENTRYPOINT Path to the original entrypoint script (default: /usr/bin/serve)"
   echo "  -a ORIGINAL_CMD        Original command arguments (default: empty)"
   exit 1
