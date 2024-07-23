@@ -22,7 +22,7 @@ spec:
         secretKeyRef:
           name: nvidia-nim-secrets
           key: NGC_API_KEY
-    image: nvcr.io/nvstaging/nim/nv-rerankqa-mistral-4b-v3:1.0.0-rc13
+    image: nvcr.io/nim/nvidia/nv-rerankqa-mistral-4b-v3:1.0.0
     name: kserve-container
     ports:
     - containerPort: 8000
