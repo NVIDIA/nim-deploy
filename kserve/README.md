@@ -3,7 +3,7 @@
 
 # Setup
 
-The following steps assumes a running K8s cluster with KServe installed, kubectl access, and NIM access on NGC. The cluster will need a StorageClass that can provide a PV large enough to download and unpack the models (200GB+ for larger models), a LoadBalancer configured in the platform, and supported GPUs for the class of NIM being deployed.
+The following steps assumes a running K8s cluster with KServe installed (see [here](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#enable-kserve-on-cns) for setup details), kubectl access, and NIM access on NGC. The cluster will need a StorageClass that can provide a PV large enough to download and unpack the models (200GB+ for larger models), a LoadBalancer configured in the platform, and supported GPUs for the class of NIM being deployed.
 
 A single instance of KServe can support many NIMs running the same or different models. The first few installation steps are only required once, after initial setup a new NIM can be deployed by creating a single `InferenceService` using the YAML files in [nim-models](https://github.com/NVIDIA/nim-deploy/tree/main/kserve/nim-models).
 
@@ -25,7 +25,7 @@ bash scripts/setup.sh
 
 4. Create the NIM cache locally. KServe currently requires that PVCs are mounted to a Pod in ReadOnly mode (see this [issue](https://github.com/kserve/kserve/issues/3687)), because of this the NIM cache must be created outside of NIM `InferenceService` deployment.
 
-> For faster testing purposes this step can be bypassed by setting the NIM to re-download the model each time by setting `NIM_CACHE_PATH` to `/tmp` in the runtime files.
+> For faster testing purposes this step can be bypassed by setting the NIM to re-download the model each time by setting `NIM_CACHE_PATH` to `/tmp` in the runtime files. Model downloads may take 2-5 minutes for smaller models, 5-15 minutes for larger models, or more depending on the networking configuration of the deployment environment.
 
 The default `setup.sh` script creates a PV that points to the local hostpath at `/raid/nvidia-nim`. NIM can be run locally following the [official docs](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#launch-nvidia-nim-for-llms) to initially populate this cache. The NIM container can be run locally with Docker or in the cluster as a Pod, Job, or Deployment. The best method for cache creation will depend on the type of distributed storage being used to back the PVC.
 
@@ -44,7 +44,7 @@ kubectl create -f nim-models/llama3-70b-instruct_4xh100_1.0.0.yaml
 
  > **Note**: The NIM YAML files  provides are just an example, a user could create more configurations than listed by specifying different GPU quantities or architectures referencing the same NIM containers and `pvc` configurations.
 
-6. Validate that the NIM is running by posting a query against the KServe endpoint. Additional KServe metrics are available internally on the `ClusterIP` at port `9091` on `/metrics/`
+6. Validate that the NIM is running by posting a query against the KServe endpoint. Additional KServe metrics are available internally on the `ClusterIP` at port `9091` on `/metrics/`, see the [NIM docs](https://docs.nvidia.com/nim/large-language-models/latest/observability.html) for additional metrics details.
 
 ```
 # KServe URL can be obtained from `kubectl get inferenceservice` or the cluster-ip from the private predictor on `kubectl get svc` depending on KServe setup.
