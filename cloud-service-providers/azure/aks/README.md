@@ -1,4 +1,4 @@
-# nim on Azure Kubernetes Service (AKS)
+# NIM on Azure Kubernetes Service (AKS)
 
 
 To deploy NIM on AKS successfully, ensure you have the right GPU and driver version. The default GPU driver in Azure Kubernetes Services (AKS) is usually outdated for the latest NVIDIA software, and Microsoft does not yet have an official solution for this issue.
