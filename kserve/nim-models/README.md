@@ -3,6 +3,21 @@ This directory holds NIM `InferenceService` YAML specs, these should be applied 
 
 The NIM specs provided here are a set of examples. These examples could be modified to use different combinations of GPUs or models as specified by the official [NIM support matrix](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html).
 
+## NIM Profile
+By default, the NIM will select the underlying model profile that is most available for the hardware the NIM was deployed on. This may include the quantization method, tensor parallelism, inferencing backend, or other parameters.
+
+The profile can be overriden in NIM by setting the `NIM_MODEL_PROFILE` environment variable. The value can be set to either the human readable name such as `vllm-fp16-tp2` or the longer machine-readable hash (see the [here](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#serving-models-from-local-assets) for details on profiles). This can be done in the KServe `InferenceService` by adding a `env` section under the spec.predictor.model section of the yaml such as:
+
+**Specify the Tensor Parallelism 2, FP16, with vLLM backend**
+```
+spec:
+  predictor:
+    model:
+      env:
+        - name: NIM_MODEL_PROFILE
+          value: vllm-fp16-tp2
+```
+
 ## GPU Count
 GPU count can be specified by changing both the `limits` and `requests` under the `resources` section of the `InferenceService` YAML file.
 
