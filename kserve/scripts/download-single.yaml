@@ -1,17 +1,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: nim-download-all-job
+  name: nim-download-single-job
 spec:
   template:
     metadata:
-      name: nim-download-all-pod
+      name: nim-download-single-pod
     spec:
       containers:
-      - name: nim-download-all
+      - name: nim-download-single
         # Update the image name to the NIM that will be deployed in production
         image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.0
-        args: ["download-to-cache", "--all"]
+        args: ["download-to-cache"]
         env:
         - name: NIM_CACHE_PATH
           value: /mnt/models/cache
@@ -23,10 +23,21 @@ spec:
         volumeMounts:
         - name: model-cache
           mountPath: /mnt/models/cache
+
+        # Update the number of GPUs desired for production deployment
+        resources:
+          limits:
+            nvidia.com/gpu: "1"
+          requests:
+            nvidia.com/gpu: "1"
       imagePullSecrets:
       - name: ngc-secret
       volumes:
       - name: model-cache
         persistentVolumeClaim:
           claimName: nvidia-nim-pvc
+      
+      # Update the type of GPU desired for production deployment
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-H100-SXM4-80GB
       restartPolicy: Never
