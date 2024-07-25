@@ -1,0 +1,19 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    autoscaling.knative.dev/target: "10"
+  name: mistral-7b-instruct-v03-1xgpu
+spec:
+  predictor:
+    minReplicas: 1
+    model:
+      modelFormat:
+        name: nvidia-nim-mistral-7b-instruct-v03
+      resources:
+        limits:
+          nvidia.com/gpu: "1"
+        requests:
+          nvidia.com/gpu: "1"
+      runtime: nvidia-nim-mistral-7b-instruct-v03-1.0.0
+      storageUri: pvc://nvidia-nim-pvc/
