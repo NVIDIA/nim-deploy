@@ -24,7 +24,7 @@ spec:
               key: NGC_API_KEY    
         volumeMounts:
         - name: model-cache
-          mountPath: /mnt/models/cache
+          mountPath: /mnt/models
       imagePullSecrets:
       - name: ngc-secret
       volumes:
