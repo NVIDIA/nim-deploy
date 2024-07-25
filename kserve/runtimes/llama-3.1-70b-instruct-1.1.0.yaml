@@ -46,7 +46,7 @@ spec:
   - autoSelect: true
     name: nvidia-nim-llama-3.1-70b-instruct
     priority: 1
-    version: "1.0.0"
+    version: "1.1.0"
   volumes:
   - emptyDir:
       medium: Memory
