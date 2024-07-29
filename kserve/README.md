@@ -48,6 +48,7 @@ bash scripts/setup.sh
   ```
 
   Run the below command to know the available StorageClass on the cluster
+
   ```
   kubectl get sc
   ```
