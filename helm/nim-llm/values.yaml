@@ -295,6 +295,18 @@ model:  # most of these values only matter if not using customCommand
   # dataStoreURL: "gateway-api:9009"  # URL of data store service, if used
   # customizationSource: "NDS"  # Type of customization source, can be NDS, SERVICE or DIRECTORY -- optional
 
+## @section PEFT parameters
+## @param peft.volumeClaimName [string] Name of persistent volume claim with PEFT adapters. If undefined (the default) or set to null, other peft parameters have no effect.
+## @param peft.maxLoraRank Specify the max LoRA rank.
+## @param peft.maxGpuLoras Specify number of LoRAs that can fit in GPU PEFT cache.
+## @param peft.maxCpuLoras Specify number of LoRAs that can fit in CPU PEFT cache.
+## @param peft.refreshInterval Specify how often to check peft.volumeClaimName for new models in seconds. If not set, PEFT cache will not refresh.
+peft: 
+  volumeClaimName: "" 
+  maxLoraRank: 32
+  maxGpuLoras: 8
+  maxCpuLoras: 16
+  refreshInterval: 0 # if enabled, recommended to be greater than 30
 
 ## @section Storage parameters
 ## @extra persistence Specify settings to modify the path `/model-store` if `model.legacyCompat` is enabled else `/.cache` volume where the model is served from.

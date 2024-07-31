@@ -170,6 +170,20 @@ spec:
               value: {{ ternary "1" "0" .Values.model.jsonLogging | quote }}
             - name: NIM_LOG_LEVEL
               value: {{ .Values.model.logLevel | quote }}
+            {{- if .Values.peft.volumeClaimName }}
+            - name: NIM_PEFT_SOURCE
+              value: "/loras"
+            - name: NIM_MAX_LORA_RANK
+              value: {{ .Values.peft.maxLoraRank | quote }}
+            - name: NIM_MAX_GPU_LORAS
+              value: {{ .Values.peft.maxGpuLoras | quote }}
+            - name: NIM_MAX_CPU_LORAS
+              value: {{ .Values.peft.maxCpuLoras | quote }}
+            {{- if .Values.peft.refreshInterval }}  
+            - name: NIM_PEFT_REFRESH_INTERVAL
+              value: {{ .Values.peft.refreshInterval | quote }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.env }}
             {{- toYaml .Values.env | nindent 12 }}
             {{- end }}
@@ -257,6 +271,10 @@ spec:
               name: dshm
             - name: scripts-volume 
               mountPath: /scripts
+          {{- if .Values.peft.volumeClaimName }}    
+            - name: peft-adapters 
+              mountPath: /loras
+          {{- end }}
           {{- if .Values.extraVolumeMounts }}
           {{- range $k, $v := .Values.extraVolumeMounts }}
             - name: {{ $k }}
@@ -301,6 +319,11 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- end }}
+        {{- if .Values.peft.volumeClaimName }}
+        - name: peft-adapters
+          persistentVolumeClaim:
+            claimName: {{ .Values.peft.volumeClaimName }}
         {{- end }}
       {{- if .Values.extraVolumes }}
       {{- range $k, $v := .Values.extraVolumes }}
