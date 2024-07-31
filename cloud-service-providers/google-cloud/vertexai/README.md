@@ -1,0 +1,96 @@
+# NVIDIA NIM on GCP Vertex AI
+
+**NVIDIA NIM** is a set of microservices designed to accelerate the deployment of generative AI models across the cloud, data center, and workstations. NIMs are categorized by model family and a per model basis. This repository demonstrates [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) deploy and inference on **GCP Vertex AI** with NVIDIA GPUs.
+
+## Prerequisites
+* [NGC API KEY](https://org.ngc.nvidia.com/setup/personal-keys)
+* [NGC CLI](https://org.ngc.nvidia.com/setup/installers/cli)
+* [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/introduction)
+* [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+
+## Run NIM on Vertex AI Workbench Instance
+### 1. Create an Vertex AI Workbench Instance
+Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.htmlß) for specific NIM.
+[<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
+
+### 2. Run NIM on JupyterLab Notebook
+`OPEN JUPYTERLAB` of the instance, and install required packages per `requirements.txt`. Run `nim-vertexai.ipynb` Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource.
+
+If NIM container has been successfully launched, you will see below output in cell or deployment log:
+
+```shell
+===========================================
+== NVIDIA Inference Microservice LLM NIM ==
+===========================================
+
+NVIDIA Inference Microservice LLM NIM Version 1.0.0
+Model: nim/meta/llama3-8b-instruct
+
+Container image Copyright (c) 2016-2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This NIM container is governed by the NVIDIA AI Product Agreement here:
+https://www.nvidia.com/en-us/data-center/products/nvidia-ai-enterprise/eula/.
+A copy of this license can be found under /opt/nim/LICENSE.
+
+The use of this model is governed by the AI Foundation Models Community License
+here: https://docs.nvidia.com/ai-foundation-models-community-license.pdf.
+
+ADDITIONAL INFORMATION: Meta Llama 3 Community License, Built with Meta Llama 3. 
+A copy of the Llama 3 license can be found under /opt/nim/MODEL_LICENSE.
+```
+
+**Airgap NIM Container**
+If need to build Airgap NIM container, update volume bind source file path in `docker-compose.yaml`, and backend profile in `airgap_model_manifest.yaml`. 
+Then follow insturctions in the notebook to build new docker image. 
+
+### 3. Inference in Online prediction
+After deploying NIM container to endpoint, check Vertex AI `Model Registry` and `Online prediction` for model/endpoint version details and event logs.
+[<img src="imgs/vertexai_02.png" width="750"/>](HighLevelArch)
+
+Make endpoint inference with OpenAI Python API or CLI. Streaming reponse is also supported.
+
+Sample request and responese with Python API:
+
+```shell
+Request
+endpoint: "projects/.../locations/us-central1/endpoints/..."
+http_body {
+  content_type: "application/json"
+  data: "{\"model\": \"meta/llama3-8b-instruct\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello! How are you?\"}, {\"role\": \"assistant\", \"content\": \"Hi! I am quite well, how can I help you today?\"}, {\"role\": \"user\", \"content\": \"Write a short limerick about the wonders of GPU Computing.\"}], \"temperature\": 0.2, \"max_tokens\": 256, \"top_p\": 0.8}"
+}
+
+{'max_tokens': 256,
+ 'messages': [{'content': 'Hello! How are you?', 'role': 'user'},
+              {'content': 'Hi! I am quite well, how can I help you today?',
+               'role': 'assistant'},
+              {'content': 'Write a short limerick about the wonders of GPU '
+                          'Computing.',
+               'role': 'user'}],
+ 'model': 'meta/llama3-8b-instruct',
+ 'temperature': 0.2,
+ 'top_p': 0.8}
+
+--------------------------------------------------------------------------------------
+Response
+{'choices': [{'finish_reason': 'stop',
+              'index': 0,
+              'logprobs': None,
+              'message': {'content': 'There once was a GPU so fine,\n'
+                                     'Whose computing powers did shine.\n'
+                                     'It processed with ease,\n'
+                                     'Massive data with peace,\n'
+                                     'And solved problems in no time divine!',
+                          'role': 'assistant'},
+              'stop_reason': 128009}],
+ 'created': ...,
+ 'id': '...',
+ 'model': 'meta/llama3-8b-instruct',
+ 'object': 'chat.completion',
+ 'usage': {'completion_tokens': 35, 'prompt_tokens': 53, 'total_tokens': 88}}
+ ```
+ 
+ ## Reference
+ For more information about NIM, please refer to 
+ * [NVIDIA NIM](https://docs.nvidia.com/nim/large-language-models/latest/introduction.html)
+ * [NGC User Guide](https://docs.nvidia.com/ngc/gpu-cloud/ngc-user-guide/index.html)
+ * [NIM API](https://docs.nvidia.com/nim/large-language-models/latest/api-reference.html) 

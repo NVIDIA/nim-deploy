@@ -1,0 +1,25 @@
+19031a45cf096b683c4d66fff2a072c0e164a24f19728a58771ebfc4c9ade44f:
+  model: meta/llama3-8b-instruct
+  release: 'latest'
+  tags:
+    feat_lora: 'false'
+    llm_engine: vllm
+    precision: fp16
+    tp: '2'
+  container_url: nvcr.io/nim/meta/llama3-8b-instruct:latest
+  workspace: !workspace
+    components:
+    - dst: ''
+      src:
+        repo_id: /airgap/llama3-8b-instruct_vhf
+        files:
+        - !name config.json
+        - !name generation_config.json
+        - !name model-00001-of-00004.safetensors
+        - !name model-00002-of-00004.safetensors
+        - !name model-00003-of-00004.safetensors
+        - !name model-00004-of-00004.safetensors
+        - !name model.safetensors.index.json
+        - !name special_tokens_map.json
+        - !name tokenizer.json
+        - !name tokenizer_config.json
