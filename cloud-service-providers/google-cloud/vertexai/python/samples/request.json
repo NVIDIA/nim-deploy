@@ -1,0 +1,20 @@
+{
+    "model": "meta/llama3-8b-instruct",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello! How are you?"
+      },
+      {
+        "role": "assistant",
+        "content": "Hi! I am quite well, how can I help you today?"
+      },
+      {
+        "role": "user",
+        "content": "Write a short limerick about the wonders of GPU Computing."
+      }
+    ],
+    "temperature": 0.2,
+    "max_tokens": 512,
+    "top_p": 0.8
+  }
