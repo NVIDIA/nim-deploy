@@ -10,11 +10,13 @@
 
 ## Run NIM on Vertex AI Workbench Instance
 ### 1. Create an Vertex AI Workbench Instance
-Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.htmlß) for specific NIM.
+Create an new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.htmlß) for specific NIM.
 [<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
 
 ### 2. Run NIM on JupyterLab Notebook
-`OPEN JUPYTERLAB` of the instance, and install required packages per `requirements.txt`. Run `nim-vertexai.ipynb` Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource.
+`OPEN JUPYTERLAB` of the instance, and install required packages per `requirements.txt`. 
+
+Run `nim-vertexai.ipynb` Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource.
 
 If NIM container has been successfully launched, you will see below output in cell or deployment log:
 
@@ -40,16 +42,77 @@ A copy of the Llama 3 license can be found under /opt/nim/MODEL_LICENSE.
 ```
 
 **Airgap NIM Container**
-If need to build Airgap NIM container, update volume bind source file path in `docker-compose.yaml`, and backend profile in `airgap_model_manifest.yaml`. 
-Then follow insturctions in the notebook to build new docker image. 
+
+Airgap NIM container has the advantages of having `NGC_API_KEY` inbuilt, thus not required when run within interface or via endpoint. It could also help to avoid exposing credentail on Vertex AI `Model Registry`.
+
+If needed, please refer to `/airgap` directory to update volume bind source file path in `docker-compose.yaml`, and backend profile in `airgap_model_manifest.yaml`. 
+
+Then follow insturctions in the notebook `Build Airgap NIM Container` to build new airgap docker image. 
 
 ### 3. Inference in Online prediction
 After deploying NIM container to endpoint, check Vertex AI `Model Registry` and `Online prediction` for model/endpoint version details and event logs.
+
 [<img src="imgs/vertexai_02.png" width="750"/>](HighLevelArch)
 
 Make endpoint inference with OpenAI Python API or CLI. Streaming reponse is also supported.
 
+> [!IMPORTANT]
+> Please use `rawPredict` to make endpoint inference, as `predict` method will need additional formatting.
+> 
 Sample request and responese with Python API:
+
+* Payload
+```shell
+messages = [
+    {"role": "user", "content": "Hello! How are you?"},
+    {"role": "assistant", "content": "Hi! I am quite well, how can I help you today?"},
+    {"role": "user", "content": "Write a short limerick about the wonders of GPU Computing."}
+]
+
+payload = {
+  "model": payload_model,
+  "messages": messages,
+  "temperature": 0.2,  # Temperature controls the degree of randomness in token selection.
+  "max_tokens": 512,  # Token limit determines the maximum amount of text output.
+  "top_p": 0.8,  # Tokens are selected from most probable to least until the sum of their probabilities equals the top_p value.
+}
+
+with open("request.json", "w") as outfile: 
+    json.dump(payload, outfile)
+```
+
+* Python Inference
+```shell
+import json
+from pprint import pprint
+from google.api import httpbody_pb2
+from google.cloud import aiplatform_v1
+
+http_body = httpbody_pb2.HttpBody(
+    data=json.dumps(payload).encode("utf-8"),
+    content_type="application/json",
+)
+
+req = aiplatform_v1.RawPredictRequest(
+    http_body=http_body, endpoint=endpoint.resource_name
+)
+
+print('Request')
+print(req)
+pprint(json.loads(req.http_body.data))
+print()
+
+API_ENDPOINT = "{}-aiplatform.googleapis.com".format(region)
+client_options = {"api_endpoint": API_ENDPOINT}
+
+pred_client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
+
+response = pred_client.raw_predict(req)
+print("--------------------------------------------------------------------------------------")
+print('Response')
+pprint(json.loads(response.data))
+```
+
 
 ```shell
 Request
@@ -88,7 +151,42 @@ Response
  'object': 'chat.completion',
  'usage': {'completion_tokens': 35, 'prompt_tokens': 53, 'total_tokens': 88}}
  ```
- 
+
+ * CLI Inference
+```shell
+! curl \
+    --request POST \
+    --header "Authorization: Bearer $(gcloud auth print-access-token)" \
+    --header "Content-Type: application/json" \
+    https://us-central1-prediction-aiplatform.googleapis.com/v1/projects/$project_id/locations/$region/endpoints/$ENDPOINT_ID:rawPredict \
+    --data "@request.json"
+```
+```shell
+{
+  "id": "...",
+  "object": "chat.completion",
+  "created": ...,
+  "model": "meta/llama3-8b-instruct",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "There once was a GPU so fine,\nComputed at speed, oh so divine.\nIt ran tasks with ease,\nSimulations to please,\nAnd processed data in a short time!"
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 128009
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 53,
+    "total_tokens": 89,
+    "completion_tokens": 36
+  }
+}
+```
+
  ## Reference
  For more information about NIM, please refer to 
  * [NVIDIA NIM](https://docs.nvidia.com/nim/large-language-models/latest/introduction.html)
