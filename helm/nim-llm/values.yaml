@@ -267,15 +267,15 @@ metrics:
 ## @param model.openaiPort Specify Open AI Port.
 ## @param model.labels [object] Specify extra labels to be added on deployed pods.
 ## @param model.jsonLogging Turn jsonl logging on or off. Defaults to true.
-## @param model.logLevel Log level of NIM service. Possible values of the variable are TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL. 
+## @param model.logLevel Log level of NIM service. Possible values of the variable are TRACE, DEBUG, INFO, WARNING, ERROR, CRITICAL.
 ## @section Deprecated and Legacy Model parameters
 ## @param model.legacyCompat Set `true` to enable compatiblity with pre-release NIM versions prior to 1.0.0.
 ## @param model.numGpus (deprecated) Specify GPU requirements for the model.
 ## @param model.subPath (deprecated) Specify path within the model volume to mount if not the root -- default works with ngcInit and persistent volume. (legacyCompat only)
 ## @param model.modelStorePath (deprecated) Specify location of unpacked model.
-model:  # most of these values only matter if not using customCommand
+model:
   nimCache: /model-store
-  name: my-model # optionsl name of the model in the OpenAI API -- used in `helm test`
+  name: meta/llama3-8b-instruct # optional name of the model in the OpenAI API -- used in `helm test`
   ngcAPISecret: "ngc-api"
   ngcAPIKey: ""
   openaiPort: 8000

@@ -345,7 +345,7 @@
                 "name": {
                     "type": "string",
                     "description": "Specify name of the model in the API (name of the NIM). Mostly used for tests (optional otherwise). This must match the name from `/v1/models` to allow `helm test <release-name>` to work. In legacyCompat, this is required and sets the name of the model in /v1/models",
-                    "default": "my-model"
+                    "default": "meta/llama3-8b-instruct"
                 },
                 "ngcAPISecret": {
                     "type": "string",

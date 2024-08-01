@@ -21,8 +21,10 @@ spec:
       {{- toYaml .Values.model.labels | nindent 6 }}
       {{- end }}
   {{- if .Values.statefulSet.enabled }}
-  serviceName: {{ include "nim-llm.fullname" . }}
+  serviceName: {{ .Values.service.name | default (include "nim-llm.fullname" .) }}-sts
   podManagementPolicy: "Parallel"
+  {{ else }}
+  progressDeadlineSeconds: 3600
   {{- end }}
   template:
     metadata:
