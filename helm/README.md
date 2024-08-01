@@ -2,6 +2,8 @@
 
 The NIM Helm chart requires a Kubernetes cluster with appropriate GPU nodes and the [GPU Operator](https://github.com/NVIDIA/gpu-operator) installed.
 
+The files in this repo are for reference, for the official NVIDIA AI Enterprise supported release, see [NGC](https://catalog.ngc.nvidia.com/orgs/nim/helm-charts/nim-llm) and the [official documentation](https://docs.nvidia.com/nim/large-language-models/latest/deploy-helm.html).
+
 
 ## Setting up the environment
 
@@ -13,9 +15,12 @@ export NGC_CLI_API_KEY="key from ngc"
 
 If you have not set up NGC, see the [NGC Setup](https://ngc.nvidia.com/setup) topic.
 
-[comment]: <> (TODO: update the repo with th real location)
-
 Clone this repository and change directories into `nim-deploy/helm`. The following commands must be run from that directory.
+
+```
+git clone git@github.com:NVIDIA/nim-deploy.git
+cd nim-deploy/helm
+```
 
 ## Select a NIM to use in your helm release
 
