@@ -100,7 +100,7 @@ spec:
           command:
             {{- if .Values.customCommand }}
             {{- range .Values.customCommand }}
-             - {{ . }}
+             - {{ . | quote }}
             {{- end }}
             {{- else }}
             - nemollm_inference_ms
@@ -153,6 +153,14 @@ spec:
             {{- if .Values.model.modelStorePath }}
             - --model_store_path
             - {{ .Values.model.modelStorePath | quote }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.customArgs }}
+          args:
+            {{- if .Values.customArgs }}
+            {{- range .Values.customArgs }}
+             - {{ . | quote }}
             {{- end }}
             {{- end }}
           {{- end }}

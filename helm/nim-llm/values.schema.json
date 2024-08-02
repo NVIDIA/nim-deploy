@@ -2,6 +2,14 @@
     "title": "Chart Values",
     "type": "object",
     "properties": {
+        "customArgs": {
+            "type": "array",
+            "description": "overrides args of the NeMo Inference service container with the array listed here. ",
+            "default": "[]",
+            "items": {
+                "type": "string"
+            }
+        },
         "customCommand": {
             "type": "array",
             "description": "overrides command line options sent to the NeMo Inference service with the array listed here. ",

@@ -18,6 +18,10 @@ containerSecurityContext: {}
   # seccompProfile:
   #   type: "RuntimeDefault"
 
+## @param customArgs [array] overrides args of the NeMo Inference service container with the array listed here. 
+## For andvanced use if necessary only
+customArgs: []
+
 ## @param customCommand [array] overrides command line options sent to the NeMo Inference service with the array listed here. 
 ## For andvanced use if necessary only
 customCommand: []
