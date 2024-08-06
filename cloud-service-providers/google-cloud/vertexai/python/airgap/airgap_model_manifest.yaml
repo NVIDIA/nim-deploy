@@ -1,12 +1,12 @@
 19031a45cf096b683c4d66fff2a072c0e164a24f19728a58771ebfc4c9ade44f:
   model: meta/llama3-8b-instruct
-  release: 'latest'
+  release: '1.0.0'
   tags:
     feat_lora: 'false'
     llm_engine: vllm
     precision: fp16
     tp: '2'
-  container_url: nvcr.io/nim/meta/llama3-8b-instruct:latest
+  container_url: nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
   workspace: !workspace
     components:
     - dst: ''
