@@ -10,7 +10,7 @@
 
 ## Run NIM on Vertex AI Workbench Instance
 ### 1. Create a Vertex AI Workbench Instance
-Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.htmlß) for specific NIM.
+Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html) for specific NIM.
 [<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
 
 ### 2. Run NIM on JupyterLab Notebook
