@@ -9,8 +9,8 @@
 * [gcloud CLI](https://cloud.google.com/sdk/docs/install)
 
 ## Run NIM on Vertex AI Workbench Instance
-### 1. Create an Vertex AI Workbench Instance
-Create an new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.htmlß) for specific NIM.
+### 1. Create a Vertex AI Workbench Instance
+Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.htmlß) for specific NIM.
 [<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
 
 ### 2. Run NIM on JupyterLab Notebook
@@ -41,20 +41,28 @@ ADDITIONAL INFORMATION: Meta Llama 3 Community License, Built with Meta Llama 3.
 A copy of the Llama 3 license can be found under /opt/nim/MODEL_LICENSE.
 ```
 
-**Airgap NIM Container**
+**Airgap NIM Container** (Optional)
 
-Airgap NIM container has the advantages of having `NGC_API_KEY` inbuilt, thus not required when run within interface or via endpoint. It could also help to avoid exposing credentail on Vertex AI `Model Registry`.
+Airgap NIM container is a custom Docker image based on the Llama3-8b model. It includes specific features such as a customized model profile and built-in credentials.
 
-If needed, please refer to `/airgap` directory to update volume bind source file path in `docker-compose.yaml`, and backend profile in `airgap_model_manifest.yaml`. 
+* The model profile can be customized and has been tested and validated on Vertex AI G2 machine series/L4 instance types.
+* `NGC_API_KEY` can be incorporated, allowing automatic authorization when running NIM, which helps avoid exposing credentials in Vertex AI `Model Registry` after model deployment.
 
-Then follow insturctions in the notebook `Build Airgap NIM Container` to build new airgap docker image. 
+To build the Airgap container, follow these steps:
+
+* Refer to the `/airgap` directory to select a profile in the `airgap_model_manifest.yaml` file.
+* Use the `docker-compose.yaml` file to build the Airgap NIM container.
+
+Detailed instructions are available in the notebook `Build Airgap Container` session.
+
+All content is based on enterprise-supported artifacts available on NVIDIA NGC.
 
 ### 3. Inference in Online prediction
 After deploying NIM container to endpoint, check Vertex AI `Model Registry` and `Online prediction` for model/endpoint version details and event logs.
 
 [<img src="imgs/vertexai_02.png" width="750"/>](HighLevelArch)
 
-Make endpoint inference with OpenAI Python API or CLI. Streaming reponse is also supported.
+You can perform endpoint inference using the OpenAI Python API or CLI. The option to stream results on or off is supported.
 
 > [!IMPORTANT]
 > Please use `rawPredict` to make endpoint inference, as `predict` method will need additional formatting.
