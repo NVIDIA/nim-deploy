@@ -1,6 +1,6 @@
 services:
   nim-llama-8b:
-    image: nvcr.io/nim/meta/llama3-8b-instruct:latest
+    image: nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
     shm_size: 35gb
     runtime: nvidia
     hostname: nim-llama-8b
