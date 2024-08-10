@@ -1,6 +1,8 @@
 # NVIDIA NIM on GCP Vertex AI
 
-**NVIDIA NIM** is a set of microservices designed to accelerate the deployment of generative AI models across the cloud, data center, and workstations. NIMs are categorized by model family and a per model basis. This repository demonstrates [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) deploy and inference on **GCP Vertex AI** with NVIDIA GPUs.
+**NVIDIA NIM** is a set of microservices designed to accelerate the deployment of generative AI models across the cloud, data center, and workstations. NIMs are categorized by model family and a per model basis. Leveraging NVIDIA’s GPU acceleration on Google Cloud Platform, NIM offers an efficient and scalable path to inference with unparalleled performance.
+
+This repository demonstrates [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) deploy and inference on **GCP Vertex AI** with NVIDIA GPUs.
 
 ## Prerequisites
 * [NGC API KEY](https://org.ngc.nvidia.com/setup/personal-keys)
@@ -11,6 +13,9 @@
 ## Run NIM on Vertex AI Workbench Instance
 ### 1. Create a Vertex AI Workbench Instance
 Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html) for specific NIM.
+
+Please note NIM supports [TensorRT-LLM](https://docs.nvidia.com/tensorrt-llm/index.html) profile on L40S, A100, H100 GPU types, and vLLM profile on others.
+
 [<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
 
 ### 2. Run NIM on JupyterLab Notebook
@@ -56,6 +61,7 @@ Sample request and response:
 * Payload
 ```shell
 payload_model = "meta/llama3-8b-instruct"
+
 messages = [
     {"role": "user", "content": "Hello! How are you?"},
     {"role": "assistant", "content": "Hi! I am quite well, how can I help you today?"},
