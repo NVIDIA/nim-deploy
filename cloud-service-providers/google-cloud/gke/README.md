@@ -1,6 +1,6 @@
 # NVIDIA NIMs on GKE
 
-This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs for hosting NIMs and carrying out inference. Meta's [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) serves as a demonstration model in this instance. The repository contains the NVIDIA-provided [helm charts](https://github.com/NVIDIA/nim-deploy/tree/main/helm).
+This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs for hosting NIMs and carrying out inference. Meta's [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) serves as a demonstration model in this instance. The repository references the NVIDIA-provided [helm charts](https://github.com/NVIDIA/nim-deploy/tree/main/helm).
 
 ## Table of Contents
 
@@ -102,7 +102,7 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | `gpu_pools.accelerator_type` | NVIDIA GPU name | `nvidia-l4` |
   | `gpu_pools.accelerator_count` | GPU count | `1` |
 
-  Update variables in `infra/3-config/terraform.auto.tfvars`
+3. Update variables in `infra/3-config/terraform.auto.tfvars`
 
   | Variable | Description | Default | Need update? |
   |---|---|---|---|
@@ -113,7 +113,29 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | `model_name` | NIM Model name | `meta/llama3-8b-instruct` | *No* |
   | `gpu_limits` | GPU Limits | `1` | *No* |
 
-3. Provision infrastructure and helm charts
+4. Create a YAML file under `infra/3-config/helm/custom-values.yaml` with below contents:
+
+ ```yaml
+ # YAML
+image:
+  repository: 
+  tag: 
+model:
+  name: 
+  ngcAPISecret: ngc-api
+persistence:
+  enabled: true
+statefulSet:
+  enabled: false
+imagePullSecrets:
+  - name: registry-secret
+# Uncomment if you want to control the number of GPUs
+# resources:
+#  limits:
+#    nvidia.com/gpu: 1
+ ```
+
+5. Provision infrastructure and helm charts
 
 ```shell
 bash 1.setup.sh

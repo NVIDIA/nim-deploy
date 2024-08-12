@@ -15,7 +15,7 @@
 
 ##common variables
 cluster_name      = "nim-demo-gke"
-cluster_location  = "<GCP Zone for zonal cluster / GCP Region for regional cluster"
+cluster_location  = "<GCP Zone for zonal cluster / GCP Region for regional cluster>"
 autopilot_cluster = false ## true = autopilot cluster, false = standard cluster
 
 ## network values
@@ -43,8 +43,8 @@ enable_gpu = true
 gpu_pools = [
   {
     name               = "gpu-pool"
-    accelerator_type   = "g2-standard-4"
-    machine_type       = "nvidia-l4"
+    machine_type       = "g2-standard-4"
+    accelerator_type   = "nvidia-l4"
     accelerator_count  = 1
     autoscaling        = true
     min_count          = 1
