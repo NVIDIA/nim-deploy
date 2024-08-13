@@ -34,7 +34,7 @@ email_address="<your-email-address>"
 
 # Container related information
  # NOTE: Verify that your AML workspace can access this ACR
-registry_name="<your-azureml-registry-name>"
+acr_registry_name="<your-azureml-registry-name>"
 image_name="<custom-name-for-nim-image>"
 ngc_container="nvcr.io/nim/meta/llama3-8b-instruct:1.0.0"
 

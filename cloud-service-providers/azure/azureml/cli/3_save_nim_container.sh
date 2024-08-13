@@ -24,7 +24,7 @@ if $SKIP_CONTAINER_CREATION; then
   fi
 else
   # Fetch NIM container
-  docker login nvcr.io -u $oauthtoken -p $ngc_api_key
+  docker login nvcr.io -u \$oauthtoken -p $ngc_api_key
   docker pull $ngc_container
 
   # Create AzureML dockerfile with NIM inside

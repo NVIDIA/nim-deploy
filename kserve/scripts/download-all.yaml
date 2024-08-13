@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nim-download-all-job
+spec:
+  template:
+    metadata:
+      name: nim-download-all-pod
+    spec:
+      containers:
+      - name: nim-download-all
+        # Update the image name to the NIM that will be deployed in production
+        image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.0
+        args: ["download-to-cache", "--all"]
+        env:
+        - name: NIM_CACHE_PATH
+          value: /mnt/models/cache
+        - name: NGC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nvidia-nim-secrets
+              key: NGC_API_KEY    
+        volumeMounts:
+        - name: model-cache
+          mountPath: /mnt/models
+      imagePullSecrets:
+      - name: ngc-secret
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: nvidia-nim-pvc
+      restartPolicy: Never

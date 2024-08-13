@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nim-download-profile-job
+spec:
+  template:
+    metadata:
+      name: nim-download-profile-pod
+    spec:
+      containers:
+      - name: nim-profile-single
+        # Update the image name to the NIM that will be deployed in production
+        image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.0
+        
+        # Update the profile name to either the hash or the human-readable name that will be used in production
+        args: ["download-to-cache", "--profile", "tensorrt_llm-l40s-bf16-tp2-throughput"]
+        env:
+        - name: NIM_CACHE_PATH
+          value: /mnt/models/cache
+        - name: NGC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nvidia-nim-secrets
+              key: NGC_API_KEY    
+        volumeMounts:
+        - name: model-cache
+          mountPath: /mnt/models
+      imagePullSecrets:
+      - name: ngc-secret
+      volumes:
+      - name: model-cache
+        persistentVolumeClaim:
+          claimName: nvidia-nim-pvc
+      restartPolicy: Never

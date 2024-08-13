@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nim-profile-job
+spec:
+  template:
+    metadata:
+      name: nim-profile-pod
+    spec:
+      containers:
+      - name: nim-profile
+        # Update the image name to the NIM that will be deployed in production
+        image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.0
+        args: ["list-model-profiles"]
+        env:
+        - name: NIM_CACHE_PATH
+          value: /tmp
+        - name: NGC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nvidia-nim-secrets
+              key: NGC_API_KEY    
+      imagePullSecrets:
+      - name: ngc-secret
+      restartPolicy: Never
+      

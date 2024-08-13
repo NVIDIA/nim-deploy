@@ -1,6 +1,6 @@
 # Deploy NIM to NVCF
 ## 1. NVCF Introduction
-[NVCF](https://docs.nvidia.com/cloud-functions/index.html)(Nvidia Cloud Functions) is a serverless API to deploy & manage AI workloads on GPUs, which provides security, scale and reliability to your workloads. The API to access the workloads is un-opinionated and supports HTTP polling, HTTP streaming & gRPC. NVCF is primarily suited for shorter running, preemptable workloads such as inferencing and fine-tuning.
+[NVCF](https://docs.nvidia.com/cloud-functions/index.html)(NVIDIA Cloud Functions) is a serverless API to deploy & manage AI workloads on GPUs, which provides security, scale and reliability to your workloads. The API to access the workloads is un-opinionated and supports HTTP polling, HTTP streaming & gRPC. NVCF is primarily suited for shorter running, preemptable workloads such as inferencing and fine-tuning.
 
 NVCF is available via the [NGC Portal](https://ngc.nvidia.com/).
 

@@ -1,9 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
 name: deployment_name_placeholder
 endpoint_name: endpoint_name_placeholder
-# Model is not used.
-model: azureml://registries/azureml-meta/models/Meta-Llama-3-8B-Instruct/versions/5
-model_mount_path: /triton-models
 environment: 
   name: image_name_placeholder-env
   image: acr_registry_placeholder.azurecr.io/image_name_placeholder:v1
