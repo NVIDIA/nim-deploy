@@ -1,0 +1,11 @@
+export SERVICE_ACCOUNT_ID=dfisk-nemoms-vertex-ai-study
+export PROJECTID=k80-exploration
+export PROJECTUSER=dfisk
+export PROJECTNUM=342959614509
+export REGION=us-central1
+export GCSBUCKET=dfisk-model-data
+export SERVICE_NAME=llama-3-8b-instruct
+# ---- entries below created by build_nim.sh
+export IMAGE=us-docker.pkg.dev/k80-exploration/dfisk/llama-3-8b-instruct-l4:1.0
+export IMAGE=us-docker.pkg.dev/k80-exploration/dfisk/llama-3-8b-instruct-l4:1.0
+export IMAGE=us-docker.pkg.dev/k80-exploration/dfisk/llama-3-8b-instruct-l4:1.0
