@@ -51,7 +51,7 @@ kubectl create namespace nim
 You can launch `llama3-8b-instruct` using a default configuration while only setting the NGC API key and persistence in one line with no extra files. Set `persistence.enabled` to **true** to ensure that permissions are set correctly and the container runtime filesystem isn't filled by downloading models.
 
 ```bash
-helm --namespace nim install my-nim nim-llm/ --set model.ngcAPIKey=$NGC_CLI_API_KEY --set persistence.enabled=true
+helm --namespace nim install my-nim nim-llm/ --set model.ngcAPIKey=$NGC_API_KEY --set persistence.enabled=true
 ```
 
 ## Using a custom values file
@@ -63,9 +63,9 @@ The following example uses meta/llama-3-8b-instruct with an existing secret as t
 If you specify secrets as shown in this example, you cannot set the API key directly in the file or on the CLI. Instead, first create the secrets, as shown in the following example:
 
 ```bash
-kubectl -n nim create secret docker-registry registry-secret --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_CLI_API_KEY
+kubectl -n nim create secret docker-registry registry-secret --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_KEY
 
-kubectl -n nim create secret generic ngc-api --from-literal=NGC_CLI_API_KEY=$NGC_CLI_API_KEY
+kubectl -n nim create secret generic ngc-api --from-literal=NGC_API_KEY=$NGC_API_KEY
 ```
 
 ```yaml
