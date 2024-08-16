@@ -65,7 +65,7 @@ If you specify secrets as shown in this example, you cannot set the API key dire
 ```bash
 kubectl -n nim create secret docker-registry registry-secret --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_KEY
 
-kubectl -n nim create secret generic ngc-api --from-literal=NGC_API_KEY=$NGC_API_KEY
+kubectl -n nim create secret generic ngc-api --from-literal=NGC_CLI_API_KEY=$NGC_API_KEY
 ```
 
 ```yaml
