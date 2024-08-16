@@ -7,7 +7,7 @@ The files in this repo are for reference, for the official NVIDIA AI Enterprise 
 
 ## Setting up the environment
 
-Set the **NGC_API_KEY** environment variable to your NGC API key, as shown in the following example. (Caution: In the previous version of NIMs, the env var was NGC_CLI_API_KEY)
+Set the **NGC_API_KEY** environment variable to your NGC API key, as shown in the following example. (**Caution:** In the previous versions of NIM, the env var was NGC_CLI_API_KEY)
 
 ```bash
 export NGC_API_KEY="key from ngc"
