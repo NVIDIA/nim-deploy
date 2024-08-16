@@ -43,7 +43,7 @@ We can also validate if the plugin installation was successful.
 2: Create a kubernetes secret for NGC_API_KEY
 
     export NGC_API_KEY=<NGC_API_KEY>
-    kubectl create secret generic ngc-api --from-literal=NGC_API_KEY=$NGC_API_KEY
+    kubectl create secret generic ngc-api --from-literal=NGC_CLI_API_KEY=$NGC_API_KEY
 
 3: Create Docker Registry Secret:
 
