@@ -1,0 +1,11 @@
+# Add the parent CloudRun URL to the env file (along with other project irelated variables)
+
+$ . ./env && ./build.sh
+
+$ . ./env && ./run.ssh
+
+# Get the current test CloudRun URL and use /output to obvserve the current query outputs
+export TESTURL=https://llama-3-8b-instruct-test-kcifu7ad4a-uc.a.run.app
+$ time curl -X GET ${TESTURL?}/output
+
+

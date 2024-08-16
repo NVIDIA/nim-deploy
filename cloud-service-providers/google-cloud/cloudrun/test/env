@@ -1,0 +1,8 @@
+export SERVICE_ACCOUNT_ID=dfisk-nemoms-vertex-ai-study
+export PROJECTID=k80-exploration
+export PROJECTUSER=dfisk
+export PROJECTNUM=342959614509
+export REGION=us-central1
+export SERVICE_NAME=llama-3-8b-instruct
+export CLOUD_RUN_ENDPOINT_URL=https://llama-3-8b-instruct-kcifu7ad4a-uc.a.run.app
+export IMAGE=us-docker.pkg.dev/${PROJECTID?}/${PROJECTUSER?}/${SERVICE_NAME?}-l4-test:1.0
