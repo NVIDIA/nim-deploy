@@ -1,0 +1,4 @@
+- repo: https://github.com/tuttlebr/nv-pre-commit
+  rev: v0.0.4 
+  hooks:
+    - id: detect-nv-keys
