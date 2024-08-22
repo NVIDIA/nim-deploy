@@ -36,16 +36,12 @@ def make_request(url, headers, messages, model, tools=None, tool_choice=None):
         response = requests.post(url, headers=headers, data=json.dumps(data))
         response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
         return response.json()
-    except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}")
-    except requests.exceptions.ConnectionError as conn_err:
-        print(f"Connection error occurred: {conn_err}")
-    except requests.exceptions.Timeout as timeout_err:
-        print(f"Timeout error occurred: {timeout_err}")
-    except requests.exceptions.RequestException as req_err:
-        print(f"An error occurred: {req_err}")
-    except json.JSONDecodeError as json_err:
-        print(f"JSON decode error occurred: {json_err}")
+    except (requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+            json.JSONDecodeError) as err:
+        print(f"An error occurred: {err}")
     return None
 
 # Define the function to handle function calls
