@@ -25,8 +25,8 @@ Replace `<model-name>` with the desired model (e.g., `meta/llama-3_1-8b-instruct
 python test_function_calling.py --model meta/llama-3_1-8b-instruct --url https://api.example.com/endpoint --token your_api_token
 ```
 
-```json
-Initial Response 
+Initial Response:
+```json 
 {
     "role": "assistant",
     "content": null,
@@ -41,8 +41,10 @@ Initial Response
         }
     ]
 }
+```
+Follow up response:
 
-Follow up Response 
+```json
 {
     "role": "assistant",
     "content": "The current weather in San Francisco, CA is 68 degrees Fahrenheit."
