@@ -5,6 +5,7 @@ metadata:
   name: "{{ include "nim-llm.fullname" . }}-test-streaming-chat"
   labels:
     {{- include "nim-llm.labels" . | nindent 4 }}
+    sidecar.istio.io/inject: "false"
   annotations:
     "helm.sh/hook": test
 spec:

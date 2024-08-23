@@ -21,5 +21,7 @@
 .idea/
 *.tmproj
 .vscode/
-# test file
+# test files
 test-values.yaml
+multinode-test-values.yaml
+test-values-demo.yaml

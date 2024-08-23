@@ -13,6 +13,13 @@ spec:
   selector:
     matchLabels:
       {{- include "nim-llm.selectorLabels" . | nindent 6 }}
+      {{- if .Values.multiNode.enabled }}
+      {{- if (or (.Capabilities.APIVersions.Has "leaderworkerset.x-k8s.io/v1") .Values.multiNode.leaderWorkerSet.enabled) }}
+      nim-llm-role: "leader"
+      {{- else }}
+      training.kubeflow.org/replica-index: "0"
+      {{- end }}
+      {{- end }}
   endpoints:
   - port: {{ $.Values.model.legacyCompat | ternary "metrics" "http-openai" }}
 {{- end -}}
