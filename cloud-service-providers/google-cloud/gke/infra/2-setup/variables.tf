@@ -137,6 +137,7 @@ variable "master_ipv4_cidr_block" {
 variable "all_node_pools_oauth_scopes" {
   type = list(string)
   default = [
+    "https://www.googleapis.com/auth/cloud-platform",
     "https://www.googleapis.com/auth/logging.write",
     "https://www.googleapis.com/auth/monitoring",
     "https://www.googleapis.com/auth/devstorage.read_only",

@@ -116,23 +116,36 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
 4. Create a YAML file under `infra/3-config/helm/custom-values.yaml` with below contents:
 
  ```yaml
- # YAML
+
 image:
   repository: 
   tag: 
+imagePullSecrets:
+  - name: registry-secret
 model:
   name: 
   ngcAPISecret: ngc-api
+  nimCache: /.cache
 persistence:
-  enabled: true
+  enabled: false
 statefulSet:
   enabled: false
-imagePullSecrets:
-  - name: registry-secret
 # Uncomment if you want to control the number of GPUs
 # resources:
-#  limits:
-#    nvidia.com/gpu: 1
+#   limits:
+#     nvidia.com/gpu: 1
+csi:
+  enabled: true
+  driver: gcsfuse.csi.storage.gke.io
+  volumeAttributes:
+    bucketName: ngc-gcs-cache
+    mountOptions: max-conns-per-host=0,metadata-cache:ttl-secs:-1,file-cache:max-size-mb:-1,file-cache:cache-file-for-range-read:true,file-cache:enable-parallel-downloads:true
+podAnnotations:
+  gke-gcsfuse/volumes: "true"
+  gke-gcsfuse/cpu-limit: "0"
+  gke-gcsfuse/memory-limit: "0"
+  gke-gcsfuse/ephemeral-storage-limit: "0"
+
  ```
 
 5. Provision infrastructure and helm charts
