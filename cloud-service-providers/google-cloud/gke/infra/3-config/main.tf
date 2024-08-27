@@ -93,15 +93,48 @@ resource "kubernetes_secret" "ngc_api" {
 
 }
 
-resource "helm_release" "my_nim" {
-  name       = "my-nim"
+resource "kubernetes_service_account" "ngc_gcs_ksa" {
+  metadata {
+    name = "nim-on-gke-sa"
+    namespace = "nim"
+  }
+  depends_on = [kubernetes_namespace.nim]
+}
+
+resource "google_storage_bucket" "ngc_gcs_cache" {
+  project       = data.google_project.current.name
+  name          = "${data.google_project.current.name}-ngc-gcs-cache"
+  location      = "US"
+  force_destroy = true
+
+  uniform_bucket_level_access = true
+}
+
+resource "google_storage_bucket_iam_binding" "ngc_gcs_ksa_binding" {
+  bucket = google_storage_bucket.ngc_gcs_cache.name
+  role = "roles/storage.objectUser"
+  members = [
+    "principal://iam.googleapis.com/projects/${data.google_project.current.number}/locations/global/workloadIdentityPools/${data.google_project.current.project_id}.svc.id.goog/subject/ns/${kubernetes_service_account.ngc_gcs_ksa.metadata[0].namespace}/sa/${kubernetes_service_account.ngc_gcs_ksa.metadata[0].name}",
+  ]
+  depends_on = [kubernetes_service_account.ngc_gcs_ksa]
+}
+
+resource "helm_release" "ngc_to_gcs_transfer" {
+  name       = "ngc-to-gcs-transfer"
   namespace  = "nim"
   repository = "nim-llm"
-  chart      = "../../../../../helm/nim-llm/"
+  chart      = "../../../../../helm/nim-llm"
+  wait_for_jobs = true
 
   values = [
-    file("./helm/custom-values.yaml")
+    file("./helm/custom-values.yaml"),
+    file("./helm/ngc-pull-values.yaml")
   ]
+
+  set {
+    name = "extraVolumes.cache-volume.csi.volumeAttributes.bucketName"
+    value = google_storage_bucket.ngc_gcs_cache.name
+  }
 
   set {
     name  = "image.repository"
@@ -114,6 +147,11 @@ resource "helm_release" "my_nim" {
   }
 
   set {
+    name = "serviceAccount.name"
+    value = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
+  }
+
+  set {
     name  = "model.name"
     value = var.model_name
   }
@@ -123,7 +161,53 @@ resource "helm_release" "my_nim" {
     value = var.gpu_limits
   }
 
-  depends_on = [kubernetes_namespace.nim]
+  depends_on = [kubernetes_secret.ngc_api, google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
+
+  timeout = 900
+  wait    = true
+}
+
+resource "helm_release" "my_nim" {
+  name       = "my-nim"
+  namespace  = "nim"
+  repository = "nim-llm"
+  chart      = "../../../../../helm/nim-llm/"
+
+  values = [
+    file("./helm/custom-values.yaml")
+  ]
+
+  set {
+    name = "csi.volumeAttributes.bucketName"
+    value = google_storage_bucket.ngc_gcs_cache.name
+  }
+
+  set {
+    name  = "image.repository"
+    value = var.repository
+  }
+
+  set {
+    name  = "image.tag"
+    value = var.tag
+  }
+
+  set {
+    name = "serviceAccount.name"
+    value = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
+  }
+
+  set {
+    name  = "model.name"
+    value = var.model_name
+  }
+
+  set {
+    name  = "resources.limits.nvidia\\.com/gpu"
+    value = var.gpu_limits
+  }
+
+  depends_on = [helm_release.ngc_to_gcs_transfer]
 
   timeout = 900
   wait    = true

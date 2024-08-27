@@ -1,0 +1,13 @@
+---
+{{ if .Values.job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "nim-llm.labels" . | nindent 4 }}
+spec:
+  parallelism: 1
+  completions: 1
+  {{ include "nim-llm.nim-pod-spec" . | nindent 2 }}
+{{- end}}
