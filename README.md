@@ -6,32 +6,32 @@ This repo showcases different ways NVIDIA NIMs can be deployed. This repo contai
 
 # Deployment Options
 
-**DiY Tools & Guides** 
-| Category                           | Deployment Option                                           | Description |
+**Tools & Guides** 
+| Category                           | Type               | Description |
 |------------------------------------|-------------------------------------------------------------|-------------|
-|                                    | | [LLM NIM](https://github.com/NVIDIA/nim-deploy/tree/main/helm/nim-llm)                                            |             |
-|                                    | | LLM NIM on OpenShift Container Platform (coming soon) |             |
-| **Open Source Platform**           | | [KServe](https://github.com/NVIDIA/nim-deploy/tree/main/kserve)                                             |             |
-| **Commercial Platform**            | **Deployment Guide**  | [Run.ai](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/runai)          |             |
-| **Commercial Platform**            | **Deployment Guide**   | [Hugging Face NIM Deployment](https://github.com/NVIDIA/nim-deploy/tree/main/docs/hugging-face-nim-deployment)     
+| Open Source                        | Helm Chart(s)      | [LLM NIM](https://github.com/NVIDIA/nim-deploy/tree/main/helm/nim-llm)                                            |             |
+|                                    |                    | LLM NIM on OpenShift Container Platform (coming soon) |             |
+| Open Source Platform               | Deployment Guide   | [KServe](https://github.com/NVIDIA/nim-deploy/tree/main/kserve)                                             |             |
+| Commercial Platform                | Deployment Guide   | [Run.ai](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/runai)          |             |
+| Commercial Platform                | Deployment Guide   | [Hugging Face NIM Deployment](https://github.com/NVIDIA/nim-deploy/tree/main/docs/hugging-face-nim-deployment)     
 
 **Managed Cloud Services**
 
-| Category                           | Deployment Option                                           | Description |
+| Category                           | Type               | Description |
 |------------------------------------|-------------------------------------------------------------|-------------|
-| **Managed Cloud Services** | **Azure**                                                |             |
-|                                    | | [AKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/aks)                             |             |
-|                                    | | [Azure ML](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/azureml)                                    |             |
-|                                    | | [Azure prompt flow](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/promptflow)                                  |             |
-|                                    | **Amazon Web Services**                                     |             |
-|                                    | | [EKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/eks)                             |             |
-|                                    | | [Amazon SageMaker](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/sagemaker)                                   |             |
-|                                    | **Google Cloud Platform**                                   |             |
-|                                    | | [GKE Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke)                             |             |
-|                                    | | [Google Cloud Vertex AI](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/vertexai/python)               |             |
-|                                    | | [Cloud Run](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/cloudrun)                             |             |
-|                                    | **NVIDIA DGX Cloud**                                        |             |
-|                                    | | [NVIDIA Cloud Functions](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/nvidia/nvcf)                             |           
+|                                    |                                     |             |
+| Microsoft Azure                    | | [AKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/aks)                           |        |
+| Microsoft Azure                    | | [Azure ML](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/azureml)                                     |        |
+| Microsoft Azure                    | | [Azure prompt flow](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/promptflow)                         |        |
+|                                    | |             |
+| Amazon Web Services                | | [EKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/eks)                             |        |
+| Amazon Web Services                | | [Amazon SageMaker](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/sagemaker)                             |        |
+|                                    | |             |
+| Google Cloud Platform              | | [GKE Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke)                    |        |
+| Google Cloud Platform              | | [Google Cloud Vertex AI](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/vertexai/python)        |        |
+| Google Cloud Platform              | | [Cloud Run](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/cloudrun)                            |        |
+|                                    | |             |
+| NVIDIA DGX Cloud                   | | [NVIDIA Cloud Functions](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/nvidia/nvcf)                         |
 
 
 ## Contributions
