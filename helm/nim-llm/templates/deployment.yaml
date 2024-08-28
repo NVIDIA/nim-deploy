@@ -1,5 +1,6 @@
 {{- $pvcUsingTemplate := and .Values.persistence.enabled .Values.statefulSet.enabled (not .Values.persistence.existingClaim) (ne .Values.persistence.accessMode "ReadWriteMany")| ternary true false }}
 ---
+{{- if not .Values.multiNode.enabled }}
 apiVersion: apps/v1
 {{- if .Values.statefulSet.enabled }}
 kind: StatefulSet
@@ -102,7 +103,7 @@ spec:
           command:
             {{- if .Values.customCommand }}
             {{- range .Values.customCommand }}
-             - {{ . }}
+             - {{ . | quote }}
             {{- end }}
             {{- else }}
             - nemollm_inference_ms
@@ -158,6 +159,14 @@ spec:
             {{- end }}
             {{- end }}
           {{- end }}
+          {{- if .Values.customArgs }}
+          args:
+            {{- if .Values.customArgs }}
+            {{- range .Values.customArgs }}
+             - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+          {{- end }}
           env:
             - name: NIM_CACHE_PATH
               value: {{ .Values.model.nimCache | quote }}
@@ -165,7 +174,9 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.model.ngcAPISecret }}
-                  key: NGC_CLI_API_KEY
+                  key: NGC_API_KEY
+            - name: OUTLINES_CACHE_DIR
+              value: /tmp/outlines
             - name: NIM_SERVER_PORT
               value: {{ .Values.model.openaiPort | quote }}
             - name: NIM_JSONL_LOGGING
@@ -176,95 +187,12 @@ spec:
             {{- toYaml .Values.env | nindent 12 }}
             {{- end }}
           ports:
-            {{- if .Values.model.legacyCompat }}
-            - containerPort: 8000
-              name: http
-            {{- end }}
-            {{- if and .Values.healthPort .Values.model.legacyCompat }}
-            - containerPort: {{ .Values.healthPort }}
-              name: health
-            {{- end }}
-            {{- if .Values.service.grpc_port }}
-            - containerPort: 8001
-              name: grpc
-            {{- end }}
-            {{- if and .Values.metrics.enabled .Values.model.legacyCompat }}
-            - containerPort: 8002
-              name: metrics
-            {{- end }}
-            {{- if or .Values.model.openaiPort .Values.model.openai_port }}
-            - containerPort: {{ .Values.model.openai_port | default .Values.model.openaiPort }}
-              name: http-openai
-            {{- end }}
-            {{- if or .Values.model.nemoPort .Values.model.nemo_port }}
-            - containerPort: {{ .Values.model.nemoPort | default .Values.model.nemo_port }}
-              name: http-nemo
-            {{- end }}
-          {{- if .Values.livenessProbe.enabled }}
-          {{- with .Values.livenessProbe }}
-          livenessProbe:
-            {{- if eq .method "http" }}
-            httpGet:
-              path: {{ .path }}
-              port: {{ $.Values.model.legacyCompat | ternary "health" "http-openai" }}
-            {{- else if eq .method "script" }}
-            exec:
-              command:
-              {{- toYaml .command | nindent 16 }}
-            {{- end }}
-            initialDelaySeconds: {{ .initialDelaySeconds }}
-            periodSeconds: {{ .periodSeconds }}
-            timeoutSeconds: {{ .timeoutSeconds }}
-            successThreshold: {{ .successThreshold }}
-            failureThreshold: {{ .failureThreshold }}
-          {{- end }}
-          {{- end }}
-          {{- if .Values.readinessProbe.enabled }}
-          {{- with .Values.readinessProbe }}
-          readinessProbe:
-            httpGet:
-              path: {{ .path }}
-              port: {{ $.Values.model.legacyCompat | ternary "health" "http-openai" }}
-            initialDelaySeconds: {{ .initialDelaySeconds }}
-            periodSeconds: {{ .periodSeconds }}
-            timeoutSeconds: {{ .timeoutSeconds }}
-            successThreshold: {{ .successThreshold }}
-            failureThreshold: {{ .failureThreshold }}
-          {{- end }}
-          {{- end }}
-          {{- if .Values.startupProbe.enabled }}
-          {{- with .Values.startupProbe }}
-          startupProbe:
-            httpGet:
-              path: {{ .path }}
-              port: {{ $.Values.model.legacyCompat | ternary "health" "http-openai" }}
-            initialDelaySeconds: {{ .initialDelaySeconds }}
-            periodSeconds: {{ .periodSeconds }}
-            timeoutSeconds: {{ .timeoutSeconds }}
-            successThreshold: {{ .successThreshold }}
-            failureThreshold: {{ .failureThreshold }}
-          {{- end }}
-          {{- end }}
+            {{- include "nim-llm.ports" . | nindent 12 }}
+          {{- include "nim-llm.probes" . | indent 10 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: model-store
-              {{- if .Values.model.legacyCompat }}
-              mountPath: {{ .Values.model.nimCache }}
-              subPath: {{ .Values.model.subPath }}
-              {{- else }}
-              mountPath: {{ .Values.model.nimCache }}
-              {{- end }}
-            - mountPath: /dev/shm
-              name: dshm
-            - name: scripts-volume 
-              mountPath: /scripts
-          {{- if .Values.extraVolumeMounts }}
-          {{- range $k, $v := .Values.extraVolumeMounts }}
-            - name: {{ $k }}
-              {{- toYaml $v | nindent 14 }}
-          {{- end }}
-          {{- end }}
+            {{- include "nim-llm.volumeMounts" . | nindent 12 }}
       terminationGracePeriodSeconds: 60
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -335,3 +263,4 @@ spec:
       storageClassName: "{{ .Values.persistence.storageClass }}"
     {{- end }}
   {{- end }}
+{{- end }}

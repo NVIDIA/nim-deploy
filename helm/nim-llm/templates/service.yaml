@@ -42,7 +42,14 @@ spec:
     {{- end }}
   selector:
     {{- include "nim-llm.selectorLabels" . | nindent 4 }}
-{{- if .Values.statefulSet.enabled }}
+    {{- if .Values.multiNode.enabled }}
+    {{- if (or (.Capabilities.APIVersions.Has "leaderworkerset.x-k8s.io/v1") .Values.multiNode.leaderWorkerSet.enabled) }}
+    nim-llm-role: "leader"
+    {{- else }}
+    training.kubeflow.org/replica-index: "0"
+    {{- end }}
+    {{- end }}
+{{- if (and .Values.statefulSet.enabled (not .Values.multiNode.enabled))}}
 ---
 {{/*
 If using statefulSet, ensure a headless service also exists to satisfy the API correctly
