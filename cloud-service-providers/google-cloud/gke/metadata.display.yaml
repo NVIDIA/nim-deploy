@@ -1,16 +1,16 @@
 apiVersion: blueprints.cloud.google.com/v1alpha1
 kind: BlueprintMetadata
 metadata:
-  name: ai-on-gke-display
+  name: nim-on-gke-display
   annotations:
     config.kubernetes.io/local-config: "true"
 spec:
   info:
     title: NVIDIA NIM on GKE
     source:
-      repo: https://github.com/GoogleCloudPlatform/ai-on-gke
+      repo: https://github.com/sujituk/nim-deploy
       sourceType: git
-      dir: /applications/nim
+      dir: /test-infra-mgr/cloud-service-providers/google-cloud/gke
   ui:
     input:
       variables:
@@ -114,14 +114,14 @@ spec:
         - name: acknowledge
           title: Before you begin
           subtext:
-                This solution deploys a sample <a href="https://github.com/GoogleCloudPlatform/ai-on-gke/blob/release-1.3/applications/nim/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
+                This solution deploys a sample <a href="https://github.com/sujituk/nim-deploy/blob/add-ngc-pull-gcs/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
         - name: required_config
           title: Required configuration
     runtime:
       outputMessage: Deployment can take several minutes to complete.
       suggestedActions:
         - heading: Connect to GKE Cluster
-          description: Connect to GKE Cluster. Open another terminal and follow these <a href="https://github.com/GoogleCloudPlatform/ai-on-gke/tree/main/nim#inference">instructions</a> to run inference.
+          description: Connect to GKE Cluster. Open another terminal and follow these <a href="https://github.com/sujituk/nim-deploy/blob/add-ngc-pull-gcs/cloud-service-providers/google-cloud/gke/README.md#inference">instructions</a> to run inference.
       outputs:
         cluster_name: {}
         cluster_location: {}
