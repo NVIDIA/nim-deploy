@@ -8,7 +8,7 @@ Run.ai provides an [InferenceWorkload](https://docs.run.ai/latest/Researcher/wor
 
 It should be noted that InferenceWorkload is an optional add-on for Run.ai. Consult your Run.ai UI portal or cluster administrator to determine which clusters support InferenceWorkload.
 
-### Example
+### Basic Example
 
 At the core, running NIMs with InferenceWorkload is quite simple. However, many customizations are possible, such as adding variables, PVCs to cache models, health checks, and other special configurations that will pass through to the pods backing the services. The `examples` directory can evolve over time with more complex deployment examples. The following example is a bare minimum configuration.
 
@@ -62,7 +62,16 @@ Gimme that pizza love, and my heart will be gold
 % helm uninstall my-llama-1
 release "my-llama-1" uninstalled
 ```
+### PVC Example
 
-#### Troubleshooting
+The PVC example runs in much the same way. It adds a mounted PVC to the example NIM container in a place where it can be used as a cache - `/opt/nim/.cache`, and configured to be retained between helm uninstall and install, so that the model data need only be downloaded on first use.
+
+```
+% helm install --set namespace=$NAMESPACE --set ngcKey=$NGC_KEY my-llama-pvc examples/basic-llama-pvc
+
+% kubectl get ksvc basic-llama-pvc --watch
+```
+
+### Troubleshooting
 
 Users can troubleshoot workloads by looking at the underlying resources that are created. There should be deployments, pods, ksvcs to describe or view logs from.

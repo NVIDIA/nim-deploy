@@ -1,0 +1,8 @@
+
+# These can be edited here locally, but should be overridden like so:
+# helm install --set namespace=$NAMESPACE --set ngcKey=$NGC_KEY
+namespace: override-with-flag
+ngcKey: override-with-flag
+
+## optional to override
+storageClassName: standard-rwx
