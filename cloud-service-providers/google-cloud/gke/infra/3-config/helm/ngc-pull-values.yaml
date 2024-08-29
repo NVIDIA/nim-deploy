@@ -2,7 +2,7 @@ job:
   enabled: true
 csi:
   enabled: false
-customCommand: ["/bin/bash", "-c", "download-to-cache && find $NIM_CACHE_PATH -type d -printf '%P\\n' | xargs -P 100 -I {} mkdir -p /upload-dir/{} && find $NIM_CACHE_PATH -type f,l -printf '%P\\n' | xargs -P 100 -I {} cp --no-dereference $NIM_CACHE_PATH/{} /upload-dir/{}"]
+customCommand: ["/bin/bash", "-x", "-c", "download-to-cache && find $NIM_CACHE_PATH -type d -printf '%P\\n' | xargs -P 100 -I {} mkdir -p /upload-dir/{} && find $NIM_CACHE_PATH -type f,l -printf '%P\\n' | xargs -P 100 -I {} cp --no-dereference $NIM_CACHE_PATH/{} /upload-dir/{} || echo ngc-pull non-zero exitCode: $?"]
 extraVolumes:
   cache-volume:
     csi:
