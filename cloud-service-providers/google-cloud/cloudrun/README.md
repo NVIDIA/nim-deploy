@@ -59,3 +59,25 @@ $ . ./env && ./build_nim.sh
 ```
 $ . ./env &&  ./run.sh 
 ```
+
+#### Test the NIM
+```
+$ export TESTURL=$(gcloud run services list --project ${PROJECTID?} \
+  --region ${REGION?} | grep ${SERVICE_NAME?} | \
+  awk '/https/ {print $4}')/v1/completions
+
+$ curl -X POST  ${TESTURL?}  \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "model": "meta/llama3-8b-instruct",
+  "prompt": "Once upon a time",
+  "max_tokens": 100,
+  "temperature": 1,
+  "top_p": 1,
+  "n": 1,
+  "stream": false,
+  "stop": "string",
+  "frequency_penalty": 0.0
+}'
+```
