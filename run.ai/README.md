@@ -6,7 +6,7 @@ Run.ai provides a fast and efficient platform for running AI workloads. It sits 
 
 Run.ai provides an [InferenceWorkload](https://docs.run.ai/latest/Researcher/workloads/inference-overview/) resource to help automate inference services like NIMs. It leverages Knative to automate the underlying service and routing of traffic.
 
-It should be noted that InferenceWorkload is an optional add-on for Run.ai. Consult your Run.ai UI portal or administrator to determine which clusters support InferenceWorkload.
+It should be noted that InferenceWorkload is an optional add-on for Run.ai. Consult your Run.ai UI portal or cluster administrator to determine which clusters support InferenceWorkload.
 
 ### Example
 
