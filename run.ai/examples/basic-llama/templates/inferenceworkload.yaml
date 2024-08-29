@@ -13,7 +13,7 @@ spec:
   gpu:
     value: "1"
   image:
-    value: "nvcr.io/nim/meta/llama3-8b-instruct"
+    value: "nvcr.io/nim/meta/llama-3.1-8b-instruct"
   minScale:
     value: 1
   maxScale:

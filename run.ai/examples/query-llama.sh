@@ -6,8 +6,9 @@ if [[ -z $LHOST ]]; then
 fi
 
 Q="Write a song about pizza"
+MODEL=$(curl -s "http://${LHOST}/v1/models" | jq -r '.data[0]|.id')
 
-curl "http://${LHOST}/v1/chat/completions" \
+curl -s "http://${LHOST}/v1/chat/completions" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{
@@ -17,7 +18,7 @@ curl "http://${LHOST}/v1/chat/completions" \
         "role": "user"
     }
    ],
-   "model": "meta/llama3-8b-instruct",
+   "model": "'"${MODEL}"'",
    "max_tokens": 500,
    "top_p": 0.8,
    "temperature": 0.9,

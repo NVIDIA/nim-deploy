@@ -17,6 +17,7 @@ This example can also be deployed through [UI](https://docs.run.ai/latest/Resear
 **Prerequisites**:
 * A Runai Project (and corresponding Kubernetes namespace, which is the project name prefixed with `runai-`). You should be set up to run "kubectl" commands to the target cluster and namespace.
 * An NGC API Key
+* `curl` and `jq` for the test script
 * A Docker registry secret for `nvcr.io` needs to exist in your Run.ai project. This can only be created through the UI, via "credentials" section. Add a new docker-registry credential, choose the scope to be your project, set username to `$oauthtoken` and password to your NGC API key. Set the registry url to `ngcr.io`. This only has to be done once per scope, and Run.ai will detect and use it when it is needed.
 
 1. Deploy InferenceWorkload to your current Kubernetes context via Helm, with working directory being the same as this README, setting the neccessary environment variables
@@ -27,7 +28,7 @@ This example can also be deployed through [UI](https://docs.run.ai/latest/Resear
 % helm install --set namespace=$NAMESPACE --set ngcKey=$NGC_KEY my-llama-1 examples/basic-llama
 ```
 
-Now, wait for the InferenceWorkload to become ready.
+Now, wait for the InferenceWorkload's ksvc to become ready.
 
 ```
 % kubectl get ksvc basic-llama -o wide --watch
@@ -41,7 +42,7 @@ basic-llama   http://basic-llama.runai-myproject.inference.12345678.dgxc.ngc.nvi
 
 2. Query your new inference service
 
-As seen above, you will get a new service with host-based routing at a DNS name of [workloadname].[namespace].inference.[cluster-suffix]. Use this to pass to the test script by setting an environment variable `LHOST`
+As seen above, you will get a new knative service accessible via hostname-based routing. Use the hostname from this URL to pass to the test script by setting an environment variable `LHOST`.
 
 ```
 % export LHOST="basic-llama.runai-myproject.inference.12345678.dgxc.ngc.nvidia.com"
