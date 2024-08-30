@@ -88,3 +88,7 @@ The PVC example runs in much the same way. It adds a mounted PVC to the example 
 ### Troubleshooting
 
 Users can troubleshoot workloads by looking at the underlying resources that are created. There should be deployments, pods, ksvcs to describe or view logs from.
+
+## Air-gapped operations
+
+For scenarios in which Run:ai clusters are operating in air-gapped (disconnected) environments, please see NVIDIA NIM documentation for [serving models from local assets](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#serving-models-from-local-assets).

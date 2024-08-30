@@ -14,7 +14,7 @@ This repo showcases different ways NVIDIA NIMs can be deployed. This repo contai
 |                                    | **Open Source Platforms**                                   |             |
 |                                    | | [KServe](https://github.com/NVIDIA/nim-deploy/tree/main/kserve)                                             |             |
 |                                    | **Independent Software Vendors**                            |             |
-|                                    | | [Run.ai](./run.ai/README.md)                               |             |
+|                                    | | [Run.ai](./docs/run.ai/README.md)                               |             |
 | **Cloud Service Provider Deployments** | **Azure**                                                |             |
 |                                    | | [AKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/aks)                             |             |
 |                                    | | [Azure ML](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/azureml)                                    |             |
