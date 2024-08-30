@@ -17,7 +17,7 @@ The key to creating Oracle Kubernetes Engine (OKE) for NIM is to create a proper
 Use the OCI CLI to search for GPU availability:
 
    ```bash
-   oci compute shape list --all
+   oci compute shape list --region <region-name> --compartment-id <your-compartment-id> --all --query 'data[*].shape' --output json | jq -r '.[]' | grep -i 'gpu'
    ```
 
    Cross-reference with the [OCI Regions](https://www.oracle.com/cloud/data-regions.html) to select the best region.
