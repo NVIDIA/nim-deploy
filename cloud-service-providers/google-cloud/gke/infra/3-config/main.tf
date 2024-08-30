@@ -123,16 +123,21 @@ resource "helm_release" "ngc_to_gcs_transfer" {
   name       = "ngc-to-gcs-transfer"
   namespace  = "nim"
   repository = "nim-llm"
-  chart      = "../../../../../helm/nim-llm"
+  chart      = "./helm/ngc-cache"
   wait_for_jobs = true
 
   values = [
     file("./helm/custom-values.yaml"),
-    file("./helm/ngc-pull-values.yaml")
+    file("./helm/ngc-cache-values.yaml")
   ]
 
   set {
     name = "extraVolumes.cache-volume.csi.volumeAttributes.bucketName"
+    value = google_storage_bucket.ngc_gcs_cache.name
+  }
+
+  set {
+    name = "persistence.csi.volumeHandle"
     value = google_storage_bucket.ngc_gcs_cache.name
   }
 

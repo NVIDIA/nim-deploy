@@ -1,0 +1,18 @@
+extraVolumes:
+  cache-volume:
+    csi:
+      driver: gcsfuse.csi.storage.gke.io
+      volumeAttributes:
+        bucketName: "ngc-gcs-cache"
+        mountOptions: "max-conns-per-host=0"
+extraVolumeMounts:
+  cache-volume:
+    mountPath: /upload-dir
+    readOnly: false
+persistence:
+  enabled: false
+  csi:
+    driver: gcsfuse.csi.storage.gke.io
+    volumeHandle: ngc-gcs-cache
+    readOnly: true
+  storageClass: gcsfuse-sc

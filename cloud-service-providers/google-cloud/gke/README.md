@@ -127,19 +127,15 @@ model:
   ngcAPISecret: ngc-api
   nimCache: /.cache
 persistence:
-  enabled: false
+  enabled: true
+  existingClaim: "ngc-cache"
+  accessMode: ReadOnlyMany
 statefulSet:
   enabled: false
 # Uncomment if you want to control the number of GPUs
 # resources:
 #   limits:
 #     nvidia.com/gpu: 1
-csi:
-  enabled: true
-  driver: gcsfuse.csi.storage.gke.io
-  volumeAttributes:
-    bucketName: ngc-gcs-cache
-    mountOptions: max-conns-per-host=0,metadata-cache:ttl-secs:-1,file-cache:max-size-mb:-1,file-cache:cache-file-for-range-read:true,file-cache:enable-parallel-downloads:true
 podAnnotations:
   gke-gcsfuse/volumes: "true"
   gke-gcsfuse/cpu-limit: "0"
