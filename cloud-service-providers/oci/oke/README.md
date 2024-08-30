@@ -7,7 +7,7 @@ When you select a GPU shape for a managed node pool or self-managed node in OKE,
 
 ## Prerequisites
 
-Please follow [Pre-rquirement instruction](./prerequisites/README.md) to get ready for OKE creation.
+Please follow [Prerequisite instructions](./prerequisites/README.md) to get ready for OKE creation.
 
 ## Create OKE
 
