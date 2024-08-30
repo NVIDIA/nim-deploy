@@ -45,12 +45,16 @@ Ensure you have the necessary service limits (quota) for the GPU shapes. If need
    - **Node Subnet**: Select a subnet within your VCN.
 5. Click **Create Cluster** to start the provisioning process.
 
-## Create GPU nodepool
+## Create GPU nodepool on existing OKE cluster
 
-1. After the cluster is created, navigate to the **Node Pools** section.
+1. For an existing OKE cluster, navigate to the **Node Pools** section.
 2. Click **Add Node Pool** and configure:
    - **Name**: Provide a name for the node pool.
+   - **Compartment**: Select the appropriate compartment.
+   - **Version**: the Kubernetes version of the nodes - defaults to current cluster version.
+   - **Node Placement Configuration** - select Availability Domain and Worker node subnet.
    - **Node Shape**: Select the desired GPU-enabled shape.
+   - **Node Image**: is automatically populated with an OEL GPU image which you can change to a different version.
    - **Node Count**: Set the number of nodes (adjust according to your needs).
    - **Additional Configuration**: Customize as needed (e.g., OS disk size, SSH keys).
 3. Click **Create Node Pool**.
@@ -58,7 +62,7 @@ Ensure you have the necessary service limits (quota) for the GPU shapes. If need
 ## Connect to OKE
 
 1. Install the OCI CLI if you haven't already.
-2. Retrieve the OKE cluster credentials:
+2. Retrieve the OKE cluster credentials using the Access Cluster buton in the console Cluster details page:
 
    ```bash
    oci ce cluster create-kubeconfig --cluster-id <cluster OCID> --file $HOME/.kube/config --region <region> --token-version 2.0.0 --kube-endpoint PUBLIC_ENDPOINT
