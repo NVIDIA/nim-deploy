@@ -66,12 +66,7 @@ In case of Mistral models, create a file `nim_user_values_override.yaml` file wi
 
 1. Deploy directly to OCI using the below button:
 
-[
-![Deploy to Oracle Cloud]
-(https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)
-]
-(https://cloud.oracle.com/resourcemanager/stacks/create
-?zipUrl=https://github.com/ionut-sturzu/nim_on_oke/archive/refs/heads/main.zip)
+[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/ionut-sturzu/nim_on_oke/archive/refs/heads/main.zip)
 
 
 2. Deploy via ORM
