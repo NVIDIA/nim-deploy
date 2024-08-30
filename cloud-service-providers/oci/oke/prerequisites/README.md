@@ -63,4 +63,4 @@ For more details, please reference this [link.](https://helm.sh/docs/intro/insta
 
 ## Next step
 
-![Continue to OKE creation](../setup/README.md)
+[Continue to OKE creation](../setup/README.md)
