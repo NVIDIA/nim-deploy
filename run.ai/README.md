@@ -4,7 +4,7 @@ Run.ai provides a fast and efficient platform for running AI workloads. It sits 
 
 ## InferenceWorkload
 
-Run.ai provides an [InferenceWorkload](https://docs.run.ai/latest/Researcher/workloads/inference-overview/) resource to help automate inference services like NIMs. It leverages Knative to automate the underlying service and routing of traffic.
+Run.ai provides an [InferenceWorkload](https://docs.run.ai/latest/Researcher/workloads/inference-overview/) resource to help automate inference services like NIMs. It leverages Knative to automate the underlying service and routing of traffic. YAML examples can be found [here](https://docs.run.ai/latest/developer/cluster-api/submit-yaml/#inference-workload-example).
 
 It should be noted that InferenceWorkload is an optional add-on for Run.ai. Consult your Run.ai UI portal or cluster administrator to determine which clusters support InferenceWorkload.
 
@@ -18,9 +18,9 @@ This example can also be deployed through [UI](https://docs.run.ai/latest/Resear
 * A Runai Project (and corresponding Kubernetes namespace, which is the project name prefixed with `runai-`). You should be set up to run "kubectl" commands to the target cluster and namespace.
 * An NGC API Key
 * `curl` and `jq` for the test script
-* A Docker registry secret for `nvcr.io` needs to exist in your Run.ai project. This can only be created through the UI, via "credentials" section. Add a new docker-registry credential, choose the scope to be your project, set username to `$oauthtoken` and password to your NGC API key. Set the registry url to `ngcr.io`. This only has to be done once per scope, and Run.ai will detect and use it when it is needed.
+* A Docker registry secret for `nvcr.io` needs to exist in your Run.ai project. This can only be created through the UI, via "credentials" section. Add a new docker-registry credential, choose the scope to be your project, set username to `$oauthtoken` and password to your NGC API key. Set the registry url to `nvcr.io`. This only has to be done once per scope, and Run.ai will detect and use it when it is needed.
 
-1. Deploy InferenceWorkload to your current Kubernetes context via Helm, with working directory being the same as this README, setting the neccessary environment variables
+1. Deploy InferenceWorkload to your current Kubernetes context via Helm, with working directory being the same as this README, setting the necessary environment variables
 
 ```
 % export NAMESPACE=[namespace]
