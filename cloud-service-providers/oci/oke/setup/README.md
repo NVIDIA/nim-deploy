@@ -73,30 +73,3 @@ Ensure you have the necessary service limits (quota) for the GPU shapes. If need
    ```bash
    kubectl get nodes
    ```
-
-## Install GPU Operator (Only if necessary)
-
-**Note:** If you're using an OCI GPU shape that comes with the drivers pre-installed (such as those  having 'GPU' in their names, for example the ones in the `BM.GPU.A100` series), you can skip this section. The GPU drivers are already installed and configured. 
-
-If your chosen shape does not include the GPU drivers, follow the steps below to install the NVIDIA GPU Operator.
-
-1. Add the NVIDIA Helm repository:
-
-   ```bash
-   helm repo add nvidia https://helm.ngc.nvidia.com/nvidia --pass-credentials
-   helm repo update
-   ```
-
-2. Install the GPU Operator in your OKE cluster:
-
-   ```bash
-   helm install --create-namespace --namespace gpu-operator nvidia/gpu-operator --wait --generate-name
-   ```
-
-3. Monitor the deployment to ensure everything is set up correctly:
-
-   ```bash
-   kubectl get pods -n gpu-operator
-   ```
-
-Official instructions for the NVIDIA GPU Operator can be found [here](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html).
