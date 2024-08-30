@@ -56,7 +56,13 @@ Ensure you have the necessary service limits (quota) for the GPU shapes. If need
    - **Node Shape**: Select the desired GPU-enabled shape.
    - **Node Image**: is automatically populated with an OEL GPU image which you can change to a different version.
    - **Node Count**: Set the number of nodes (adjust according to your needs).
-   - **Additional Configuration**: Customize as needed (e.g., OS disk size, SSH keys).
+   - **Boot volume**: Specify a larger size than the default 50GB size, for example 300 GB. To complement this change also go to the next point on custo cloudinit.sh.
+   - **Show advanced options** -> **Initialization script** -> **Paste Cloud-init Script** and paste:
+   ```
+   #!/bin/bash 
+   /usr/libexec/oci-growfs -y
+
+   ```
 3. Click **Create Node Pool**.
 
 ## Connect to OKE
