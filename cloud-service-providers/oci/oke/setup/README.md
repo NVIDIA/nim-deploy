@@ -61,7 +61,6 @@ Ensure you have the necessary service limits (quota) for the GPU shapes. If need
    ```
    #!/bin/bash 
    /usr/libexec/oci-growfs -y
-
    ```
 3. Click **Create Node Pool**.
 
