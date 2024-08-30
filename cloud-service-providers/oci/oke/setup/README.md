@@ -31,19 +31,22 @@ Ensure you have the necessary service limits (quota) for the GPU shapes. If need
 
 ## Create OKE
 
+To easily create the OKE cluster and NVIDIA GPU nodepool, you can use Quick Create to initially set up the cluster with a default node pool that includes a single, simple VM node. After the cluster is created, you can add a new node pool with GPU shapes that require a larger boot volume size. This way, you can ensure the GPUs have the necessary storage while manually configuring the nodes as needed.
+
 1. In the OCI Console, navigate to **Developer Services** > **Kubernetes Clusters** > **OKE Clusters**.
-2. Click **Create Cluster** and select **Start with Quick Create**.
+2. Click **Create Cluster** and select **Quick Create**.
 3. Configure the following:
    - **Name**: Provide a name for your cluster.
    - **Compartment**: Select the appropriate compartment.
    - **Kubernetes Version**: Choose the latest stable version.
-   - **Shape**: Choose a shape with the desired GPU (e.g., `BM.GPU.A100.1`, `BM.GPU.A10.1`).
-4. Under **Node Pool Configuration**:
-   - **Node Pool Name**: Name your node pool.
-   - **Shape**: Select the GPU shape identified earlier.
+   - **Kubernetes API endpoint**: Private or public.
+   - **Node type**: Managed.
+   - **Kubernetes worker nodes**: Private or public.
+4. Under **Shape and image**:
+   - **Shape**: You can leave the default simple VM.Standard.x.
    - **Node Count**: Start with 1 node (adjust as needed).
-   - **Node Subnet**: Select a subnet within your VCN.
-5. Click **Create Cluster** to start the provisioning process.
+   - **Add an SSH key**(optional): In order to have access to nodes.
+5. Click **Create Cluster** to start the provisioning process. This will provision a simple cluster, to which you can subsequently add a GPU nodepool.
 
 ## Create GPU nodepool on existing OKE cluster
 
