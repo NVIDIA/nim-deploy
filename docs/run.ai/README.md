@@ -1,10 +1,23 @@
 # NIMs on Run.ai
 
-Run.ai provides a fast and efficient platform for running AI workloads. It sits on top of a group of Kubernetes clusters and provides UI, GPU-aware scheduling, container orchestration, node pooling, organizational resource quota management, and more. It gives customers the tools to manage resources across multiple Kubernetes clusters and subdivide them across project and departments, and automates Kubernetes primitives with its own AI optimized resources.
+[Run.ai](https://www.run.ai/) provides a platform for accelerating AI development delivering life cycle support spanning from concept to deployment of AI workloads. It layers on top of Kubernetes starting with a single cluster but extending to centralized multi-cluster management. It provides UI, GPU-aware scheduling, container orchestration, node pooling, organizational resource quota management, and more. And it offers administrators, researchers, and developers tools to manage resources across multiple Kubernetes clusters and subdivide them across project and departments, and automates Kubernetes primitives with its own AI optimized resources.
+
+## Run.ai Deployment Options
+
+The Run:ai Control Plane is available as a [hosted service](https://docs.run.ai/latest/home/components/#runai-control-plane-on-the-cloud) or alternatively as a [self-hosted](https://docs.run.ai/latest/home/components/#self-hosted-control-plane) option (including in disconnected "air-gapped" environments). In either case, the control plane can manage Run:ai "cluster engine" equipped clusters whether local or remotely cloud hosted.
+
+## Prerequisites
+
+1. A conformant Kubernetes cluster ([RunAI K8s version requirements](https://docs.run.ai/latest/admin/overview-administrator/))
+2. RunAI Control Plane and cluster(s) [installed](https://docs.run.ai/latest/admin/runai-setup/cluster-setup/cluster-install/) and operational
+3. [NVIDIA GPU Operator](https://github.com/NVIDIA/gpu-operator) installed
+4. General NIM requirements: [NIM Prerequisites](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#prerequisites)
+5. An NVIDIA AI Enterprise (NVAIE) License: [Sign up for NVAIE license](https://build.nvidia.com/meta/llama-3-8b-instruct?snippet_tab=Docker&signin=true&integrate_nim=true&self_hosted_api=true) or [Request a Free 90-Day NVAIE License](https://enterpriseproductregistration.nvidia.com/?LicType=EVAL&ProductFamily=NVAIEnterprise) through the NVIDIA Developer Program.
+6. An NVIDIA NGC API Key: please follow the guidance in the [NVIDIA NIM Getting Started](https://docs.nvidia.com/nim/large-language-models/latest/getting-started.html#option-2-from-ngc) documentation to generate a properly scoped API key if you haven't already.
 
 ## InferenceWorkload
 
-Run.ai provides an [InferenceWorkload](https://docs.run.ai/latest/Researcher/workloads/inference-overview/) resource to help automate inference services like NIMs. It leverages Knative to automate the underlying service and routing of traffic. YAML examples can be found [here](https://docs.run.ai/latest/developer/cluster-api/submit-yaml/#inference-workload-example).
+Run.ai provides an [InferenceWorkload](https://docs.run.ai/latest/Researcher/workloads/inference-overview/) resource to help automate inference services like NIMs. It leverages [Knative](https://github.com/knative) to automate the underlying service and routing of traffic. YAML examples can be found [here](https://docs.run.ai/latest/developer/cluster-api/submit-yaml/#inference-workload-example).
 
 It should be noted that InferenceWorkload is an optional add-on for Run.ai. Consult your Run.ai UI portal or cluster administrator to determine which clusters support InferenceWorkload.
 
@@ -14,7 +27,7 @@ At the core, running NIMs with InferenceWorkload is quite simple. However, many 
 
 This example can also be deployed through [UI](https://docs.run.ai/latest/Researcher/workloads/inference-overview/) - including creating the secret and InferenceWorkload.
 
-**Prerequisites**:
+**Preparation**:
 * A Runai Project (and corresponding Kubernetes namespace, which is the project name prefixed with `runai-`). You should be set up to run "kubectl" commands to the target cluster and namespace.
 * An NGC API Key
 * `curl` and `jq` for the test script
