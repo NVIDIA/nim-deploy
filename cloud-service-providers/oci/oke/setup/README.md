@@ -9,7 +9,7 @@ The key to creating Oracle Kubernetes Engine (OKE) for NIM is to create a proper
 
 ## Identify GPU needed for NIM
 
-- Refer to the NIM documentation to identify the GPU you [need](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html). Here is also a list of available OKE node shapes.
+- Refer to the NIM documentation to identify the NVIDIA GPU you [need](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html). Here is also a list of available [OKE NVIDIA GPU node shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm#vm-gpu).
 
 
 ## Find the Region with the Desired GPU
