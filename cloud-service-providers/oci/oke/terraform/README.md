@@ -22,12 +22,8 @@ In case the bastion and operator hosts are not created, is a prerequisite to hav
 - kubectl
 - oci-cli
 
-[
-![Deploy to Oracle Cloud]
-(https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)
-]
-(https://cloud.oracle.com/resourcemanager/stacks/create
-?zipUrl=https://github.com/ionut-sturzu/nim_on_oke/archive/refs/heads/main.zip)
+[![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/ionut-sturzu/nim_on_oke/archive/refs/heads/main.zip)
+
 
 ## Helm Deployments
 
@@ -115,7 +111,7 @@ compartment_id         = "ocid1.compartment.oc1..aaaaaaaaqi3if6t4n24qyabx5pjzlw6
 # Jupyter Hub deployment values
 jupyter_admin_user     = "oracle-ai"
 jupyter_admin_password = "<admin-passowrd>"
-playbooks_repo         = "https://github.com/robo-cap/llm-jupyter-notebooks.git"
+playbooks_repo         = "https://github.com/ionut-sturzu/nim_notebooks.git"
 
 # NIM Deployment values
 nim_image_repository   = "nvcr.io/nim/meta/llama3-8b-instruct"
