@@ -26,10 +26,10 @@ variable "ngc_username" {
   sensitive   = true
 }
 
-variable "ngc_cli_api_key" {
+variable "ngc_api_key" {
   type        = string
-  default     = "$NGC_CLI_API_KEY"
-  description = "NGC CLI API key to access NGC registry"
+  default     = "$NGC_API_KEY"
+  description = "NGC API key to access NGC registry"
   sensitive   = true
 }
 
