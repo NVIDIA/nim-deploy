@@ -90,9 +90,9 @@ spec:
           title: NGC Login username
           section: required_config
           invisible: true
-        ngc_cli_api_key:
-          name: ngc_cli_api_key
-          title: NGC CLI API Key
+        ngc_api_key:
+          name: ngc_api_key
+          title: NGC API Key
           section: required_config
         repository:
           name: repository

@@ -67,7 +67,7 @@ spec:
         varType: string
         required: true
         defaultValue: "$oauthtoken"
-      - name: ngc_cli_api_key
+      - name: ngc_api_key
         varType: string
         required: true
         defaultValue: "$oauthtoken"
