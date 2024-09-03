@@ -127,6 +127,7 @@ module "gke-cluster" {
   depends_on                  = [module.custom-network]
 }
 
+/*
 resource "null_resource" "kubectl_config" {
   provisioner "local-exec" {
     command = <<EOT
@@ -154,6 +155,8 @@ provider "kubernetes" {
 }
 
 data "google_client_config" "current" {}
+
+*/
 
 /*
 locals {
