@@ -206,7 +206,7 @@ variable "cpu_pools" {
     logging_variant        = optional(string, "DEFAULT")
     auto_repair            = optional(bool, true)
     auto_upgrade           = optional(bool, true)
-    create_service_account = optional(bool, true)
+    service_account        = string
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
@@ -240,7 +240,7 @@ variable "gpu_pools" {
     logging_variant        = optional(string, "DEFAULT")
     auto_repair            = optional(bool, true)
     auto_upgrade           = optional(bool, true)
-    create_service_account = optional(bool, true)
+    service_account        = string
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
