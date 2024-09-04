@@ -39,6 +39,7 @@ module "gke" {
   monitoring_enabled_components        = ["SYSTEM_COMPONENTS"]
   monitoring_enable_managed_prometheus = var.monitoring_enable_managed_prometheus
   master_authorized_networks           = var.master_authorized_networks
+  create_service_account = false
 
   node_pools = local.node_pools
 
