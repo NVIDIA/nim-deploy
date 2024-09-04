@@ -114,14 +114,14 @@ spec:
         - name: acknowledge
           title: Before you begin
           subtext:
-                This solution deploys a sample <a href="https://github.com/sujituk/nim-deploy/blob/add-ngc-pull-gcs/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
+                This solution deploys a sample <a href="https://github.com/sujituk/nim-deploy/blob/test-infra-mgr/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
         - name: required_config
           title: Required configuration
     runtime:
       outputMessage: Deployment can take several minutes to complete.
       suggestedActions:
         - heading: Connect to GKE Cluster
-          description: Connect to GKE Cluster. Open another terminal and follow these <a href="https://github.com/sujituk/nim-deploy/blob/add-ngc-pull-gcs/cloud-service-providers/google-cloud/gke/README.md#inference">instructions</a> to run inference.
+          description: Connect to GKE Cluster. Open another terminal and follow these <a href="https://github.com/sujituk/nim-deploy/blob/test-infra-mgr/cloud-service-providers/google-cloud/gke/README.md#inference">instructions</a> to run inference.
       outputs:
         cluster_name: {}
         cluster_location: {}
