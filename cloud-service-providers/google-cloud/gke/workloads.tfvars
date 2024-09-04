@@ -13,19 +13,21 @@
 # limitations under the License.
 
 
-project_id = "<Google Cloud Project ID>"
+project_id = "isv-coe-skhas-nvidia"
 
 ##common variables
 cluster_name      = "nim-demo-gke"
-cluster_location  = "<GCP Zone for zonal cluster / GCP Region for regional cluster>"
+cluster_location  = "us-central1-c"
 autopilot_cluster = false ## true = autopilot cluster, false = standard cluster
 
 ## network values
 create_network    = true
 network_name      = "nim-demo-vpc"
 subnetwork_name   = "nim-demo-subnet"
-subnetwork_region = "<GCP region>"
+subnetwork_region = "us-central1"
 subnetwork_cidr   = "10.100.0.0/16"
+
+create_service_account = false
 
 ## CPU node pool values
 cpu_pools = [{
@@ -37,6 +39,7 @@ cpu_pools = [{
   enable_gcfs  = true
   disk_size_gb = 100
   disk_type    = "pd-standard"
+  create_service_account = false
 }]
 
 ## GPU node pool values
@@ -56,9 +59,10 @@ gpu_pools = [
     enable_gcfs        = true
     logging_variant    = "DEFAULT"
     gpu_driver_version = "DEFAULT"
+    create_service_account = false
 }]
 
-ngc_api_key = "<NGC CLI API Key>"
+ngc_api_key = ""
 registry_server = "nvcr.io"
 repository      = "nvcr.io/nim/meta/llama3-8b-instruct"
 tag             = "1.0.0"
