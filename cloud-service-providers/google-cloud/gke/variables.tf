@@ -219,6 +219,7 @@ variable "cpu_pools" {
     max_count    = 3
     disk_size_gb = 100
     disk_type    = "pd-standard"
+    service_account = ""
   }]
 }
 
@@ -258,6 +259,7 @@ variable "gpu_pools" {
     accelerator_count  = 2
     accelerator_type   = "nvidia-tesla-t4"
     gpu_driver_version = "DEFAULT"
+    service_account = ""
   }]
 }
 
