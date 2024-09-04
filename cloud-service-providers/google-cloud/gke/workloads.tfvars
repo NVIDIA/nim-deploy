@@ -39,6 +39,7 @@ cpu_pools = [{
   enable_gcfs  = true
   disk_size_gb = 100
   disk_type    = "pd-standard"
+  create_service_account = false
   service_account = "sa-nim-inframgr@isv-coe-skhas-nvidia.iam.gserviceaccount.com"
 }]
 
@@ -59,6 +60,7 @@ gpu_pools = [
     enable_gcfs        = true
     logging_variant    = "DEFAULT"
     gpu_driver_version = "DEFAULT"
+    create_service_account = false
     service_account = "sa-nim-inframgr@isv-coe-skhas-nvidia.iam.gserviceaccount.com"
 }]
 

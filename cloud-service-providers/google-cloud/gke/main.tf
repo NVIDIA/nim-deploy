@@ -115,7 +115,7 @@ module "gke-cluster" {
   gcs_fuse_csi_driver                  = var.gcs_fuse_csi_driver
   master_authorized_networks           = var.master_authorized_networks
   deletion_protection                  = var.deletion_protection
-  create_service_account               = var.create_service_account
+  #create_service_account               = var.create_service_account
 
   ## pools config variables
   cpu_pools                   = var.cpu_pools
