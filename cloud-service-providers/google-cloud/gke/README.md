@@ -8,6 +8,8 @@ This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs 
 - [Setup](#setup)
   - [Prerequisites](#prerequisites)
   - [Steps](#steps)
+    - [Using Terraform](#using-terraform)
+    - [Using Google Cloud Infra Manager](#using-google-cloud-infra-manager)
     - [NVIDIA H100 (MEGA - 80GB) for A3 machine series](#nvidia-h100-mega-80gb-for-a3-machine-series)
     - [NVIDIA A100 (80GB) for A2 machine series](#nvidia-a100-80gb-for-a2-machine-series)
     - [NVIDIA L4 for G2 machine series](#nvidia-l4-for-g2-machine-series)
@@ -20,7 +22,9 @@ This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs 
   - [Setup GenAI-Perf](#setup-genai-perf)
   - [Run test](#run-test)
   - [Results](#results)
-- [Teardown](#sample-inference)
+- [Teardown](#teardown)
+  - [Using Terraform](#using-terraform-1
+  - [Using Google Cloud Infra Manager](#using-google-cloud-infra-manager-1)
 - [LICENSE](#license)
 
 ## Introduction to NVIDIA NIM
@@ -53,6 +57,8 @@ The repo provisions the below infrastructure and software resources:
 
 ## Steps
 
+### Using Terraform
+
 1. Clone this repo
 
 ```shell
@@ -78,7 +84,7 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
 
  Depending on the GPU machine type, below variables need to be updated:
 
-### NVIDIA H100 (MEGA 80GB) for A3 machine series
+#### NVIDIA H100 (MEGA 80GB) for A3 machine series
 
   | Variable | Description | Recommended Value |
   |---|---|---|
@@ -86,7 +92,7 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | `gpu_pools.accelerator_type` | NVIDIA GPU name | `nvidia-h100-mega-80gb` |
   | `gpu_pools.accelerator_count` | GPU count | `8` |
 
-### NVIDIA A100 (80GB) for A2 machine series
+#### NVIDIA A100 (80GB) for A2 machine series
 
   | Variable | Description | Recommended Value |
   |---|---|---|
@@ -94,7 +100,7 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | `gpu_pools.accelerator_type` | NVIDIA GPU name | `nvidia-a100-80gb` |
   | `gpu_pools.accelerator_count` | GPU count | `1` |
 
-### NVIDIA L4 for G2 machine series
+#### NVIDIA L4 for G2 machine series
 
   | Variable | Description | Recommended Value |
   |---|---|---|
@@ -140,6 +146,86 @@ imagePullSecrets:
 ```shell
 bash 1.setup.sh
 ```
+
+### Using Google Cloud Infra manager
+
+1. Clone this repo
+
+```shell
+git clone https://github.com/NVIDIA/nim-deploy
+cd nim-deploy/cloud-service-providers/google-cloud/gke
+```
+
+2. Configure values for Infra manager
+
+```shell
+PROJECT_ID="<GCP Project ID"
+REGION="<GCP Region>"
+INFRAMGR_DEP_NAME="<Deployment name>"
+
+CLUSTER_NAME="<GKE Cluster name>"
+CLUSTER_LOCATION="<GCP Region / Zone>>"
+NETWORK_REGION="<GCP Region>"
+NGC_API_KEY="<NGC API Key from NVIDIA"
+
+SVC_ACCOUNT_NAME="sa-nim-inframgr"
+SVC_DESCRIPTION="service account for infra manager to provision resources"
+SVC_DISPLAY_NAME="sa-nim-inframgr"
+```
+
+3. Configure values for tfvars. Below are required fields to be updated
+
+```shell
+project_id = "<GCP Project ID"
+cluster_location  = "<GCP Region / Zone>>"
+subnetwork_region = "<GCP Region>"
+ngc_api_key = "<NGC API Key from NVIDIA"
+```
+
+4. Create service account for Infra manager and assign IAM permissions
+
+```shell
+gcloud iam service-accounts create ${SVC_ACCOUNT_NAME} \
+  --description="${SVC_DESCRIPTION}" \
+  --display-name="${SVC_DISPLAY_NAME}"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountUser"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/iam.serviceAccountAdmin"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/config.agent"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/compute.networkAdmin"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/container.admin"
+
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member="serviceAccount:${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+    --role="roles/container.nodeServiceAccount"
+```
+
+5. Create the deployment
+
+```shell
+gcloud infra-manager deployments apply projects/${PROJECT_ID}/locations/${REGION}/deployments/${INFRAMGR_DEP_NAME} \
+  --service-account projects/${PROJECT_ID}/serviceAccounts/${SVC_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+  --location=${REGION} \
+  --git-source-repo="https://github.com/sujituk/nim-deploy.git" \
+  --git-source-directory="cloud-service-providers/google-cloud/gke" \
+  --git-source-ref="test-infra-mgr" \
+  --inputs-file=./workloads.tfvars
+```
+
 
 ### Optional
 
@@ -322,8 +408,16 @@ Teardown the infrastructure
 
 > :warning: All resources provisioned by this repo will be destroyed.
 
+### Using Terraform
+
 ```shell
 bash 2.teardown.sh
+```
+### Using Google Cloud Infra Manager
+
+```shell
+gcloud infra-manager deployments delete \
+  projects/${PROJECT_ID}/locations/${REGION}/deployments/${INFRAMGR_DEP_NAME}
 ```
 
 ## License
