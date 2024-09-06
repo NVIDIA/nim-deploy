@@ -107,7 +107,7 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | Variable | Description | Default | Need update? |
   |---|---|---|---|
   | `registry_server` | NVIDIA Registry that hosts the images | `nvcr.io` | *No* |
-  | `ngc_api_key` | NGC API Key from NVIDIA | <> | *Yes* |
+  | `ngc_api_key` | NGC API Key | <> | *Yes* |
   | `repository` | NIM image | `nvcr.io/nim/meta/llama3-8b-instruct` | *No* |
   | `tag` | Tag of image | `1.0.0` | *No* |
   | `model_name` | NIM Model name | `meta/llama3-8b-instruct` | *No* |
