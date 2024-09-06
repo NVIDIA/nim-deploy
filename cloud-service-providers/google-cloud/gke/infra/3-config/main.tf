@@ -86,7 +86,7 @@ resource "kubernetes_secret" "ngc_api" {
   type = "Opaque" # Generic secret type
 
   data = {
-    "NGC_CLI_API_KEY" = var.ngc_cli_api_key
+    "NGC_API_KEY" = var.ngc_cli_api_key
   }
 
   depends_on = [kubernetes_namespace.nim]
