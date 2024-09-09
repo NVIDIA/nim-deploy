@@ -1,7 +1,7 @@
 apiVersion: serving.kserve.io/v1alpha1
 kind: ClusterServingRuntime
 metadata:
-  name: nvidia-nim-llama3-8b-instruct-1.0.0
+  name: nvidia-nim-llama-3.1-8b-instruct-1.1.0
 spec:
   annotations:
     prometheus.kserve.io/path: /metrics
@@ -22,7 +22,7 @@ spec:
         secretKeyRef:
           name: nvidia-nim-secrets
           key: NGC_API_KEY
-    image: nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
+    image: nvcr.io/nim/meta/llama-3.1-8b-instruct:1.1.0
     name: kserve-container
     ports:
     - containerPort: 8000
@@ -30,10 +30,10 @@ spec:
     resources:
       limits:
         cpu: "12"
-        memory: 256Gi
+        memory: 32Gi
       requests:
         cpu: "12"
-        memory: 128Gi
+        memory: 32Gi
     volumeMounts:
     - mountPath: /dev/shm
       name: dshm
@@ -44,11 +44,11 @@ spec:
   - grpc-v2
   supportedModelFormats:
   - autoSelect: true
-    name: nvidia-nim-llama3-8b-instruct
+    name: nvidia-nim-llama-3.1-8b-instruct
     priority: 1
-    version: "1.0.0"
+    version: "1.1.0"
   volumes:
   - emptyDir:
       medium: Memory
-      sizeLimit: 128Gi
+      sizeLimit: 16Gi
     name: dshm
