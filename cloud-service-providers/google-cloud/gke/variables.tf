@@ -26,15 +26,10 @@ variable "services" {
   nullable    = false
 }
 
-variable "region" {
-  type        = string
-  description = "GCP project region or zone"
-  default     = "us-central1"
-}
-
 ## network variables
 variable "create_network" {
   type = bool
+  default = true
 }
 
 variable "network_name" {
@@ -48,11 +43,6 @@ variable "subnetwork_name" {
 variable "subnetwork_cidr" {
   type    = string
   default = "10.128.0.0/20"
-}
-
-variable "subnetwork_region" {
-  type    = string
-  default = "us-central1"
 }
 
 variable "subnetwork_private_access" {
@@ -78,11 +68,7 @@ variable "create_cluster" {
 
 variable "autopilot_cluster" {
   type = bool
-}
-
-variable "cluster_regional" {
-  type    = bool
-  default = false
+  default = false  
 }
 
 variable "cluster_name" {
@@ -99,7 +85,7 @@ variable "cluster_labels" {
 
 variable "kubernetes_version" {
   type    = string
-  default = "1.28"
+  default = "1.30"
 }
 
 variable "release_channel" {
@@ -185,7 +171,13 @@ variable "enable_gpu" {
 variable "create_service_account" {
   type        = bool
   description = "Creates a google IAM service account & k8s service account & configures workload identity"
-  default     = true
+  default     = false
+}
+
+variable "kubernetes_namespace" {
+  type        = string
+  description = "Kubernetes namespace where resources are deployed"
+  default     = "nim-on-gke"
 }
 
 variable "cpu_pools" {
@@ -206,8 +198,8 @@ variable "cpu_pools" {
     logging_variant        = optional(string, "DEFAULT")
     auto_repair            = optional(bool, true)
     auto_upgrade           = optional(bool, true)
-    create_service_account = optional(bool, true)
-    service_account        = string
+    create_service_account = optional(bool, false)
+    service_account = optional(string, "")
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
@@ -242,8 +234,8 @@ variable "gpu_pools" {
     logging_variant        = optional(string, "DEFAULT")
     auto_repair            = optional(bool, true)
     auto_upgrade           = optional(bool, true)
-    create_service_account = optional(bool, true)
-    service_account        = string
+    create_service_account = optional(bool, false)
+    service_account = optional(string, "")
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
@@ -356,19 +348,23 @@ variable "ngc_api_key" {
 variable "repository" {
   type        = string
   description = "Docker image of NIM container"
+  default = "nvcr.io/nim/meta/llama3-8b-instruct"
 }
 
 variable "tag" {
   type        = string
   description = "Docker repository tag of NIM container"
+  default = "1.0.0"
 }
 
 variable "model_name" {
   type        = string
   description = "Name of the NIM model"
+  default = "meta/llama3-8b-instruct"
 }
 
 variable "gpu_limits" {
   type        = number
   description = "GPU limits"
+  default = "1"
 }

@@ -56,9 +56,6 @@ spec:
         varType: string
         required: true
         defaultValue: "nim-demo-subnet"
-      - name: subnetwork_region
-        varType: string
-        defaultValue: "us-central1"
       - name: registry_server
         varType: string
         required: true

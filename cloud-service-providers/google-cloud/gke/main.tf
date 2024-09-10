@@ -19,24 +19,15 @@ module "bootstrap" {
   services   = var.services
 }
 
-#data "terraform_remote_state" "bootstrap" {
-#  backend = "local"
-#
-#  config = {
-#    path = "../1-bootstrap/terraform.tfstate"
-#  }
-#}
-
 data "google_project" "current" {
   project_id = var.project_id
 }
 
+data "google_client_config" "default" {}
+
 locals {
+
   project_id = var.project_id
-}
-
-locals {
-
   ## GPU locations for all supported GPU types
   all_gpu_locations = {
     "nvidia-l4"             = var.gpu_locations_l4
@@ -56,7 +47,7 @@ data "google_compute_network" "existing-network" {
 data "google_compute_subnetwork" "subnetwork" {
   count   = var.create_network ? 0 : 1
   name    = var.subnetwork_name
-  region  = var.subnetwork_region
+  region  = local.cluster_location_region
   project = local.project_id
 }
 
@@ -71,7 +62,7 @@ module "custom-network" {
     {
       subnet_name           = var.subnetwork_name
       subnet_ip             = var.subnetwork_cidr
-      subnet_region         = var.subnetwork_region
+      subnet_region         = local.cluster_location_region
       subnet_private_access = var.subnetwork_private_access
       description           = var.subnetwork_description
     }
@@ -87,6 +78,7 @@ locals {
   # zone needs to be set even for regional clusters, otherwise this module picks random zones that don't have GPU availability:
   # https://github.com/terraform-google-modules/terraform-google-kubernetes-engine/blob/af354afdf13b336014cefbfe8f848e52c17d4415/main.tf#L46 
   # zone = length(split("-", local.region)) > 2 ? split(",", local.region) : split(",", local.gpu_location[local.region])
+  cluster_location_region  = (length(split("-", var.cluster_location)) == 2 ? var.cluster_location : join("-", slice(split("-", var.cluster_location), 0, 2)))
   zone = length(split("-", var.cluster_location)) > 2 ? split(",", var.cluster_location) : split(",", local.gpu_location[local.region])
   # Update gpu_pools with node_locations according to region and zone gpu availibility, if not provided
   gpu_pools = [for elm in var.gpu_pools : (local.regional && contains(keys(local.gpu_location), local.region) && elm["node_locations"] == "") ? merge(elm, { "node_locations" : local.gpu_location[local.region] }) : elm]
@@ -115,7 +107,6 @@ module "gke-cluster" {
   gcs_fuse_csi_driver                  = var.gcs_fuse_csi_driver
   master_authorized_networks           = var.master_authorized_networks
   deletion_protection                  = var.deletion_protection
-  #create_service_account               = var.create_service_account
 
   ## pools config variables
   cpu_pools                   = var.cpu_pools
@@ -128,68 +119,43 @@ module "gke-cluster" {
   depends_on                  = [module.custom-network]
 }
 
-/*
-resource "null_resource" "kubectl_config" {
-  provisioner "local-exec" {
-    command = <<EOT
-    gcloud container clusters get-credentials ${var.cluster_name} \
-        --region ${var.cluster_location}
-    EOT
-  }
+data "google_container_cluster" "default" {
+  count      = var.create_cluster ? 0 : 1
+  name       = var.cluster_name
+  location   = var.cluster_location
   depends_on = [module.gke-cluster]
 }
 
-#provider "kubernetes" {
-#  config_path = "~/.kube/config"
-#}
-
-provider "kubernetes" {
-  host                   = "https://${module.gke-cluster[0].endpoint}"
-  #cluster_ca_certificate = base64decode(module.gke-cluster[0].master_auth.0.cluster_ca_certificate) 
-
-  # No need for config_path or config_context when using google provider for authentication
-  config_path    = ""
-  config_context = ""
-
-  # Authentication via Google Cloud SDK
-  token                  = data.google_client_config.current.access_token
-}
-
-data "google_client_config" "current" {}
-
-*/
-
-/*
 locals {
-  cluster_name     = var.cluster_name
-  cluster_location = var.cluster_location
+  endpoint       = var.create_cluster ? "https://${module.gke-cluster[0].endpoint}" : "https://${data.google_container_cluster.default[0].endpoint}"
+  ca_certificate = var.create_cluster ? base64decode(module.gke-cluster[0].ca_certificate) : base64decode(data.google_container_cluster.default[0].master_auth[0].cluster_ca_certificate)
+  host           = local.endpoint
 }
 
 
 provider "helm" {
+  alias = "nim"
   kubernetes {
-    host                   = "https://${module.gke-cluster[0].endpoint}"
-    #cluster_ca_certificate = base64decode(module.gke-cluster.master_auth[0].cluster_ca_certificate)
-    config_path    = ""
-    config_context = ""
+    #host                   = local.host
+    #token                  = data.google_client_config.default.access_token
+    #cluster_ca_certificate = local.ca_certificate
 
-    # Authentication via Google Cloud SDK
-    token                  = data.google_client_config.current.access_token
+    host                   = module.gke-cluster.host
+    token                  = module.gke_cluster.token
+    cluster_ca_certificate = module.gke_cluster.cluster_ca_certificate
   }
 }
 
-#provider "helm" {
-#  kubernetes {
-#    config_path = "~/.kube/config"
-#  }
 
-#  kubernetes {
-#      host                   = "https://${module.gke-cluster[0].endpoint}"
-#      token                  = data.google_client_config.current.access_token
-#      #cluster_ca_certificate = base64decode(module.gke-cluster[0].cluster_ca_certificate)
-#      cluster_ca_certificate = module.gke-cluster.master_auth[0].cluster_ca_certificate
-#    }
-#}
+resource "helm_release" "my_nim" {
+  name             = "my_nim"
+  chart      = "../../../helm/nim-llm/"
+  namespace        = var.kubernetes_namespace
+  create_namespace = true
+}
+
+
+/*
 
 resource "null_resource" "get-credentials" {
   provisioner "local-exec" {
@@ -199,14 +165,15 @@ resource "null_resource" "get-credentials" {
 
 resource "kubernetes_namespace" "nim" {
   metadata {
-    name = "nim"
+    name = var.kubernetes_namespace
   }
 }
+
 
 resource "kubernetes_secret" "registry_secret" {
   metadata {
     name      = "registry-secret"
-    namespace = "nim"
+    namespace = var.kubernetes_namespace
   }
 
   type = "kubernetes.io/dockerconfigjson"
@@ -229,7 +196,7 @@ resource "kubernetes_secret" "registry_secret" {
 resource "kubernetes_secret" "ngc_api" {
   metadata {
     name      = "ngc-api"
-    namespace = "nim"
+    namespace = var.kubernetes_namespace
   }
 
   type = "Opaque" # Generic secret type
@@ -243,7 +210,7 @@ resource "kubernetes_secret" "ngc_api" {
 
 resource "helm_release" "my_nim" {
   name       = "my-nim"
-  namespace  = "nim"
+  namespace  = var.kubernetes_namespace
   repository = "nim-llm"
   #chart      = "../../../../../helm/nim-llm/"
   chart      = "../../../helm/nim-llm/"

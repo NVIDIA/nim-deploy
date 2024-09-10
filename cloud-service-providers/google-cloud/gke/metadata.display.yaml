@@ -78,9 +78,6 @@ spec:
           name: subnetwork_name
           title: SubNetwork Name
           invisible: true
-        subnetwork_region:
-          name: subnetwork_region
-          title: SubNetwork Region
         registry_server:
           name: registry_server
           title: NVIDIA Registry
