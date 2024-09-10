@@ -207,12 +207,14 @@ variable "cpu_pools" {
   default = [{
     name         = "cpu-pool"
     machine_type = "e2-standard-2"
-    autoscaling  = true
+    autoscaling  = false
     min_count    = 1
     max_count    = 3
     disk_size_gb = 100
     disk_type    = "pd-standard"
     service_account = ""
+    create_service_account = false
+    enable_gcfs  = true
   }]
 }
 
@@ -239,21 +241,23 @@ variable "gpu_pools" {
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
-    accelerator_type       = optional(string, "nvidia-tesla-t4")
+    accelerator_type       = optional(string, "nvidia-l4")
     gpu_driver_version     = optional(string, "DEFAULT")
   }))
   default = [{
     name               = "gpu-pool"
-    machine_type       = "n1-standard-16"
+    machine_type       = "g2-standard-4"
     autoscaling        = true
     min_count          = 1
     max_count          = 3
     disk_size_gb       = 100
-    disk_type          = "pd-standard"
-    accelerator_count  = 2
-    accelerator_type   = "nvidia-tesla-t4"
+    disk_type          = "pd-balanced"
+    accelerator_count  = 1
+    autoscaling        = true
+    accelerator_type   = "nvidia-l4"
     gpu_driver_version = "DEFAULT"
     service_account = ""
+    create_service_account = false
   }]
 }
 

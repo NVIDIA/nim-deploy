@@ -146,14 +146,14 @@ provider "helm" {
   }
 }
 
-
+/*
 resource "helm_release" "my_nim" {
   name             = "my_nim"
   chart      = "../../../helm/nim-llm/"
   namespace        = var.kubernetes_namespace
   create_namespace = true
 }
-
+*/
 
 /*
 
