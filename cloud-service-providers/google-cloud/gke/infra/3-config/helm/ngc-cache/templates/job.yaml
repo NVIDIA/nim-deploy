@@ -45,7 +45,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.model.ngcAPISecret }}
-                  key: NGC_CLI_API_KEY
+                  key: NGC_API_KEY
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
