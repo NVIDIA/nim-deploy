@@ -107,7 +107,7 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | Variable | Description | Default | Need update? |
   |---|---|---|---|
   | `registry_server` | NVIDIA Registry that hosts the images | `nvcr.io` | *No* |
-  | `ngc_cli_api_key` | NGC API Key from NVIDIA | <> | *Yes* |
+  | `ngc_api_key` | NGC API Key from NVIDIA | <> | *Yes* |
   | `repository` | NIM image | `nvcr.io/nim/meta/llama3-8b-instruct` | *No* |
   | `tag` | Tag of image | `1.0.0` | *No* |
   | `model_name` | NIM Model name | `meta/llama3-8b-instruct` | *No* |
@@ -172,7 +172,7 @@ export NGC_API_KEY=<Your API KEY>
 
 helm --namespace nim install my-nim ../../../helm/nim-llm/ \
 -f ./infra/3-config/helm/custom-values.yaml \
---set model.ngcAPIKey=$NGC_CLI_API_KEY
+--set model.ngcAPIKey=$NGC_API_KEY
 ```
 
 4.Port forward to local at 8000 (change as needed) and update in the curl command as well.
