@@ -10,10 +10,14 @@ spec:
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   scaleTargetRef:
+    {{- if (and .Values.multiNode.enabled (or (.Capabilities.APIVersions.Has "leaderworkerset.x-k8s.io/v1") .Values.multiNode.leaderWorkerSet.enabled)) }}
+    apiVersion: leaderworkerset.x-k8s.io/v1
+    kind: LeaderWorkerSet
+    {{- else if .Values.statefulSet.enabled }}
     apiVersion: apps/v1
-    {{- if .Values.statefulSet.enabled }}
     kind: StatefulSet
     {{- else }}
+    apiVersion: apps/v1
     kind: Deployment
     {{- end }}
     name: {{ .Release.Name }}
