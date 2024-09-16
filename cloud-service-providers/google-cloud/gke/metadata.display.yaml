@@ -62,10 +62,15 @@ spec:
           title: Enable GPU nodepool
           section: required_config
           invisible: true
+        kubernetes_namespace:
+          name: kubernetes_namespace
+          title: Kubernetes Namespace
+          section: required_config
         network_name:
           name: network_name
           title: Network Name
           section: required_config
+          invisible: true
         project_id:
           name: project_id
           title: Project Id

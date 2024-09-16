@@ -41,6 +41,10 @@ spec:
       - name: enable_gpu
         varType: bool
         defaultValue: true
+      - name: kubernetes_namespace
+        varType: string
+        required: true
+        defaultValue: "nim"
       - name: network_name
         varType: string
         required: true

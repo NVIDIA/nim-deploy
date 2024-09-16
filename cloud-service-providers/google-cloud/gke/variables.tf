@@ -177,7 +177,7 @@ variable "create_service_account" {
 variable "kubernetes_namespace" {
   type        = string
   description = "Kubernetes namespace where resources are deployed"
-  default     = "nim-on-gke"
+  default     = "nim"
 }
 
 variable "cpu_pools" {
