@@ -65,7 +65,7 @@ gpu_pools = [
     # service_account = "sa-nim-inframgr@isv-coe-skhas-nvidia.iam.gserviceaccount.com"
 }]
 
-ngc_api_key     = "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"
+ngc_api_key     = ""
 registry_server = "nvcr.io"
 repository      = "nvcr.io/nim/meta/llama3-8b-instruct"
 tag             = "1.0.0"
