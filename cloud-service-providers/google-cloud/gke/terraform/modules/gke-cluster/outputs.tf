@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+
 output "cluster" {
   value = module.gke
 }
@@ -22,5 +23,20 @@ output "endpoint" {
 }
 
 output "ca_certificate" {
-  value = module.gke.ca_certificate
+  value = base64decode(module.gke.ca_certificate)
 }
+
+/*
+output "token" {
+  value = module.gke.access_token
+}
+*/
+/*
+output "host" {
+  value = "https://${module.gke[0].endpoint}"
+}
+
+output "endpoint" {
+  value = "https://${module.gke[0].endpoint}"
+}
+*/

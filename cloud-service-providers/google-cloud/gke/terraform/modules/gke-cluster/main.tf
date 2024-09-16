@@ -16,6 +16,8 @@ locals {
   node_pools = concat((var.enable_gpu ? var.gpu_pools : []), var.cpu_pools)
 }
 
+data "google_client_config" "default" {}
+
 module "gke" {
   source                               = "terraform-google-modules/kubernetes-engine/google"
   version                              = "29.0.0"
@@ -39,7 +41,7 @@ module "gke" {
   monitoring_enabled_components        = ["SYSTEM_COMPONENTS"]
   monitoring_enable_managed_prometheus = var.monitoring_enable_managed_prometheus
   master_authorized_networks           = var.master_authorized_networks
-  create_service_account = false
+  create_service_account               = false
 
   node_pools = local.node_pools
 

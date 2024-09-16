@@ -82,7 +82,7 @@ spec:
         description: "Docker repository tag of NIM container"
         varType: string
         required: true
-        defaultValue: ""
+        defaultValue: "1.0.0"
       - name: gpu_limits
         description: "GPU limits"
         varType: number

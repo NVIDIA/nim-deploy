@@ -28,7 +28,7 @@ variable "services" {
 
 ## network variables
 variable "create_network" {
-  type = bool
+  type    = bool
   default = true
 }
 
@@ -67,8 +67,8 @@ variable "create_cluster" {
 }
 
 variable "autopilot_cluster" {
-  type = bool
-  default = false  
+  type    = bool
+  default = false
 }
 
 variable "cluster_name" {
@@ -199,22 +199,22 @@ variable "cpu_pools" {
     auto_repair            = optional(bool, true)
     auto_upgrade           = optional(bool, true)
     create_service_account = optional(bool, false)
-    service_account = optional(string, "")
+    service_account        = optional(string, "")
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
   }))
   default = [{
-    name         = "cpu-pool"
-    machine_type = "e2-standard-2"
-    autoscaling  = false
-    min_count    = 1
-    max_count    = 3
-    disk_size_gb = 100
-    disk_type    = "pd-standard"
-    service_account = ""
+    name                   = "cpu-pool"
+    machine_type           = "e2-standard-2"
+    autoscaling            = false
+    min_count              = 1
+    max_count              = 3
+    disk_size_gb           = 100
+    disk_type              = "pd-standard"
+    service_account        = ""
     create_service_account = false
-    enable_gcfs  = true
+    enable_gcfs            = true
   }]
 }
 
@@ -237,7 +237,7 @@ variable "gpu_pools" {
     auto_repair            = optional(bool, true)
     auto_upgrade           = optional(bool, true)
     create_service_account = optional(bool, false)
-    service_account = optional(string, "")
+    service_account        = optional(string, "")
     preemptible            = optional(bool, false)
     initial_node_count     = optional(number, 1)
     accelerator_count      = optional(number, 0)
@@ -245,18 +245,18 @@ variable "gpu_pools" {
     gpu_driver_version     = optional(string, "DEFAULT")
   }))
   default = [{
-    name               = "gpu-pool"
-    machine_type       = "g2-standard-4"
-    autoscaling        = true
-    min_count          = 1
-    max_count          = 3
-    disk_size_gb       = 100
-    disk_type          = "pd-balanced"
-    accelerator_count  = 1
-    autoscaling        = true
-    accelerator_type   = "nvidia-l4"
-    gpu_driver_version = "DEFAULT"
-    service_account = ""
+    name                   = "gpu-pool"
+    machine_type           = "g2-standard-4"
+    autoscaling            = true
+    min_count              = 1
+    max_count              = 3
+    disk_size_gb           = 100
+    disk_type              = "pd-balanced"
+    accelerator_count      = 1
+    autoscaling            = true
+    accelerator_type       = "nvidia-l4"
+    gpu_driver_version     = "DEFAULT"
+    service_account        = ""
     create_service_account = false
   }]
 }
@@ -352,23 +352,23 @@ variable "ngc_api_key" {
 variable "repository" {
   type        = string
   description = "Docker image of NIM container"
-  default = "nvcr.io/nim/meta/llama3-8b-instruct"
+  default     = "nvcr.io/nim/meta/llama3-8b-instruct"
 }
 
 variable "tag" {
   type        = string
   description = "Docker repository tag of NIM container"
-  default = "1.0.0"
+  default     = "1.0.0"
 }
 
 variable "model_name" {
   type        = string
   description = "Name of the NIM model"
-  default = "meta/llama3-8b-instruct"
+  default     = "meta/llama3-8b-instruct"
 }
 
 variable "gpu_limits" {
   type        = number
   description = "GPU limits"
-  default = "1"
+  default     = "1"
 }

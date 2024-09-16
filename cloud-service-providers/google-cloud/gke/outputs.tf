@@ -25,19 +25,3 @@ output "cluster_name" {
 output "cluster_location" {
   value = var.cluster_location
 }
-
-
-
-output "endpoint" {
-  value      = module.gke-cluster[0].endpoint
-  sensitive  = true
-  depends_on = [module.gke-cluster]
-}
-
-/*
-output "ca_certificate" {
-  value      = module.gke-cluster[0].ca_certificate
-  sensitive  = false
-  depends_on = [module.gke-cluster]
-}
-*/

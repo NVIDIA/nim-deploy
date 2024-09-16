@@ -65,7 +65,7 @@ spec:
         network_name:
           name: network_name
           title: Network Name
-          invisible: true
+          section: required_config
         project_id:
           name: project_id
           title: Project Id

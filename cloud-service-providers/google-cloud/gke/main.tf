@@ -70,16 +70,13 @@ module "custom-network" {
 }
 
 locals {
-  network_name    = var.create_network ? module.custom-network[0].network_name : var.network_name
-  subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
-  subnetwork_cidr = var.create_network ? module.custom-network[0].subnets_ips[0] : data.google_compute_subnetwork.subnetwork[0].ip_cidr_range
-  region          = length(split("-", var.cluster_location)) == 2 ? var.cluster_location : ""
-  regional        = local.region != "" ? true : false
-  # zone needs to be set even for regional clusters, otherwise this module picks random zones that don't have GPU availability:
-  # https://github.com/terraform-google-modules/terraform-google-kubernetes-engine/blob/af354afdf13b336014cefbfe8f848e52c17d4415/main.tf#L46 
-  # zone = length(split("-", local.region)) > 2 ? split(",", local.region) : split(",", local.gpu_location[local.region])
-  cluster_location_region  = (length(split("-", var.cluster_location)) == 2 ? var.cluster_location : join("-", slice(split("-", var.cluster_location), 0, 2)))
-  zone = length(split("-", var.cluster_location)) > 2 ? split(",", var.cluster_location) : split(",", local.gpu_location[local.region])
+  network_name            = var.create_network ? module.custom-network[0].network_name : var.network_name
+  subnetwork_name         = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
+  subnetwork_cidr         = var.create_network ? module.custom-network[0].subnets_ips[0] : data.google_compute_subnetwork.subnetwork[0].ip_cidr_range
+  region                  = length(split("-", var.cluster_location)) == 2 ? var.cluster_location : ""
+  regional                = local.region != "" ? true : false
+  cluster_location_region = (length(split("-", var.cluster_location)) == 2 ? var.cluster_location : join("-", slice(split("-", var.cluster_location), 0, 2)))
+  zone                    = length(split("-", var.cluster_location)) > 2 ? split(",", var.cluster_location) : split(",", local.gpu_location[local.region])
   # Update gpu_pools with node_locations according to region and zone gpu availibility, if not provided
   gpu_pools = [for elm in var.gpu_pools : (local.regional && contains(keys(local.gpu_location), local.region) && elm["node_locations"] == "") ? merge(elm, { "node_locations" : local.gpu_location[local.region] }) : elm]
 }
@@ -127,48 +124,23 @@ data "google_container_cluster" "default" {
 }
 
 locals {
-  endpoint       = var.create_cluster ? "https://${module.gke-cluster[0].endpoint}" : "https://${data.google_container_cluster.default[0].endpoint}"
-  ca_certificate = var.create_cluster ? base64decode(module.gke-cluster[0].ca_certificate) : base64decode(data.google_container_cluster.default[0].master_auth[0].cluster_ca_certificate)
-  host           = local.endpoint
+  endpoint       = module.gke-cluster[0].endpoint
+  ca_certificate = module.gke-cluster[0].ca_certificate
+  token          = data.google_client_config.default.access_token
 }
 
+provider "kubernetes" {
+  host  = "https://${local.endpoint}"
+  token = local.token
 
-provider "helm" {
-  alias = "nim"
-  kubernetes {
-    #host                   = local.host
-    #token                  = data.google_client_config.default.access_token
-    #cluster_ca_certificate = local.ca_certificate
-
-    host                   = module.gke-cluster.host
-    token                  = module.gke_cluster.token
-    cluster_ca_certificate = module.gke_cluster.cluster_ca_certificate
-  }
-}
-
-/*
-resource "helm_release" "my_nim" {
-  name             = "my_nim"
-  chart      = "../../../helm/nim-llm/"
-  namespace        = var.kubernetes_namespace
-  create_namespace = true
-}
-*/
-
-/*
-
-resource "null_resource" "get-credentials" {
-  provisioner "local-exec" {
-    command = "gcloud container clusters get-credentials ${local.cluster_name} --region ${local.cluster_location}"
-  }
+  cluster_ca_certificate = local.ca_certificate
 }
 
 resource "kubernetes_namespace" "nim" {
   metadata {
-    name = var.kubernetes_namespace
+    name = "nim"
   }
 }
-
 
 resource "kubernetes_secret" "registry_secret" {
   metadata {
@@ -208,16 +180,65 @@ resource "kubernetes_secret" "ngc_api" {
   depends_on = [kubernetes_namespace.nim]
 }
 
-resource "helm_release" "my_nim" {
-  name       = "my-nim"
-  namespace  = var.kubernetes_namespace
-  repository = "nim-llm"
-  #chart      = "../../../../../helm/nim-llm/"
-  chart      = "../../../helm/nim-llm/"
+resource "kubernetes_service_account" "ngc_gcs_ksa" {
+  metadata {
+    name      = "nim-on-gke-sa"
+    namespace = "nim"
+  }
+  depends_on = [kubernetes_namespace.nim]
+}
+
+resource "google_storage_bucket" "ngc_gcs_cache" {
+  project       = data.google_project.current.name
+  name          = "${data.google_project.current.name}-ngc-gcs-cache"
+  location      = "US"
+  force_destroy = true
+
+  uniform_bucket_level_access = true
+}
+
+resource "google_storage_bucket_iam_binding" "ngc_gcs_ksa_binding" {
+  bucket = google_storage_bucket.ngc_gcs_cache.name
+  role   = "roles/storage.objectUser"
+  members = [
+    "principal://iam.googleapis.com/projects/${data.google_project.current.number}/locations/global/workloadIdentityPools/${data.google_project.current.project_id}.svc.id.goog/subject/ns/${kubernetes_service_account.ngc_gcs_ksa.metadata[0].namespace}/sa/${kubernetes_service_account.ngc_gcs_ksa.metadata[0].name}",
+  ]
+  depends_on = [kubernetes_service_account.ngc_gcs_ksa]
+}
+
+
+provider "helm" {
+  alias = "helm_install"
+  kubernetes {
+    host                   = local.endpoint
+    token                  = local.token
+    cluster_ca_certificate = local.ca_certificate
+  }
+}
+
+resource "helm_release" "ngc_to_gcs_transfer" {
+  name          = "ngc-to-gcs-transfer"
+  namespace     = "nim"
+  repository    = "nim-llm"
+  chart         = "./helm/ngc-cache"
+  wait_for_jobs = true
+
+  provider = helm.helm_install
 
   values = [
-    file("./helm/custom-values.yaml")
+    file("./helm/custom-values.yaml"),
+    file("./helm/ngc-cache-values.yaml")
   ]
+
+  set {
+    name  = "extraVolumes.cache-volume.csi.volumeAttributes.bucketName"
+    value = google_storage_bucket.ngc_gcs_cache.name
+  }
+
+  set {
+    name  = "persistence.csi.volumeHandle"
+    value = google_storage_bucket.ngc_gcs_cache.name
+  }
 
   set {
     name  = "image.repository"
@@ -230,6 +251,11 @@ resource "helm_release" "my_nim" {
   }
 
   set {
+    name  = "serviceAccount.name"
+    value = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
+  }
+
+  set {
     name  = "model.name"
     value = var.model_name
   }
@@ -239,9 +265,33 @@ resource "helm_release" "my_nim" {
     value = var.gpu_limits
   }
 
-  depends_on = [kubernetes_namespace.nim]
+  depends_on = [kubernetes_secret.ngc_api, google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
 
   timeout = 900
   wait    = true
 }
-*/
+
+
+module "helm_nim" {
+  source = "./terraform/modules/helm/nim-install"
+
+  providers = {
+    helm = helm.helm_install
+  }
+
+  host                   = local.endpoint
+  token                  = local.token
+  cluster_ca_certificate = local.ca_certificate
+
+  namespace = var.kubernetes_namespace
+  chart     = "./../../../helm/nim-llm/"
+
+  repository = var.repository
+  model_name = var.model_name
+  tag        = var.tag
+  gpu_limits = var.gpu_limits
+  ksa_name   = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
+
+  depends_on = [helm_release.ngc_to_gcs_transfer]
+
+}
