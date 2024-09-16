@@ -1,0 +1,20 @@
+image:
+ repository: 
+ tag: 
+imagePullSecrets:
+ - name: registry-secret
+model:
+ name: 
+ ngcAPISecret: ngc-api
+ nimCache: /.cache
+persistence:
+ enabled: true
+ existingClaim: "ngc-cache"
+ accessMode: ReadOnlyMany
+statefulSet:
+ enabled: false
+podAnnotations:
+ gke-gcsfuse/volumes: "true"
+ gke-gcsfuse/cpu-limit: "0"
+ gke-gcsfuse/memory-limit: "0"
+ gke-gcsfuse/ephemeral-storage-limit: "0"
