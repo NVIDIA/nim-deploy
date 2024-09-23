@@ -41,6 +41,9 @@ spec:
       - name: enable_gpu
         varType: bool
         defaultValue: true
+      - name: goog_cm_deployment_name
+        varType: string
+        defaultValue: "nim-on-gke"        
       - name: kubernetes_namespace
         varType: string
         required: true
@@ -60,10 +63,6 @@ spec:
         varType: string
         required: true
         defaultValue: "nim-demo-subnet"
-      - name: registry_server
-        varType: string
-        required: true
-        defaultValue: "nvcr.io"
       - name: ngc_username
         varType: string
         required: true
@@ -71,22 +70,20 @@ spec:
       - name: ngc_api_key
         varType: string
         required: true
-        defaultValue: "$oauthtoken"
-      - name: repository
-        description: "Docker image of NIM container"
+        defaultValue: ""
+      - name: registry_server
         varType: string
         required: true
-        defaultValue: ""
+        defaultValue: "nvcr.io"
+      - name: tag
+        description: "Docker repository tag of NIM container"
+        varType: string
+        required: true
       - name: model_name
         description: "Name of the NIM model"
         varType: string
         required: true
         defaultValue: ""
-      - name: tag
-        description: "Docker repository tag of NIM container"
-        varType: string
-        required: true
-        defaultValue: "1.0.0"
       - name: gpu_limits
         description: "GPU limits"
         varType: number

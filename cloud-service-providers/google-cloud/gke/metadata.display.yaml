@@ -62,10 +62,14 @@ spec:
           title: Enable GPU nodepool
           section: required_config
           invisible: true
+        goog_cm_deployment_name:
+          name: goog_cm_deployment_name
+          title: Goog CM Deployment Name         
         kubernetes_namespace:
           name: kubernetes_namespace
           title: Kubernetes Namespace
           section: required_config
+          invisible: true
         network_name:
           name: network_name
           title: Network Name
@@ -83,10 +87,6 @@ spec:
           name: subnetwork_name
           title: SubNetwork Name
           invisible: true
-        registry_server:
-          name: registry_server
-          title: NVIDIA Registry
-          section: required_config
         ngc_username:
           name: ngc_username
           title: NGC Login username
@@ -96,17 +96,20 @@ spec:
           name: ngc_api_key
           title: NGC API Key
           section: required_config
-        repository:
-          name: repository
-          title: NIM Image
+          # invisibile: true
+        registry_server:
+          name: registry_server
+          title: NVIDIA Registry
           section: required_config
-        model_name:
-          name: model_name
-          title: NIM Model name
-          section: required_config
+          invisible: true
         tag:
           name: tag
           title: NIM image tag
+          section: required_config
+          invisible: true        
+        model_name:
+          name: model_name
+          title: NIM Model name
           section: required_config
         gpu_limits:
           name: gpu_limits

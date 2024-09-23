@@ -150,6 +150,7 @@ resource "kubernetes_secret" "registry_secret" {
 
   type = "kubernetes.io/dockerconfigjson"
 
+  
   data = {
     ".dockerconfigjson" = jsonencode({
       "auths" = {
@@ -161,6 +162,7 @@ resource "kubernetes_secret" "registry_secret" {
       }
     })
   }
+  
 
   depends_on = [kubernetes_namespace.nim]
 }
@@ -206,7 +208,6 @@ resource "google_storage_bucket_iam_binding" "ngc_gcs_ksa_binding" {
   depends_on = [kubernetes_service_account.ngc_gcs_ksa]
 }
 
-
 provider "helm" {
   alias = "helm_install"
   kubernetes {
@@ -214,6 +215,20 @@ provider "helm" {
     token                  = local.token
     cluster_ca_certificate = local.ca_certificate
   }
+}
+
+locals {
+
+  image_tag = lookup(var.nim_list, var.model_name, var.tag)
+  image = var.repository == "" ? "${var.registry_server}/nim/${var.model_name}" : var.repository
+}
+
+output "image_tag" {
+  value = local.image_tag
+}
+
+output "image" {
+  value = local.image
 }
 
 resource "helm_release" "ngc_to_gcs_transfer" {
@@ -242,12 +257,12 @@ resource "helm_release" "ngc_to_gcs_transfer" {
 
   set {
     name  = "image.repository"
-    value = var.repository
+    value = local.image
   }
 
   set {
     name  = "image.tag"
-    value = var.tag
+    value = local.image_tag
   }
 
   set {
@@ -265,12 +280,12 @@ resource "helm_release" "ngc_to_gcs_transfer" {
     value = var.gpu_limits
   }
 
-  depends_on = [kubernetes_secret.ngc_api, google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
+  depends_on = [kubernetes_secret.ngc_api, 
+                google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
 
   timeout = 900
   wait    = true
 }
-
 
 module "helm_nim" {
   source = "./terraform/modules/helm/nim-install"
@@ -285,13 +300,14 @@ module "helm_nim" {
 
   namespace = var.kubernetes_namespace
   chart     = "./../../../helm/nim-llm/"
+  #chart = "./helm/nim-llm"
 
-  repository = var.repository
+  #repository = var.repository
+  repository = local.image
   model_name = var.model_name
-  tag        = var.tag
+  tag        = local.image_tag
   gpu_limits = var.gpu_limits
   ksa_name   = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
 
   depends_on = [helm_release.ngc_to_gcs_transfer]
-
 }

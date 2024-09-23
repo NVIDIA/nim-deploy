@@ -101,26 +101,32 @@ variable "ip_range_pods" {
   type    = string
   default = ""
 }
+
 variable "ip_range_services" {
   type    = string
   default = ""
 }
+
 variable "monitoring_enable_managed_prometheus" {
   type    = bool
   default = false
 }
+
 variable "gcs_fuse_csi_driver" {
   type    = bool
   default = true
 }
+
 variable "filestore_csi_driver" {
   type    = bool
   default = true
 }
+
 variable "deletion_protection" {
   type    = bool
   default = false
 }
+
 variable "master_authorized_networks" {
   type = list(object({
     cidr_block   = string
@@ -145,18 +151,21 @@ variable "all_node_pools_oauth_scopes" {
     "https://www.googleapis.com/auth/servicecontrol",
   ]
 }
+
 variable "all_node_pools_labels" {
   type = map(string)
   default = {
     "created-by" = "nim-on-gke"
   }
 }
+
 variable "all_node_pools_metadata" {
   type = map(string)
   default = {
     disable-legacy-endpoints = "true"
   }
 }
+
 variable "all_node_pools_tags" {
   type    = list(string)
   default = ["nim-gke-node", "nim-on-gke"]
@@ -261,12 +270,6 @@ variable "gpu_pools" {
   }]
 }
 
-variable "registry_server" {
-  type        = string
-  default     = "nvcr.io"
-  description = "Registry that hosts the NIM images"
-}
-
 variable "gpu_locations_l4" {
   type = map(string)
 
@@ -335,6 +338,20 @@ variable "gpu_locations_h100_80gb" {
   }
 }
 
+## NVIDIA NIM specific config
+variable "nim_list" {
+  type = map(string)
+  description = "A map of NIM and version"
+
+  default = {
+    "meta/llama-3.1-8b-instruct" = "latest"
+    "meta/llama-3.1-405b-instruct" = "1.2.0"
+    "meta/llama-3.1-70b-instruct" = "1.1"
+    "meta/llama3-70b-instruct" = "1.0.3"
+    "meta/llama3-8b-instruct" = "1.0.3"
+  }
+}
+
 variable "ngc_username" {
   type        = string
   default     = "$oauthtoken"
@@ -349,26 +366,37 @@ variable "ngc_api_key" {
   sensitive   = true
 }
 
+variable "model_name" {
+  type        = string
+  description = "Name of the NIM model"
+  default     = "meta/llama3-8b-instruct​"
+}
+
+variable "registry_server" {
+  type        = string
+  default     = "nvcr.io"
+  description = "Registry that hosts the NIM images"
+}
+
 variable "repository" {
   type        = string
   description = "Docker image of NIM container"
-  default     = "nvcr.io/nim/meta/llama3-8b-instruct"
+  default = ""
 }
 
 variable "tag" {
   type        = string
   description = "Docker repository tag of NIM container"
-  default     = "1.0.0"
-}
-
-variable "model_name" {
-  type        = string
-  description = "Name of the NIM model"
-  default     = "meta/llama3-8b-instruct"
+  default     = ""
 }
 
 variable "gpu_limits" {
   type        = number
   description = "GPU limits"
   default     = "1"
+}
+
+variable "goog_cm_deployment_name" {
+  type    = string
+  default = "nim-on-gke"
 }

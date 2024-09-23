@@ -17,7 +17,7 @@ project_id = "isv-coe-skhas-nvidia"
 
 ##common variables
 cluster_name         = "nim-demo-gke"
-cluster_location     = "us-central1-a"
+cluster_location     = "us-east4-a"
 autopilot_cluster    = false ## true = autopilot cluster, false = standard cluster
 kubernetes_namespace = "nim"
 create_cluster       = true
@@ -41,7 +41,6 @@ cpu_pools = [{
   disk_size_gb           = 100
   disk_type              = "pd-standard"
   create_service_account = false
-  # service_account = "sa-nim-inframgr@isv-coe-skhas-nvidia.iam.gserviceaccount.com"
 }]
 
 ## GPU node pool values
@@ -62,12 +61,10 @@ gpu_pools = [
     logging_variant        = "DEFAULT"
     gpu_driver_version     = "DEFAULT"
     create_service_account = false
-    # service_account = "sa-nim-inframgr@isv-coe-skhas-nvidia.iam.gserviceaccount.com"
 }]
 
-ngc_api_key     = ""
+## NIM specific values
+ngc_api_key     = "<Enter your NGC API Key>"
 registry_server = "nvcr.io"
-repository      = "nvcr.io/nim/meta/llama3-8b-instruct"
-tag             = "1.0.0"
 model_name      = "meta/llama3-8b-instruct"
 gpu_limits      = 1
