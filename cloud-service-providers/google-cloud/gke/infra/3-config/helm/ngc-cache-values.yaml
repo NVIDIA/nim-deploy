@@ -4,7 +4,7 @@ extraVolumes:
       driver: gcsfuse.csi.storage.gke.io
       volumeAttributes:
         bucketName: "ngc-gcs-cache"
-        mountOptions: "max-conns-per-host=0"
+        mountOptions: "implicit-dirs,max-conns-per-host=0"
 extraVolumeMounts:
   cache-volume:
     mountPath: /upload-dir
