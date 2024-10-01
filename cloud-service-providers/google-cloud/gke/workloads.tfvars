@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-project_id = "isv-coe-skhas-nvidia"
+project_id = "<Enter GCP Project ID>>"
 
 ##common variables
 cluster_name         = "nim-demo-gke"
