@@ -22,6 +22,8 @@ output "cluster_name" {
   value = var.cluster_name
 }
 
+/*
 output "cluster_location" {
   value = var.cluster_location
 }
+*/

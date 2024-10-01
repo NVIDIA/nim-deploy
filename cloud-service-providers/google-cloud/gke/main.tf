@@ -36,6 +36,21 @@ locals {
   }
 
   gpu_location = lookup(local.all_gpu_locations, var.gpu_pools[0].accelerator_type, {})
+
+  region_vm        = split(" ", var.region_based_vm)
+  cluster_location = local.region_vm[length(local.region_vm) - 2]
+  machine_type = {
+    "machine_type" = local.region_vm[length(local.region_vm) - 1]
+  }
+  gpu_type = lookup(var.vm_gpu_spec_list, local.region_vm[length(local.region_vm) - 1])
+  
+  accelerator_type = {
+    "accelerator_type" = local.gpu_type.accelerator_type
+  }  
+
+  accelerator_count = {
+    "accelerator_count" = local.gpu_type.accelerator_count
+  }  
 }
 
 data "google_compute_network" "existing-network" {
@@ -70,15 +85,28 @@ module "custom-network" {
 }
 
 locals {
-  network_name            = var.create_network ? module.custom-network[0].network_name : var.network_name
-  subnetwork_name         = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
-  subnetwork_cidr         = var.create_network ? module.custom-network[0].subnets_ips[0] : data.google_compute_subnetwork.subnetwork[0].ip_cidr_range
-  region                  = length(split("-", var.cluster_location)) == 2 ? var.cluster_location : ""
-  regional                = local.region != "" ? true : false
-  cluster_location_region = (length(split("-", var.cluster_location)) == 2 ? var.cluster_location : join("-", slice(split("-", var.cluster_location), 0, 2)))
-  zone                    = length(split("-", var.cluster_location)) > 2 ? split(",", var.cluster_location) : split(",", local.gpu_location[local.region])
+  network_name    = var.create_network ? module.custom-network[0].network_name : var.network_name
+  subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
+  subnetwork_cidr = var.create_network ? module.custom-network[0].subnets_ips[0] : data.google_compute_subnetwork.subnetwork[0].ip_cidr_range
+
+  #region                  = length(split("-", var.cluster_location)) == 2 ? var.cluster_location : ""
+  region   = length(split("-", local.cluster_location)) == 2 ? local.cluster_location : ""
+  regional = local.region != "" ? true : false
+
+  #cluster_location_region = (length(split("-", var.cluster_location)) == 2 ? var.cluster_location : join("-", slice(split("-", var.cluster_location), 0, 2)))
+  cluster_location_region = (length(split("-", local.cluster_location)) == 2 ? local.cluster_location : join("-", slice(split("-", local.cluster_location), 0, 2)))
+
+  #zone                    = length(split("-", var.cluster_location)) > 2 ? split(",", var.cluster_location) : split(",", local.gpu_location[local.region])
+  zone = length(split("-", local.cluster_location)) > 2 ? split(",", local.cluster_location) : split(",", local.gpu_location[local.region])
+
   # Update gpu_pools with node_locations according to region and zone gpu availibility, if not provided
   gpu_pools = [for elm in var.gpu_pools : (local.regional && contains(keys(local.gpu_location), local.region) && elm["node_locations"] == "") ? merge(elm, { "node_locations" : local.gpu_location[local.region] }) : elm]
+
+  gpu_pools_configured = [merge(local.gpu_pools[0], local.machine_type, local.accelerator_type, local.accelerator_count)]
+}
+
+output "gpu_pools_configured" {
+  value = local.gpu_pools_configured
 }
 
 module "gke-cluster" {
@@ -108,7 +136,8 @@ module "gke-cluster" {
   ## pools config variables
   cpu_pools                   = var.cpu_pools
   enable_gpu                  = var.enable_gpu
-  gpu_pools                   = local.gpu_pools
+  #gpu_pools                   = local.gpu_pools
+  gpu_pools = local.gpu_pools_configured
   all_node_pools_oauth_scopes = var.all_node_pools_oauth_scopes
   all_node_pools_labels       = var.all_node_pools_labels
   all_node_pools_metadata     = var.all_node_pools_metadata
@@ -117,9 +146,10 @@ module "gke-cluster" {
 }
 
 data "google_container_cluster" "default" {
-  count      = var.create_cluster ? 0 : 1
-  name       = var.cluster_name
-  location   = var.cluster_location
+  count = var.create_cluster ? 0 : 1
+  name  = var.cluster_name
+  #location   = var.cluster_location
+  location   = local.cluster_location
   depends_on = [module.gke-cluster]
 }
 
@@ -150,7 +180,7 @@ resource "kubernetes_secret" "registry_secret" {
 
   type = "kubernetes.io/dockerconfigjson"
 
-  
+
   data = {
     ".dockerconfigjson" = jsonencode({
       "auths" = {
@@ -162,7 +192,6 @@ resource "kubernetes_secret" "registry_secret" {
       }
     })
   }
-  
 
   depends_on = [kubernetes_namespace.nim]
 }
@@ -220,7 +249,8 @@ provider "helm" {
 locals {
 
   image_tag = lookup(var.nim_list, var.model_name, var.tag)
-  image = var.repository == "" ? "${var.registry_server}/nim/${var.model_name}" : var.repository
+  #image     = var.repository == "" ? "${var.registry_server}/nim/${var.model_name}" : var.repository
+  image     = "${var.registry_server}/${var.repository}/${var.model_name}"
 }
 
 output "image_tag" {
@@ -280,8 +310,8 @@ resource "helm_release" "ngc_to_gcs_transfer" {
     value = var.gpu_limits
   }
 
-  depends_on = [kubernetes_secret.ngc_api, 
-                google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
+  depends_on = [kubernetes_secret.ngc_api,
+  google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
 
   timeout = 900
   wait    = true
@@ -299,8 +329,8 @@ module "helm_nim" {
   cluster_ca_certificate = local.ca_certificate
 
   namespace = var.kubernetes_namespace
-  chart     = "./../../../helm/nim-llm/"
-  #chart = "./helm/nim-llm"
+  #chart     = "./../../../helm/nim-llm/"
+  chart = "./helm/nim-llm"
 
   #repository = var.repository
   repository = local.image

@@ -27,10 +27,10 @@ spec:
       - name: solution_deployment_view
         varType: bool
         required: true
-      - name: cluster_location
-        varType: string
-        required: true
-        defaultValue: "us-central1"
+      #- name: cluster_location
+      #  varType: string
+      #  required: true
+      #  defaultValue: "us-central1"
       - name: cluster_name
         varType: string
         defaultValue: "nim-demo-gke"
@@ -70,17 +70,23 @@ spec:
       - name: ngc_api_key
         varType: string
         required: true
-        defaultValue: ""
+        defaultValue: "Replace with user NGC API Key"
       - name: registry_server
         varType: string
         required: true
-        defaultValue: "nvcr.io"
+        #defaultValue: "nvcr.io"
+        defaultValue: "us-docker.pkg.dev/nvidia-vgpu-public"
       - name: tag
         description: "Docker repository tag of NIM container"
         varType: string
         required: true
+      - name: region_based_vm
+        description: "Pick a region for GKE Cluster and NVIDIA GPU accelerator"
+        varType: string
+        required: true
+        defaultValue: "L4 us-central1 g2-standard-24"
       - name: model_name
-        description: "Name of the NIM model"
+        description: "Pick a NIM model name"
         varType: string
         required: true
         defaultValue: ""
@@ -88,6 +94,11 @@ spec:
         description: "GPU limits"
         varType: number
         defaultValue: 1
+      - name: nim_license
+        description: Terms and Conditions
+        varType: bool
+        defaultValue: false
+        required: true
     outputs:
       - name: cluster_name
         description: GKE cluster name where the NIMs are running

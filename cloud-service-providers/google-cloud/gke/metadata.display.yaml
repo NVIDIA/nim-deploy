@@ -40,15 +40,15 @@ spec:
           enumValueLabels:
             - label: Confirm that all prerequisites have been met.
               value: "true"
-        cluster_location:
-          name: cluster_location
-          title: Cluster Location
-          section: required_config
-          xGoogleProperty:
-            type: ET_GCE_REGION
-            # specified regions have L4, A2 and A3 GPUs https://cloud.google.com/compute/docs/gpus/gpu-regions-zones#view-using-tools
-            gce_region:
-              allowlisted_regions: ["asia-east1","asia-southeast1","europe-west1","europe-west4","us-central1","us-east1","us-east4","us-west1","us-west4"]
+        #cluster_location:
+        #  name: cluster_location
+        #  title: Cluster Location
+        #  section: required_config
+        #  xGoogleProperty:
+        #    type: ET_GCE_REGION
+        #    # specified regions have L4, A2 and A3 GPUs https://cloud.google.com/compute/docs/gpus/gpu-regions-zones#view-using-tools
+        #    gce_region:
+        #      allowlisted_regions: ["asia-east1","asia-southeast1","europe-west1","europe-west4","us-central1","us-east1","us-east4","us-west1","us-west4"]
         cluster_name:
           name: cluster_name
           title: Cluster Name
@@ -96,7 +96,7 @@ spec:
           name: ngc_api_key
           title: NGC API Key
           section: required_config
-          # invisibile: true
+          invisible: true
         registry_server:
           name: registry_server
           title: NVIDIA Registry
@@ -106,11 +106,119 @@ spec:
           name: tag
           title: NIM image tag
           section: required_config
-          invisible: true        
+          invisible: true     
+        region_based_vm:
+          name: region_based_vm
+          title: Cluster and GPU location
+          section: required_config
+          enumValueLabels:
+            - label: "L4 asia-east1 g2-standard-24"
+              value: "L4 asia-east1 g2-standard-24"
+            - label: "L4 asia-south1 g2-standard-24"
+              value: "L4 asia-south1 g2-standard-24"
+            - label: "L4 europe-west1 g2-standard-24"
+              value: "L4 europe-west1 g2-standard-24"
+            - label: "L4 us-central1 g2-standard-24" 
+              value: "L4 us-central1 g2-standard-24"
+            - label: "L4 us-east4 g2-standard-24"
+              value: "L4 us-east4 g2-standard-24"
+            - label: "L4 us-west1 g2-standard-24" 
+              value: "L4 us-west1 g2-standard-24"
+            - label: "L4 asia-east1 g2-standard-48"
+              value: "L4 asia-east1 g2-standard-48"
+            - label: "L4 asia-south1 g2-standard-48"
+              value: "L4 asia-south1 g2-standard-48"
+            - label: "L4 europe-west1 g2-standard-48"
+              value: "L4 europe-west1 g2-standard-48"
+            - label: "L4 us-central1 g2-standard-48"
+              value: "L4 us-central1 g2-standard-48"
+            - label: "L4 us-east4 g2-standard-48"
+              value: "L4 us-east4 g2-standard-48"
+            - label: "L4 us-west1 g2-standard-48"
+              value: "L4 us-west1 g2-standard-48"
+            - label: "L4 asia-east1 g2-standard-96"
+              value: "L4 asia-east1 g2-standard-96"
+            - label: "L4 asia-south1 g2-standard-96"
+              value: "L4 asia-south1 g2-standard-96"
+            - label: "L4 europe-west1 g2-standard-96"
+              value: "L4 europe-west1 g2-standard-96"
+            - label: "L4 us-central1 g2-standard-96"
+              value: "L4 us-central1 g2-standard-96"
+            - label: "L4 us-east4 g2-standard-96"
+              value: "L4 us-east4 g2-standard-96"
+            - label: "L4 us-west1 g2-standard-96"
+              value: "L4 us-west1 g2-standard-96"
+            - label: "H100(80GB) asia-northeast1 a3-highgpu-8g"
+              value: "H100(80GB) asia-northeast1 a3-highgpu-8g"
+            - label: "H100(80GB) asia-south1 a3-highgpu-8g"
+              value: "H100(80GB) asia-south1 a3-highgpu-8g"
+            - label: "H100(80GB) europe-west1 a3-highgpu-8g"
+              value: "H100(80GB) europe-west1 a3-highgpu-8g"
+            - label: "H100(80GB) us-central1 a3-highgpu-8g"
+              value: "H100(80GB) us-central1 a3-highgpu-8g"
+            - label: "H100(80GB) us-east4 a3-highgpu-8g"
+              value: "H100(80GB) us-east4 a3-highgpu-8g"
+            - label: "H100(80GB) us-west1 a3-highgpu-8g"
+              value: "H100(80GB) us-west1 a3-highgpu-8g"
+            - label: "H100(80GB) us-west4 a3-highgpu-8g"
+              value: "H100(80GB) us-west4 a3-highgpu-8g"
+            - label: "A100(80GB) asia-southeast1 a2-ultragpu-1g"
+              value: "A100(80GB) asia-southeast1 a2-ultragpu-1g"
+            - label: "A100(80GB) europe-west4 a2-ultragpu-1g"
+              value: "A100(80GB) europe-west4 a2-ultragpu-1g"
+            - label: "A100(80GB) us-central1 a2-ultragpu-1g"
+              value: "A100(80GB) us-central1 a2-ultragpu-1g"
+            - label: "A100(80GB) us-east4 a2-ultragpu-1g"
+              value: "A100(80GB) us-east4 a2-ultragpu-1g"
+            - label: "A100(80GB) asia-southeast1 a2-ultragpu-4g"
+              value: "A100(80GB) asia-southeast1 a2-ultragpu-4g"
+            - label: "A100(80GB) europe-west4 a2-ultragpu-4g"
+              value: "A100(80GB) europe-west4 a2-ultragpu-4g"
+            - label: "A100(80GB) us-central1 a2-ultragpu-4g"
+              value: "A100(80GB) us-central1 a2-ultragpu-4g"
+            - label: "A100(80GB) us-east4 a2-ultragpu-4g"
+              value: "A100(80GB) us-east4 a2-ultragpu-4g"
+            - label: "A100(80GB) asia-northeast1 a2-ultragpu-8g"
+              value: "A100(80GB) asia-northeast1 a2-ultragpu-8g"
+            - label: "A100(80GB) asia-south1 a2-ultragpu-8g"
+              value: "A100(80GB) asia-south1 a2-ultragpu-8g"
+            - label: "A100(80GB) europe-west1 a2-ultragpu-8g"
+              value: "A100(80GB) europe-west1 a2-ultragpu-8g"
+            - label: "A100(80GB) us-central1 a2-ultragpu-8g"
+              value: "A100(80GB) us-central1 a2-ultragpu-8g"
+            - label: "A100(80GB) us-east4 a2-ultragpu-8g"
+              value: "A100(80GB) us-east4 a2-ultragpu-8g"
+            - label: "A100(80GB) us-west1 a2-ultragpu-8g"
+              value: "A100(80GB) us-west1 a2-ultragpu-8g"
         model_name:
           name: model_name
           title: NIM Model name
           section: required_config
+          enumValueLabels:
+            - label: meta/llama3-8b-instruct
+              value: llama3-8b-instruct
+            - label: meta/llama3-70b-instruct
+              value: llama3-70b-instruct              
+            - label: meta/llama-3.1-405b-instruct
+              value: llama-3.1-405b-instruct
+            - label: meta/llama-3.1-70b-instruct
+              value: llama-3.1-70b-instruct
+            - label: meta/llama-3.1-8b-instruct
+              value: llama-3.1-8b-instruct
+            - label: mistralai/mixtral-8x7b-instruct-v0.1
+              value: mixtral-8x7b-instruct-v01
+            - label: mistralai/mistral-7b-instruct-v0.3
+              value: mistral-7b-instruct-v0.3
+            - label: nvidia/nv-rerankqa-mistral-4b-v3
+              value: nv-rerankqa-mistral-4b-v3
+            - label: nvidia/nv-embedqa-e5-v5
+              value: nv-embedqa-e5-v5
+            - label: nvidia/nv-embedqa-mistral-7b-v2
+              value: nv-embedqa-mistral-7b-v2
+        nim_license:
+          name: nim_license
+          title: I agree to the Terms and Conditions
+          section: license
         gpu_limits:
           name: gpu_limits
           title: GPU limits
@@ -122,6 +230,18 @@ spec:
                 This solution deploys a sample <a href="https://github.com/sujituk/nim-deploy/blob/test-infra-mgr/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
         - name: required_config
           title: Required configuration
+        - name: license
+          title: Governing Terms & Conditions
+          subtext: 
+                <p>
+                The NIM container is governed by <a href="https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/">NVIDIA Agreements | Enterprise Software | NVIDIA Software License Agreement</a> and <a href="https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/">NVIDIA Agreements | Enterprise Software | Product Specific Terms for AI Product</a>; and the use of the model is governed by governed by the <a href="https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-ai-foundation-models-community-license-agreement/">NVIDIA AI Foundation Models Community License Agreement.</a><br/>
+                <b>Additional Information</b><br/>
+                &emsp;&emsp;&#x2022; For Llama-3.1 models&#58; <a href="https://www.llama.com/llama3_1/license/">Llama 3.1 Community License Agreement, Built with Llama</a><br/>
+                &emsp;&emsp;&#x2022; For Llama3 models&#58; <a href="https://www.llama.com/llama3/license/">Meta Llama 3 Community License, Built with Meta Llama 3</a><br/>
+                &emsp;&emsp;&#x2022; For Mistral models&#58; <a href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2">Apache 2.0 License</a><br/>
+                &emsp;&emsp;&#x2022; For Mixtral models&#58; <a href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2">Apache 2.0 License</a><br/>
+                &emsp;&emsp;&#x2022; For E5-Large models&#58; <a href="https://choosealicense.com/licenses/mit/">MIT license</a><br/>
+                </p>
     runtime:
       outputMessage: Deployment can take several minutes to complete.
       suggestedActions:

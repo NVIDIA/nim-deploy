@@ -93,9 +93,9 @@ variable "release_channel" {
   default = "REGULAR"
 }
 
-variable "cluster_location" {
-  type = string
-}
+#variable "cluster_location" {
+#  type = string
+#}
 
 variable "ip_range_pods" {
   type    = string
@@ -261,7 +261,7 @@ variable "gpu_pools" {
     max_count              = 3
     disk_size_gb           = 100
     disk_type              = "pd-balanced"
-    accelerator_count      = 1
+    accelerator_count      = 2
     autoscaling            = true
     accelerator_type       = "nvidia-l4"
     gpu_driver_version     = "DEFAULT"
@@ -338,17 +338,67 @@ variable "gpu_locations_h100_80gb" {
   }
 }
 
+variable "vm_gpu_spec_list" {
+  type = map(object({
+    accelerator_type  = string
+    accelerator_count = number
+  }))
+  description = "A map of VMs and GPU specs"
+
+  default = {
+    g2-standard-24 = {
+      accelerator_type  = "nvidia-l4"
+      accelerator_count = 2
+    }
+    g2-standard-48 = {
+      accelerator_type  = "nvidia-l4"
+      accelerator_count = 4
+    }
+    g2-standard-96 = {
+      accelerator_type  = "nvidia-l4"
+      accelerator_count = 8
+    }
+    a3-highgpu-8g = {
+      accelerator_type  = "nvidia-h100-80gb"
+      accelerator_count = 8
+    }
+    a2-ultragpu-1g = {
+      accelerator_type  = "nvidia-a100-80gb"
+      accelerator_count = 1
+    }
+    a2-ultragpu-4g = {
+      accelerator_type  = "nvidia-a100-80gb"
+      accelerator_count = 4
+    }
+    a2-ultragpu-8g = {
+      accelerator_type  = "nvidia-a100-80gb"
+      accelerator_count = 8
+    }
+  }
+}
+
+variable "region_based_vm" {
+  type        = string
+  description = "Cluster and GPU location"
+  default     = "L4 us-east4 g2-standard-24"
+}
+
 ## NVIDIA NIM specific config
 variable "nim_list" {
-  type = map(string)
+  type        = map(string)
   description = "A map of NIM and version"
 
   default = {
-    "meta/llama-3.1-8b-instruct" = "latest"
-    "meta/llama-3.1-405b-instruct" = "1.2.0"
-    "meta/llama-3.1-70b-instruct" = "1.1"
-    "meta/llama3-70b-instruct" = "1.0.3"
-    "meta/llama3-8b-instruct" = "1.0.3"
+    "llama-3.1-8b-instruct"   = "1.1.2"
+    "llama-3.1-70b-instruct"  = "1.1.2"
+    "llama-3.1-405b-instruct" = "1.1.2"
+    "llama3-70b-instruct"     = "1.0.3"
+    "llama3-8b-instruct"      = "1.0.3"
+    "mistral-7b-instruct-v0.3"     = "1.1"
+    "mixtral-8x7b-instruct-v01"    = "1.2.1"
+    "nv-embedqa-e5-v5"             = "1.0.1"
+    "nv-embedqa-mistral-7b-v2"     = "1.0.1"
+    "nv-rerankqa-mistral-4b-v3"    = "1.0.2"
   }
 }
 
@@ -366,22 +416,22 @@ variable "ngc_api_key" {
   sensitive   = true
 }
 
-variable "model_name" {
-  type        = string
-  description = "Name of the NIM model"
-  default     = "meta/llama3-8b-instruct​"
-}
-
 variable "registry_server" {
   type        = string
-  default     = "nvcr.io"
+  default     = "us-docker.pkg.dev/nvidia-vgpu-public"
   description = "Registry that hosts the NIM images"
 }
 
 variable "repository" {
   type        = string
   description = "Docker image of NIM container"
-  default = ""
+  default     = "nim-gke"
+}
+
+variable "model_name" {
+  type        = string
+  description = "Name of the NIM model"
+  default     = "meta/llama3-8b-instruct​"
 }
 
 variable "tag" {
