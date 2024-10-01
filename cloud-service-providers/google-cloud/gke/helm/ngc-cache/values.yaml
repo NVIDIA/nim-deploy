@@ -108,6 +108,7 @@ model:  # most of these values only matter if not using customCommand
   nimCache: /model-store
   name: my-model # optionsl name of the model in the OpenAI API -- used in `helm test`
   ngcAPISecret: ngc-api
+  ngcBundleURLSecret: ngc-bundle-url
   openaiPort: 8000
   labels: {}  # any extra labels desired on deployed pods
   jsonLogging: true

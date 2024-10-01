@@ -440,6 +440,36 @@ variable "tag" {
   default     = ""
 }
 
+variable "ngc_transfer_image" {
+  type = string
+  description = "Docker image of NGC transfer container"
+  default     = ""
+}
+
+variable "ngc_transfer_tag" {
+  type = string
+  description = "Docker repository tag of the NGC transfer container"
+  default     = ""
+}
+
+variable "ngc_bundle_gcs_bucket" {
+  type        = string
+  description = "GCS bucket containing NGC bucket with NIM profiles"
+  default     = ""
+}
+
+variable "ngc_bundle_filename" {
+  type        = string
+  description = "Filename containing NIM profiles from NGC"
+  default     = ""
+}
+
+variable "ngc_bundle_service_fqdn" {
+  type        = string
+  description = "FQDN of the service serving NIM bundle profiles"
+  default     = ""
+}
+
 variable "gpu_limits" {
   type        = number
   description = "GPU limits"

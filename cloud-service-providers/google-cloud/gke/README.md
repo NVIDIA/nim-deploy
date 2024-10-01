@@ -129,6 +129,7 @@ image:
 model:
   name: 
   ngcAPISecret: ngc-api
+  nimCache: /opt/nim/llm/.cache
 persistence:
   enabled: true
 statefulSet:

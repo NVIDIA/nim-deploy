@@ -50,7 +50,7 @@ locals {
 
   accelerator_count = {
     "accelerator_count" = local.gpu_type.accelerator_count
-  }  
+  }
 }
 
 data "google_compute_network" "existing-network" {
@@ -157,6 +157,7 @@ locals {
   endpoint       = module.gke-cluster[0].endpoint
   ca_certificate = module.gke-cluster[0].ca_certificate
   token          = data.google_client_config.default.access_token
+  use_bundle_url   = var.ngc_bundle_gcs_bucket != "" && var.ngc_bundle_filename != ""
 }
 
 provider "kubernetes" {
@@ -211,17 +212,35 @@ resource "kubernetes_secret" "ngc_api" {
   depends_on = [kubernetes_namespace.nim]
 }
 
+resource "kubernetes_secret" "ngc_bundle_url" {
+  metadata {
+    name      = "ngc-bundle-url"
+    namespace = var.kubernetes_namespace
+  }
+
+  type = "Opaque" # Generic secret type
+
+  data = {
+    "NGC_BUNDLE_URL" = local.use_bundle_url ? "${data.local_file.ngc-bundle-url[0].content}" : ""
+  }
+
+  depends_on = [kubernetes_namespace.nim]
+}
+
 resource "kubernetes_service_account" "ngc_gcs_ksa" {
   metadata {
     name      = "nim-on-gke-sa"
-    namespace = "nim"
+    namespace = var.kubernetes_namespace
   }
   depends_on = [kubernetes_namespace.nim]
 }
 
+resource "random_uuid" "gcs_cache_uuid" {
+}
+
 resource "google_storage_bucket" "ngc_gcs_cache" {
   project       = data.google_project.current.name
-  name          = "${data.google_project.current.name}-ngc-gcs-cache"
+  name          = "ngc-gcs-cache-${random_uuid.gcs_cache_uuid.result}"
   location      = "US"
   force_destroy = true
 
@@ -251,6 +270,8 @@ locals {
   image_tag = lookup(var.nim_list, var.model_name, var.tag)
   #image     = var.repository == "" ? "${var.registry_server}/nim/${var.model_name}" : var.repository
   image     = "${var.registry_server}/${var.repository}/${var.model_name}"
+  ngc_transfer_image = var.ngc_transfer_image == "" ? local.image : var.ngc_transfer_image
+  ngc_transfer_tag = var.ngc_transfer_tag == "" ? local.image_tag : var.ngc_transfer_tag
 }
 
 output "image_tag" {
@@ -261,9 +282,36 @@ output "image" {
   value = local.image
 }
 
+data "local_file" "ngc-eula" {
+  count = local.use_bundle_url ? 1 : 0
+  filename = "${path.module}/NIM_GKE_GCS_SIGNED_URL_EULA"
+}
+
+resource "null_resource" "get-signed-ngc-bundle-url" {
+  count = local.use_bundle_url ? 1 : 0
+  triggers = {
+    shell_hash = "${sha256(file("${path.module}/fetch-ngc-url.sh"))}"
+  }
+  provisioner "local-exec" {
+    command = "./fetch-ngc-url.sh > ${path.module}/ngc_signed_url.txt"
+    environment = {
+      NGC_EULA_TEXT  = "${data.local_file.ngc-eula[0].content}"
+      NIM_GCS_BUCKET = "${var.ngc_bundle_gcs_bucket}"
+      GCS_FILENAME   = "${var.ngc_bundle_filename}"
+      SERVICE_FQDN   = "${var.ngc_bundle_service_fqdn}"
+    }
+  }
+}
+
+data "local_file" "ngc-bundle-url" {
+  count = local.use_bundle_url ? 1 : 0
+  filename = "${path.module}/ngc_signed_url.txt"
+  depends_on = [null_resource.get-signed-ngc-bundle-url]
+}
+
 resource "helm_release" "ngc_to_gcs_transfer" {
   name          = "ngc-to-gcs-transfer"
-  namespace     = "nim"
+  namespace     = var.kubernetes_namespace
   repository    = "nim-llm"
   chart         = "./helm/ngc-cache"
   wait_for_jobs = true
@@ -287,12 +335,12 @@ resource "helm_release" "ngc_to_gcs_transfer" {
 
   set {
     name  = "image.repository"
-    value = local.image
+    value = local.ngc_transfer_image
   }
 
   set {
     name  = "image.tag"
-    value = local.image_tag
+    value = local.ngc_transfer_tag
   }
 
   set {
@@ -311,7 +359,8 @@ resource "helm_release" "ngc_to_gcs_transfer" {
   }
 
   depends_on = [kubernetes_secret.ngc_api,
-  google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
+    kubernetes_secret.ngc_bundle_url,
+    google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
 
   timeout = 900
   wait    = true
@@ -329,8 +378,8 @@ module "helm_nim" {
   cluster_ca_certificate = local.ca_certificate
 
   namespace = var.kubernetes_namespace
-  #chart     = "./../../../helm/nim-llm/"
-  chart = "./helm/nim-llm"
+  chart     = "./../../../helm/nim-llm/"
+  #chart = "./helm/nim-llm"
 
   #repository = var.repository
   repository = local.image

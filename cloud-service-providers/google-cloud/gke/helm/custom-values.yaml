@@ -4,9 +4,8 @@ image:
 imagePullSecrets:
  - name: registry-secret
 model:
- name: 
- ngcAPISecret: ngc-api
- nimCache: /.cache
+ name:
+ nimCache: /opt/nim/llm/.cache
 persistence:
  enabled: true
  existingClaim: "ngc-cache"

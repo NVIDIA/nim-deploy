@@ -34,10 +34,8 @@ spec:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command:
-            - /bin/bash
-            - -c
-            - "download-to-cache && find $NIM_CACHE_PATH -type d -printf '%P\\n' | xargs -P 100 -I {} mkdir -p /upload-dir/{} && find $NIM_CACHE_PATH -type f,l -printf '%P\\n' | xargs -P 100 -I {} cp --no-dereference $NIM_CACHE_PATH/{} /upload-dir/{}"
+          command: ["/bin/sh", "-c"]
+          args: ["/scripts/ngc_pull.sh"]
           env:
             - name: NIM_CACHE_PATH
               value: {{ .Values.model.nimCache | quote }}
@@ -46,6 +44,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.model.ngcAPISecret }}
                   key: NGC_API_KEY
+            - name: NGC_BUNDLE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.model.ngcBundleURLSecret }}
+                  key: NGC_BUNDLE_URL
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
@@ -56,6 +59,8 @@ spec:
               {{- else }}
               mountPath: {{ .Values.model.nimCache }}
               {{- end }}
+            - mountPath: /scripts
+              name: scripts-volume
           {{- if .Values.extraVolumeMounts }}
           {{- range $k, $v := .Values.extraVolumeMounts }}
             - name: {{ $k }}
@@ -92,6 +97,10 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        - name: scripts-volume
+          configMap:
+            name: {{ .Release.Name }}-scripts-configmap
+            defaultMode: 0555
       {{- if .Values.extraVolumes }}
       {{- range $k, $v := .Values.extraVolumes }}
         - name: {{ $k }}
