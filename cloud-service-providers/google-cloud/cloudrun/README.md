@@ -43,6 +43,7 @@ export PROJECTNUM=123467890123
 export REGION=us-central1
 export GCSBUCKET=my-model-data
 export SERVICE_NAME=llama-3-8b-instruct
+export ARTIFACT_REGISTRY_LOCATION=us
 ```
 #### Choose a model
 
