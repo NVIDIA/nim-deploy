@@ -9,15 +9,25 @@ export PROJECTID=
 export PROJECTUSER=
 export PROJECTNUM=
 export REGION=
-export SERVICE_NAME= # e.g. llama-3-8b-instruct
 export GCSBUCKET=
+ARTIFACT_REGISTERY_LOCATION= # e.g.: us
 EOF
 exit
 fi
 
 source ./env
 
-export export IMAGE=us-docker.pkg.dev/${PROJECTID:?}/${PROJECTUSER:?}/${SERVICE_NAME?}-l4:1.0
+# Articat Registry
+echo gcloud artifacts repositories list \
+    --project=${PROJECTID?} \
+    --location=${ARTIFACT_REGISTRY_LOCATION?} | grep ${PROJECTUSER:?}
+if [ $? -eq 1 ]
+then
+echo gcloud artifacts repositories create --repository-format=docker --project=${PROJECTID?} --location=${ARTIFACT_REGISTRY_LOCATION?} ${PROJECTUSER:?}
+
+fi
+
+export IMAGE=${ARTIFACT_REGISTERY_LOCATION?}-docker.pkg.dev/${PROJECTID:?}/${PROJECTUSER:?}/${SERVICE_NAME?}-l4:1.0
 
 if [ ! -r source/ngc-token ]
 then

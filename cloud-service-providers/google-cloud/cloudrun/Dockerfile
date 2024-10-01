@@ -6,8 +6,6 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib64:${LD_LIBRARY_PATH}
 USER root
 RUN mkdir -p /home/nemo
 COPY source/entrypoint_0.sh /home/nemo/entrypoint_0.sh
-COPY source/entrypoint_1.sh /home/nemo/entrypoint_1.sh
-COPY source/entrypoint_2.sh /home/nemo/entrypoint_2.sh
 COPY source/http_respond_ready.py  /home/nemo/http_respond_ready.py
 WORKDIR /
 RUN mkdir -p /opt/nim/.cache
