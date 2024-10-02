@@ -27,13 +27,15 @@ az account set -s ${subscription_id}
 
 ## Setup AzureML Workspace
 
-Create a new AzureML workspace with the "Azure ML Secrets Reader" role assignment. All necessary commands are provided in the `1_setup_credentials.sh` script file.
+The deployment procedure requires an Azure AI Workspace with an associated Azure AI private container registry. The workspace will also require to assign the "Azure ML Secrets Reader" role assignment to the user. The user could use any pre-existent workspace with those characteristics, populating accordingly the names of the resource group, container registry name and workspace name in the config.sh file. 
+
+The `1_setup_credentials.sh` script file, provides the role assigment, optionally it can create the necessary resource group, container registry and workspace (with the required association to the container registry, all using the names provided in the config.sh file) by the use of flags `--create_new_resource`, `--create_new_container_registry` and `--create_new_workspace` respectively. 
+
+Create a new AzureML resource group, container registry and workspace (if needed) with the "Azure ML Secrets Reader" role assignment. All necessary commands are provided in the `1_setup_credentials.sh` script file.
 
 ```bash
-./1_setup_credentials.sh --create_new_workspace
+./1_setup_credentials.sh --create_new_resource --create_new_container_registry --create_new_workspace
 ```
-
-The above command creates a new workspace with the workspace name provided in the `config.sh` file. If the workspace name already exists, omit the `--create_new_workspace` flag to skip the creation process and update the workspace with the necessary role assignments.
 
 ## Store NGC API Key for Use in the AzureML Deployment
 
