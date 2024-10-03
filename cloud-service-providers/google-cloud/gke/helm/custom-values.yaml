@@ -5,7 +5,7 @@ imagePullSecrets:
  - name: registry-secret
 model:
  name:
- nimCache: /opt/nim/llm/.cache
+ nimCache: /mnt/cache
 persistence:
  enabled: true
  existingClaim: "ngc-cache"
