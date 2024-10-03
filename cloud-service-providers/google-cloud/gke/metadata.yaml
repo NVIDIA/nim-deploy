@@ -70,7 +70,7 @@ spec:
       - name: ngc_api_key
         varType: string
         required: true
-        defaultValue: "Replace with user NGC API Key"
+        defaultValue: ""
       - name: registry_server
         varType: string
         required: true

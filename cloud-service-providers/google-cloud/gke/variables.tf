@@ -469,7 +469,7 @@ variable "ngc_username" {
 
 variable "ngc_api_key" {
   type        = string
-  default     = "$NGC_API_KEY"
+  default     = ""
   description = "NGC API key to access NGC registry"
   sensitive   = true
 }
