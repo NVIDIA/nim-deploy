@@ -1,0 +1,27 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-scripts-configmap
+  labels:
+    {{- include "nim-llm.labels" . | nindent 4 }}
+data:
+  ngc_pull.sh: |-
+{{ .Files.Get "files/ngc_pull.sh" | indent 4 }}
+{{ if .Values.multiNode.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-lws-mpi-config
+  labels:
+    {{- include "nim-llm.labels" . | nindent 4 }}
+data:
+  {{- range $i := untilStep 0 (int (include "nim-llm.totalMaxReplicas" .)) 1 }}
+  hostfile-{{ $i }}: |
+    localhost slots={{ $.Values.multiNode.gpusPerNode }}
+    {{- range $j := untilStep 1 (int $.Values.multiNode.workers) 1 }}
+    {{ $.Release.Name }}-{{ toString $i }}-{{ toString $j }}.{{ $.Release.Name }}.{{ $.Release.Namespace }}.svc slots={{ $.Values.multiNode.gpusPerNode }}
+    {{- end }}
+  {{- end }}
+{{ end }}
