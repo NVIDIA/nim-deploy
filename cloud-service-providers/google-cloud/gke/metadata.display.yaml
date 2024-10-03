@@ -228,7 +228,7 @@ spec:
         - name: acknowledge
           title: Before you begin
           subtext:
-                This solution deploys a sample <a href="https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
+                This solution deploys a <a href="https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
         - name: required_config
           title: Required configuration
         - name: license
