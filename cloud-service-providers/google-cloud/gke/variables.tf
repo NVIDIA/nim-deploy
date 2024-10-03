@@ -402,6 +402,64 @@ variable "nim_list" {
   }
 }
 
+## NVIDIA NIM specific config
+variable "ngc_bundle_gcs_bucket_list" {
+  type        = map(string)
+  description = "A map of model to GCS bucket"
+
+  default = {
+    "llama-3.1-8b-instruct"     = "nim-meta-llama3-1-8b-instruct"
+    "llama-3.1-70b-instruct"    = "nim-meta-llama3-1-70b-instruct"
+    "llama-3.1-405b-instruct"   = "nim-meta-llama3-1-405b-instruct"
+    "llama3-70b-instruct"       = "nim-meta-llama3-70b-instruct"
+    "llama3-8b-instruct"        = "nim-meta-llama3-8b-instruct"
+    "mistral-7b-instruct-v0.3"  = "nim-mistralai-mistral-7b-instruct-v0-3"
+    "mixtral-8x7b-instruct-v01" = "nim-mistralai-mixtral-8x7b-instruct-v0-1"
+    "nv-embedqa-e5-v5"          = "nim-nvidia-nv-embedqa-e5-v5"
+    "nv-embedqa-mistral-7b-v2"  = "nim-nvidia-nv-embedqa-mistral-7b-v2"
+    "nv-rerankqa-mistral-4b-v3" = "nim-nvidia-nv-rerankqa-mistral-4b-v3"
+  }
+}
+
+## NVIDIA NIM specific config
+variable "ngc_bundle_filename_list" {
+  type        = map(string)
+  description = "A map of model to bundle tarball"
+
+  default = {
+    "llama-3.1-8b-instruct"     = "meta-llama3-1-8b-instruct.tar"
+    "llama-3.1-70b-instruct"    = "meta-llama3-1-70b-instruct.tar"
+    "llama-3.1-405b-instruct"   = "meta-llama3-1-405b-instruct.tar"
+    "llama3-70b-instruct"       = "meta-llama3-70b-instruct.tar"
+    "llama3-8b-instruct"        = "meta-llama3-8b-instruct.tar"
+    "mistral-7b-instruct-v0.3"  = "mistralai-mistral-7b-instruct-v0-3.tar"
+    "mixtral-8x7b-instruct-v01" = "mistralai-mixtral-8x7b-instruct-v0-1.tar"
+    "nv-embedqa-e5-v5"          = "nvidia-nv-embedqa-e5-v5.tar"
+    "nv-embedqa-mistral-7b-v2"  = "nvidia-nv-embedqa-mistral-7b-v2.tar"
+    "nv-rerankqa-mistral-4b-v3" = "nvidia-nv-rerankqa-mistral-4b-v3.tar"
+  }
+}
+
+## NVIDIA NIM specific config
+## Default to 500 GiB for improved performance
+variable "ngc_bundle_size_list" {
+  type        = map(string)
+  description = "A map of model to required disk size in GiB"
+
+  default = {
+    "llama-3.1-8b-instruct"     = "500Gi"
+    "llama-3.1-70b-instruct"    = "1000Gi"
+    "llama-3.1-405b-instruct"   = "1200Gi"
+    "llama3-70b-instruct"       = "1600Gi"
+    "llama3-8b-instruct"        = "500Gi"
+    "mistral-7b-instruct-v0.3"  = "500Gi"
+    "mixtral-8x7b-instruct-v01" = "500Gi"
+    "nv-embedqa-e5-v5"          = "500Gi"
+    "nv-embedqa-mistral-7b-v2"  = "500Gi"
+    "nv-rerankqa-mistral-4b-v3" = "500Gi"
+  }
+}
+
 variable "ngc_username" {
   type        = string
   default     = "$oauthtoken"
@@ -443,13 +501,13 @@ variable "tag" {
 variable "ngc_transfer_image" {
   type = string
   description = "Docker image of NGC transfer container"
-  default     = ""
+  default     = "us-central1-docker.pkg.dev/psch-joonix/psch-gke-nim-deploy-demo/ngc-download-image"
 }
 
 variable "ngc_transfer_tag" {
   type = string
   description = "Docker repository tag of the NGC transfer container"
-  default     = ""
+  default     = "v2"
 }
 
 variable "ngc_bundle_gcs_bucket" {
@@ -467,15 +525,16 @@ variable "ngc_bundle_filename" {
 variable "ngc_bundle_service_fqdn" {
   type        = string
   description = "FQDN of the service serving NIM bundle profiles"
-  default     = ""
+  default     = "nim-gke-gcs-signed-url-722708171432.us-central1.run.app"
 }
 
+/*
 variable "gpu_limits" {
   type        = number
   description = "GPU limits"
   default     = "1"
 }
-
+*/
 variable "goog_cm_deployment_name" {
   type    = string
   default = "nim-on-gke"

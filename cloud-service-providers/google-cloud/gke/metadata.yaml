@@ -8,7 +8,7 @@ spec:
   info:
     title: NVIDIA NIM™ on GKE
     source:
-      repo: https://github.com/sujituk/nim-deploy
+      repo: https://github.com/NVIDIA/nim-deploy
       sourceType: git
       dir: /test-infra-mgr/cloud-service-providers/google-cloud/gke
     actuationTool:
@@ -33,7 +33,7 @@ spec:
       #  defaultValue: "us-central1"
       - name: cluster_name
         varType: string
-        defaultValue: "nim-demo-gke"
+        defaultValue: "nim-on-gke"
       - name: create_network
         description: Create the VPC specified by network_name/subnetwork_name
         varType: bool
@@ -51,7 +51,7 @@ spec:
       - name: network_name
         varType: string
         required: true
-        defaultValue: "nim-demo-vpc"
+        defaultValue: "vpc"
       - name: project_id
         description: GCP project id
         varType: string
@@ -62,7 +62,7 @@ spec:
       - name: subnetwork_name
         varType: string
         required: true
-        defaultValue: "nim-demo-subnet"
+        defaultValue: "subnet"
       - name: ngc_username
         varType: string
         required: true
@@ -84,7 +84,7 @@ spec:
         description: "Pick a region for GKE Cluster and NVIDIA GPU accelerator"
         varType: string
         required: true
-        defaultValue: "L4 us-central1 g2-standard-24"
+        defaultValue: "L4 us-east4 g2-standard-24"
       - name: model_name
         description: "Pick a NIM model name"
         varType: string

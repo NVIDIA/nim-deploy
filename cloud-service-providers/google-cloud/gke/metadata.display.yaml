@@ -8,9 +8,9 @@ spec:
   info:
     title: NVIDIA NIM on GKE
     source:
-      repo: https://github.com/sujituk/nim-deploy
+      repo: https://github.com/NVIDIA/nim-deploy
       sourceType: git
-      dir: /test-infra-mgr/cloud-service-providers/google-cloud/gke
+      dir: /cloud-service-providers/google-cloud/gke
   ui:
     input:
       variables:
@@ -195,16 +195,16 @@ spec:
           title: NIM Model name
           section: required_config
           enumValueLabels:
+            - label: meta/llama-3.1-8b-instruct
+              value: llama-3.1-8b-instruct
+            - label: meta/llama-3.1-70b-instruct
+              value: llama-3.1-70b-instruct   
+            - label: meta/llama-3.1-405b-instruct
+              value: llama-3.1-405b-instruct
             - label: meta/llama3-8b-instruct
               value: llama3-8b-instruct
             - label: meta/llama3-70b-instruct
               value: llama3-70b-instruct              
-            - label: meta/llama-3.1-405b-instruct
-              value: llama-3.1-405b-instruct
-            - label: meta/llama-3.1-70b-instruct
-              value: llama-3.1-70b-instruct
-            - label: meta/llama-3.1-8b-instruct
-              value: llama-3.1-8b-instruct
             - label: mistralai/mixtral-8x7b-instruct-v0.1
               value: mixtral-8x7b-instruct-v01
             - label: mistralai/mistral-7b-instruct-v0.3
@@ -223,11 +223,12 @@ spec:
           name: gpu_limits
           title: GPU limits
           section: required_config
+          invisible: true 
       sections:
         - name: acknowledge
           title: Before you begin
           subtext:
-                This solution deploys a sample <a href="https://github.com/sujituk/nim-deploy/blob/test-infra-mgr/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
+                This solution deploys a sample <a href="https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke/README.md#nvidia-nims-on-gke"><i>NVIDIA NIM</i></a> application on GKE in your project.</br>
         - name: required_config
           title: Required configuration
         - name: license
@@ -246,7 +247,7 @@ spec:
       outputMessage: Deployment can take several minutes to complete.
       suggestedActions:
         - heading: Connect to GKE Cluster
-          description: Connect to GKE Cluster. Open another terminal and follow these <a href="https://github.com/sujituk/nim-deploy/blob/test-infra-mgr/cloud-service-providers/google-cloud/gke/README.md#inference">instructions</a> to run inference.
+          description: Connect to GKE Cluster. Open another terminal and follow these <a href="https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke/README.md#inference">instructions</a> to run inference.
       outputs:
         cluster_name: {}
         cluster_location: {}

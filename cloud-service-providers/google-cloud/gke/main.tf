@@ -54,28 +54,32 @@ locals {
 }
 
 data "google_compute_network" "existing-network" {
-  count   = var.create_network ? 0 : 1
-  name    = var.network_name
+  count = var.create_network ? 0 : 1
+  #name    = var.network_name
+  name    = lower(replace("${var.cluster_name}-${var.network_name}", "/[^a-zA-Z0-9-]/", "-"))
   project = local.project_id
 }
 
 data "google_compute_subnetwork" "subnetwork" {
-  count   = var.create_network ? 0 : 1
-  name    = var.subnetwork_name
+  count = var.create_network ? 0 : 1
+  #name    = var.subnetwork_name
+  name    = lower(replace("${var.cluster_name}-${var.subnetwork_name}", "/[^a-zA-Z0-9-]/", "-"))
   region  = local.cluster_location_region
   project = local.project_id
 }
 
 module "custom-network" {
-  source       = "./terraform/modules/gcp-network"
-  count        = var.create_network ? 1 : 0
-  project_id   = local.project_id
-  network_name = var.network_name
+  source     = "./terraform/modules/gcp-network"
+  count      = var.create_network ? 1 : 0
+  project_id = local.project_id
+  #network_name = var.network_name
+  network_name = lower(replace("${var.cluster_name}-${var.network_name}", "/[^a-zA-Z0-9-]/", "-"))
   create_psa   = true
 
   subnets = [
     {
-      subnet_name           = var.subnetwork_name
+      #subnet_name           = var.subnetwork_name
+      subnet_name           = lower(replace("${var.cluster_name}-${var.subnetwork_name}", "/[^a-zA-Z0-9-]/", "-"))
       subnet_ip             = var.subnetwork_cidr
       subnet_region         = local.cluster_location_region
       subnet_private_access = var.subnetwork_private_access
@@ -85,8 +89,12 @@ module "custom-network" {
 }
 
 locals {
-  network_name    = var.create_network ? module.custom-network[0].network_name : var.network_name
-  subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
+  #network_name    = var.create_network ? module.custom-network[0].network_name : var.network_name
+  #subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
+
+  network_name    = var.create_network ? module.custom-network[0].network_name : lower(replace("${var.cluster_name}-${var.network_name}", "/[^a-zA-Z0-9-]/", "-"))
+  subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : lower(replace("${var.cluster_name}-${var.subnetwork_name}", "/[^a-zA-Z0-9-]/", "-"))
+
   subnetwork_cidr = var.create_network ? module.custom-network[0].subnets_ips[0] : data.google_compute_subnetwork.subnetwork[0].ip_cidr_range
 
   #region                  = length(split("-", var.cluster_location)) == 2 ? var.cluster_location : ""
@@ -157,7 +165,7 @@ locals {
   endpoint       = module.gke-cluster[0].endpoint
   ca_certificate = module.gke-cluster[0].ca_certificate
   token          = data.google_client_config.default.access_token
-  use_bundle_url   = var.ngc_bundle_gcs_bucket != "" && var.ngc_bundle_filename != ""
+  use_bundle_url = var.ngc_api_key == ""
 }
 
 provider "kubernetes" {
@@ -272,6 +280,9 @@ locals {
   image     = "${var.registry_server}/${var.repository}/${var.model_name}"
   ngc_transfer_image = var.ngc_transfer_image == "" ? local.image : var.ngc_transfer_image
   ngc_transfer_tag = var.ngc_transfer_tag == "" ? local.image_tag : var.ngc_transfer_tag
+  ngc_bundle_gcs_bucket = lookup(var.ngc_bundle_gcs_bucket_list, var.model_name, var.ngc_bundle_gcs_bucket)
+  ngc_bundle_filename = lookup(var.ngc_bundle_filename_list, var.model_name, var.ngc_bundle_filename)
+  ngc_bundle_size = lookup(var.ngc_bundle_size_list, var.model_name, "500Gi")
 }
 
 output "image_tag" {
@@ -296,8 +307,8 @@ resource "null_resource" "get-signed-ngc-bundle-url" {
     command = "./fetch-ngc-url.sh > ${path.module}/ngc_signed_url.txt"
     environment = {
       NGC_EULA_TEXT  = "${data.local_file.ngc-eula[0].content}"
-      NIM_GCS_BUCKET = "${var.ngc_bundle_gcs_bucket}"
-      GCS_FILENAME   = "${var.ngc_bundle_filename}"
+      NIM_GCS_BUCKET = "${local.ngc_bundle_gcs_bucket}"
+      GCS_FILENAME   = "${local.ngc_bundle_filename}"
       SERVICE_FQDN   = "${var.ngc_bundle_service_fqdn}"
     }
   }
@@ -344,6 +355,11 @@ resource "helm_release" "ngc_to_gcs_transfer" {
   }
 
   set {
+    name  = "persistence.size"
+    value = local.ngc_bundle_size
+  }
+
+  set {
     name  = "serviceAccount.name"
     value = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
   }
@@ -355,14 +371,15 @@ resource "helm_release" "ngc_to_gcs_transfer" {
 
   set {
     name  = "resources.limits.nvidia\\.com/gpu"
-    value = var.gpu_limits
+    #value = var.gpu_limits
+    value = local.accelerator_count.accelerator_count
   }
 
   depends_on = [kubernetes_secret.ngc_api,
     kubernetes_secret.ngc_bundle_url,
     google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
 
-  timeout = 900
+  timeout = 7200
   wait    = true
 }
 
@@ -378,14 +395,15 @@ module "helm_nim" {
   cluster_ca_certificate = local.ca_certificate
 
   namespace = var.kubernetes_namespace
-  chart     = "./../../../helm/nim-llm/"
-  #chart = "./helm/nim-llm"
+  #chart     = "./../../../helm/nim-llm/"
+  chart = "./helm/nim-llm"
 
   #repository = var.repository
   repository = local.image
   model_name = var.model_name
   tag        = local.image_tag
-  gpu_limits = var.gpu_limits
+  #gpu_limits = var.gpu_limits
+  gpu_limits = local.accelerator_count.accelerator_count
   ksa_name   = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
 
   depends_on = [helm_release.ngc_to_gcs_transfer]
