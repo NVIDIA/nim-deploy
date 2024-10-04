@@ -7,7 +7,7 @@ export CACHE_PATH="$NIM_CACHE_PATH"
 if [ -n "${NGC_BUNDLE_URL:-}" ]; then
   # Create a sub-directory, as tar tries to modify the parent folder permissions
   export CACHE_PATH="$NIM_CACHE_PATH/cache"
-  mkdir "$CACHE_PATH"
+  mkdir -p "$CACHE_PATH"
   MODEL_BUNDLE_FILENAME="model.tar"
   # Fetch and extract from the provided URL, with max concurrency
   aria2c -x 16 -s 16 -j 10 --dir "$CACHE_PATH" --out="$MODEL_BUNDLE_FILENAME" "$NGC_BUNDLE_URL"
