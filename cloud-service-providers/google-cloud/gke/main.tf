@@ -51,6 +51,10 @@ locals {
   accelerator_count = {
     "accelerator_count" = local.gpu_type.accelerator_count
   }
+
+  local_ssd_ephemeral_storage_count = {
+    "local_ssd_ephemeral_storage_count" = local.gpu_type.local_ssd_count
+  }
 }
 
 data "google_compute_network" "existing-network" {
@@ -110,7 +114,7 @@ locals {
   # Update gpu_pools with node_locations according to region and zone gpu availibility, if not provided
   gpu_pools = [for elm in var.gpu_pools : (local.regional && contains(keys(local.gpu_location), local.region) && elm["node_locations"] == "") ? merge(elm, { "node_locations" : local.gpu_location[local.region] }) : elm]
 
-  gpu_pools_configured = [merge(local.gpu_pools[0], local.machine_type, local.accelerator_type, local.accelerator_count)]
+  gpu_pools_configured = [merge(local.gpu_pools[0], local.machine_type, local.accelerator_type, local.accelerator_count, local.local_ssd_ephemeral_storage_count)]
 }
 
 output "gpu_pools_configured" {

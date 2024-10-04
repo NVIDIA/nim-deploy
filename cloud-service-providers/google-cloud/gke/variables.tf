@@ -191,27 +191,27 @@ variable "kubernetes_namespace" {
 
 variable "cpu_pools" {
   type = list(object({
-    name                   = string
-    machine_type           = string
-    node_locations         = optional(string, "")
-    autoscaling            = optional(bool, false)
-    min_count              = optional(number, 1)
-    max_count              = optional(number, 3)
-    local_ssd_count        = optional(number, 0)
-    spot                   = optional(bool, false)
-    disk_size_gb           = optional(number, 100)
-    disk_type              = optional(string, "pd-standard")
-    image_type             = optional(string, "COS_CONTAINERD")
-    enable_gcfs            = optional(bool, false)
-    enable_gvnic           = optional(bool, false)
-    logging_variant        = optional(string, "DEFAULT")
-    auto_repair            = optional(bool, true)
-    auto_upgrade           = optional(bool, true)
-    create_service_account = optional(bool, false)
-    service_account        = optional(string, "")
-    preemptible            = optional(bool, false)
-    initial_node_count     = optional(number, 1)
-    accelerator_count      = optional(number, 0)
+    name                              = string
+    machine_type                      = string
+    node_locations                    = optional(string, "")
+    autoscaling                       = optional(bool, false)
+    min_count                         = optional(number, 1)
+    max_count                         = optional(number, 3)
+    local_ssd_ephemeral_storage_count = optional(number, 0)
+    spot                              = optional(bool, false)
+    disk_size_gb                      = optional(number, 100)
+    disk_type                         = optional(string, "pd-standard")
+    image_type                        = optional(string, "COS_CONTAINERD")
+    enable_gcfs                       = optional(bool, false)
+    enable_gvnic                      = optional(bool, false)
+    logging_variant                   = optional(string, "DEFAULT")
+    auto_repair                       = optional(bool, true)
+    auto_upgrade                      = optional(bool, true)
+    create_service_account            = optional(bool, false)
+    service_account                   = optional(string, "")
+    preemptible                       = optional(bool, false)
+    initial_node_count                = optional(number, 1)
+    accelerator_count                 = optional(number, 0)
   }))
   default = [{
     name                   = "cpu-pool"
@@ -229,29 +229,29 @@ variable "cpu_pools" {
 
 variable "gpu_pools" {
   type = list(object({
-    name                   = string
-    machine_type           = string
-    node_locations         = optional(string, "")
-    autoscaling            = optional(bool, false)
-    min_count              = optional(number, 1)
-    max_count              = optional(number, 3)
-    local_ssd_count        = optional(number, 0)
-    spot                   = optional(bool, false)
-    disk_size_gb           = optional(number, 100)
-    disk_type              = optional(string, "pd-standard")
-    image_type             = optional(string, "COS_CONTAINERD")
-    enable_gcfs            = optional(bool, false)
-    enable_gvnic           = optional(bool, false)
-    logging_variant        = optional(string, "DEFAULT")
-    auto_repair            = optional(bool, true)
-    auto_upgrade           = optional(bool, true)
-    create_service_account = optional(bool, false)
-    service_account        = optional(string, "")
-    preemptible            = optional(bool, false)
-    initial_node_count     = optional(number, 1)
-    accelerator_count      = optional(number, 0)
-    accelerator_type       = optional(string, "nvidia-l4")
-    gpu_driver_version     = optional(string, "DEFAULT")
+    name                              = string
+    machine_type                      = string
+    node_locations                    = optional(string, "")
+    autoscaling                       = optional(bool, false)
+    min_count                         = optional(number, 1)
+    max_count                         = optional(number, 3)
+    local_ssd_ephemeral_storage_count = optional(number, 0)
+    spot                              = optional(bool, false)
+    disk_size_gb                      = optional(number, 100)
+    disk_type                         = optional(string, "pd-standard")
+    image_type                        = optional(string, "COS_CONTAINERD")
+    enable_gcfs                       = optional(bool, false)
+    enable_gvnic                      = optional(bool, false)
+    logging_variant                   = optional(string, "DEFAULT")
+    auto_repair                       = optional(bool, true)
+    auto_upgrade                      = optional(bool, true)
+    create_service_account            = optional(bool, false)
+    service_account                   = optional(string, "")
+    preemptible                       = optional(bool, false)
+    initial_node_count                = optional(number, 1)
+    accelerator_count                 = optional(number, 0)
+    accelerator_type                  = optional(string, "nvidia-l4")
+    gpu_driver_version                = optional(string, "DEFAULT")
   }))
   default = [{
     name                   = "gpu-pool"
@@ -342,6 +342,7 @@ variable "vm_gpu_spec_list" {
   type = map(object({
     accelerator_type  = string
     accelerator_count = number
+    local_ssd_count   = number
   }))
   description = "A map of VMs and GPU specs"
 
@@ -349,30 +350,37 @@ variable "vm_gpu_spec_list" {
     g2-standard-24 = {
       accelerator_type  = "nvidia-l4"
       accelerator_count = 2
+      local_ssd_count   = 2
     }
     g2-standard-48 = {
       accelerator_type  = "nvidia-l4"
       accelerator_count = 4
+      local_ssd_count   = 4
     }
     g2-standard-96 = {
       accelerator_type  = "nvidia-l4"
       accelerator_count = 8
+      local_ssd_count   = 8
     }
     a3-highgpu-8g = {
       accelerator_type  = "nvidia-h100-80gb"
       accelerator_count = 8
+      local_ssd_count   = 16
     }
     a2-ultragpu-1g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 1
+      local_ssd_count   = 1
     }
     a2-ultragpu-4g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 4
+      local_ssd_count   = 4
     }
     a2-ultragpu-8g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 8
+      local_ssd_count   = 8
     }
   }
 }
@@ -448,7 +456,7 @@ variable "ngc_bundle_size_list" {
 
   default = {
     "llama-3.1-8b-instruct"     = "500Gi"
-    "llama-3.1-70b-instruct"    = "1000Gi"
+    "llama-3.1-70b-instruct"    = "1800Gi"
     "llama-3.1-405b-instruct"   = "1200Gi"
     "llama3-70b-instruct"       = "1600Gi"
     "llama3-8b-instruct"        = "500Gi"

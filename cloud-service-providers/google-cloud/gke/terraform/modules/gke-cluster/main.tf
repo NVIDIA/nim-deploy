@@ -20,7 +20,7 @@ data "google_client_config" "default" {}
 
 module "gke" {
   source                               = "terraform-google-modules/kubernetes-engine/google"
-  version                              = "29.0.0"
+  version                              = "31.0.0"
   project_id                           = var.project_id
   regional                             = var.cluster_regional
   name                                 = var.cluster_name
