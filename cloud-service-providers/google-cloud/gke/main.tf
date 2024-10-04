@@ -247,7 +247,7 @@ resource "random_uuid" "gcs_cache_uuid" {
 }
 
 resource "google_storage_bucket" "ngc_gcs_cache" {
-  project       = data.google_project.current.name
+  project       = data.google_project.current.project_id
   name          = "ngc-gcs-cache-${random_uuid.gcs_cache_uuid.result}"
   location      = "US"
   force_destroy = true
