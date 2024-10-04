@@ -259,8 +259,8 @@ variable "gpu_pools" {
     autoscaling            = true
     min_count              = 1
     max_count              = 3
-    disk_size_gb           = 100
-    disk_type              = "pd-balanced"
+    disk_size_gb           = 500
+    disk_type              = "pd-ssd"
     accelerator_count      = 2
     autoscaling            = true
     accelerator_type       = "nvidia-l4"
@@ -536,13 +536,6 @@ variable "ngc_bundle_service_fqdn" {
   default     = "nim-gke-gcs-signed-url-722708171432.us-central1.run.app"
 }
 
-/*
-variable "gpu_limits" {
-  type        = number
-  description = "GPU limits"
-  default     = "1"
-}
-*/
 variable "goog_cm_deployment_name" {
   type    = string
   default = "nim-on-gke"

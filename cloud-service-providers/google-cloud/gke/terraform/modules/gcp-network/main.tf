@@ -32,7 +32,7 @@ locals {
 ## Create subnetwork
 resource "google_compute_subnetwork" "subnetwork" {
   for_each                   = local.subnets
-  name                       = each.value.subnet_name
+  name                       = "${each.value.subnet_name}-${var.unique_res_id}"
   ip_cidr_range              = each.value.subnet_ip
   region                     = each.value.subnet_region
   private_ip_google_access   = lookup(each.value, "subnet_private_access", "false")

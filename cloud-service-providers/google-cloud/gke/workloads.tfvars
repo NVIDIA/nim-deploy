@@ -13,19 +13,18 @@
 # limitations under the License.
 
 
-project_id = "<Enter GCP Project ID>>"
+project_id = "<GCP ProjectID>"
 
 ##common variables
-cluster_name         = "nim-demo-gke"
-#cluster_location     = "us-east4-a"
+cluster_name         = "nim-on-gke"
 autopilot_cluster    = false ## true = autopilot cluster, false = standard cluster
 kubernetes_namespace = "nim"
 create_cluster       = true
 
 ## network values
 create_network  = true
-network_name    = "nim-demo-vpc"
-subnetwork_name = "nim-demo-subnet"
+network_name    = "vpc"
+subnetwork_name = "subnet"
 subnetwork_cidr = "10.100.0.0/16"
 
 create_service_account = false
@@ -55,8 +54,8 @@ gpu_pools = [
     autoscaling            = true
     min_count              = 1
     max_count              = 3
-    disk_size_gb           = 100
-    disk_type              = "pd-balanced"
+    disk_size_gb           = 500
+    disk_type              = "pd-ssd"
     enable_gcfs            = true
     logging_variant        = "DEFAULT"
     gpu_driver_version     = "DEFAULT"
@@ -64,12 +63,10 @@ gpu_pools = [
 }]
 
 ## NIM specific values
-ngc_api_key     = "<NGC API Key>"
+ngc_api_key     = ""
 
-#registry_server = "nvcr.io"
 registry_server = "us-docker.pkg.dev/nvidia-vgpu-public"
 repository = "nim-gke"
 
 model_name      = "llama3-8b-instruct"
-gpu_limits      = 1
 region_based_vm = "L4 us-east4 g2-standard-24"

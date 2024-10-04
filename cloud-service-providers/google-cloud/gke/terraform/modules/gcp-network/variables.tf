@@ -79,3 +79,9 @@ variable "create_psa" {
   description = "Enable PSA for the network"
   default     = true
 }
+
+variable "unique_res_id" {
+  type = string
+  description = "Create unique subnet using random ID"
+  default = ""
+}

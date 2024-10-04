@@ -25,6 +25,8 @@ data "google_project" "current" {
 
 data "google_client_config" "default" {}
 
+resource "random_uuid" "unique_res_id" {}
+
 locals {
 
   project_id = var.project_id
@@ -55,19 +57,21 @@ locals {
   local_ssd_ephemeral_storage_count = {
     "local_ssd_ephemeral_storage_count" = local.gpu_type.local_ssd_count
   }
+
+  unique_res_id_short = substr(random_uuid.unique_res_id.result, 0, 8)
 }
 
 data "google_compute_network" "existing-network" {
   count = var.create_network ? 0 : 1
-  #name    = var.network_name
-  name    = lower(replace("${var.cluster_name}-${var.network_name}", "/[^a-zA-Z0-9-]/", "-"))
+  
+  name    = lower(replace("${var.cluster_name}-${var.network_name}-${local.unique_res_id_short}", "/[^a-zA-Z0-9-]/", "-"))
   project = local.project_id
 }
 
 data "google_compute_subnetwork" "subnetwork" {
   count = var.create_network ? 0 : 1
-  #name    = var.subnetwork_name
-  name    = lower(replace("${var.cluster_name}-${var.subnetwork_name}", "/[^a-zA-Z0-9-]/", "-"))
+  
+  name    = lower(replace("${var.cluster_name}-${var.subnetwork_name}-${local.unique_res_id_short}", "/[^a-zA-Z0-9-]/", "-"))
   region  = local.cluster_location_region
   project = local.project_id
 }
@@ -76,13 +80,14 @@ module "custom-network" {
   source     = "./terraform/modules/gcp-network"
   count      = var.create_network ? 1 : 0
   project_id = local.project_id
-  #network_name = var.network_name
-  network_name = lower(replace("${var.cluster_name}-${var.network_name}", "/[^a-zA-Z0-9-]/", "-"))
+  unique_res_id = local.unique_res_id_short
+  
+  network_name = lower(replace("${var.cluster_name}-${var.network_name}-${local.unique_res_id_short}", "/[^a-zA-Z0-9-]/", "-"))
   create_psa   = true
 
   subnets = [
     {
-      #subnet_name           = var.subnetwork_name
+      
       subnet_name           = lower(replace("${var.cluster_name}-${var.subnetwork_name}", "/[^a-zA-Z0-9-]/", "-"))
       subnet_ip             = var.subnetwork_cidr
       subnet_region         = local.cluster_location_region
@@ -93,22 +98,17 @@ module "custom-network" {
 }
 
 locals {
-  #network_name    = var.create_network ? module.custom-network[0].network_name : var.network_name
-  #subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : var.subnetwork_name
-
-  network_name    = var.create_network ? module.custom-network[0].network_name : lower(replace("${var.cluster_name}-${var.network_name}", "/[^a-zA-Z0-9-]/", "-"))
+  
+  network_name    = var.create_network ? module.custom-network[0].network_name : lower(replace("${var.cluster_name}-${var.network_name}-${local.unique_res_id_short}", "/[^a-zA-Z0-9-]/", "-"))
   subnetwork_name = var.create_network ? module.custom-network[0].subnets_names[0] : lower(replace("${var.cluster_name}-${var.subnetwork_name}", "/[^a-zA-Z0-9-]/", "-"))
 
   subnetwork_cidr = var.create_network ? module.custom-network[0].subnets_ips[0] : data.google_compute_subnetwork.subnetwork[0].ip_cidr_range
 
-  #region                  = length(split("-", var.cluster_location)) == 2 ? var.cluster_location : ""
   region   = length(split("-", local.cluster_location)) == 2 ? local.cluster_location : ""
   regional = local.region != "" ? true : false
 
-  #cluster_location_region = (length(split("-", var.cluster_location)) == 2 ? var.cluster_location : join("-", slice(split("-", var.cluster_location), 0, 2)))
   cluster_location_region = (length(split("-", local.cluster_location)) == 2 ? local.cluster_location : join("-", slice(split("-", local.cluster_location), 0, 2)))
 
-  #zone                    = length(split("-", var.cluster_location)) > 2 ? split(",", var.cluster_location) : split(",", local.gpu_location[local.region])
   zone = length(split("-", local.cluster_location)) > 2 ? split(",", local.cluster_location) : split(",", local.gpu_location[local.region])
 
   # Update gpu_pools with node_locations according to region and zone gpu availibility, if not provided
@@ -116,6 +116,11 @@ locals {
 
   gpu_pools_configured = [merge(local.gpu_pools[0], local.machine_type, local.accelerator_type, local.accelerator_count, local.local_ssd_ephemeral_storage_count)]
 }
+
+output "subnetwork_name" {
+  value = local.subnetwork_name
+}
+
 
 output "gpu_pools_configured" {
   value = local.gpu_pools_configured
@@ -134,7 +139,7 @@ module "gke-cluster" {
   cluster_regional                     = local.regional
   cluster_region                       = local.region
   cluster_zones                        = local.zone
-  cluster_name                         = var.cluster_name
+  cluster_name                         = "${var.cluster_name}-${local.unique_res_id_short}"
   cluster_labels                       = var.cluster_labels
   kubernetes_version                   = var.kubernetes_version
   release_channel                      = var.release_channel
@@ -148,7 +153,6 @@ module "gke-cluster" {
   ## pools config variables
   cpu_pools                   = var.cpu_pools
   enable_gpu                  = var.enable_gpu
-  #gpu_pools                   = local.gpu_pools
   gpu_pools = local.gpu_pools_configured
   all_node_pools_oauth_scopes = var.all_node_pools_oauth_scopes
   all_node_pools_labels       = var.all_node_pools_labels
@@ -159,8 +163,7 @@ module "gke-cluster" {
 
 data "google_container_cluster" "default" {
   count = var.create_cluster ? 0 : 1
-  name  = var.cluster_name
-  #location   = var.cluster_location
+  name  = "${var.cluster_name}-${local.unique_res_id_short}"
   location   = local.cluster_location
   depends_on = [module.gke-cluster]
 }
@@ -280,21 +283,12 @@ provider "helm" {
 locals {
 
   image_tag = lookup(var.nim_list, var.model_name, var.tag)
-  #image     = var.repository == "" ? "${var.registry_server}/nim/${var.model_name}" : var.repository
   image     = "${var.registry_server}/${var.repository}/${var.model_name}"
   ngc_transfer_image = var.ngc_transfer_image == "" ? local.image : var.ngc_transfer_image
   ngc_transfer_tag = var.ngc_transfer_tag == "" ? local.image_tag : var.ngc_transfer_tag
   ngc_bundle_gcs_bucket = lookup(var.ngc_bundle_gcs_bucket_list, var.model_name, var.ngc_bundle_gcs_bucket)
   ngc_bundle_filename = lookup(var.ngc_bundle_filename_list, var.model_name, var.ngc_bundle_filename)
   ngc_bundle_size = lookup(var.ngc_bundle_size_list, var.model_name, "500Gi")
-}
-
-output "image_tag" {
-  value = local.image_tag
-}
-
-output "image" {
-  value = local.image
 }
 
 data "local_file" "ngc-eula" {
@@ -375,7 +369,6 @@ resource "helm_release" "ngc_to_gcs_transfer" {
 
   set {
     name  = "resources.limits.nvidia\\.com/gpu"
-    #value = var.gpu_limits
     value = local.accelerator_count.accelerator_count
   }
 
@@ -402,11 +395,9 @@ module "helm_nim" {
   #chart     = "./../../../helm/nim-llm/"
   chart = "./helm/nim-llm"
 
-  #repository = var.repository
   repository = local.image
   model_name = var.model_name
   tag        = local.image_tag
-  #gpu_limits = var.gpu_limits
   gpu_limits = local.accelerator_count.accelerator_count
   ksa_name   = kubernetes_service_account.ngc_gcs_ksa.metadata[0].name
 
