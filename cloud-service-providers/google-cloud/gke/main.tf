@@ -35,14 +35,14 @@ locals {
     "nvidia-h100-mega-80gb" = var.gpu_locations_h100_80gb
   }
 
-  gpu_location = lookup(local.all_gpu_locations, var.gpu_pools[0].accelerator_type, {})
-
   region_vm        = split(" ", var.region_based_vm)
   cluster_location = local.region_vm[length(local.region_vm) - 2]
   machine_type = {
     "machine_type" = local.region_vm[length(local.region_vm) - 1]
   }
   gpu_type = lookup(var.vm_gpu_spec_list, local.region_vm[length(local.region_vm) - 1])
+
+  gpu_location = lookup(local.all_gpu_locations, local.gpu_type.accelerator_type, {})
   
   accelerator_type = {
     "accelerator_type" = local.gpu_type.accelerator_type
