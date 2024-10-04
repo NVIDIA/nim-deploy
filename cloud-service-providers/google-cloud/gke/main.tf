@@ -34,7 +34,7 @@ locals {
   all_gpu_locations = {
     "nvidia-l4"             = var.gpu_locations_l4
     "nvidia-a100-80gb"      = var.gpu_locations_a100
-    "nvidia-h100-mega-80gb" = var.gpu_locations_h100_80gb
+    "nvidia-h100-80gb" = var.gpu_locations_h100_80gb
   }
 
   region_vm        = split(" ", var.region_based_vm)
@@ -117,13 +117,12 @@ locals {
   gpu_pools_configured = [merge(local.gpu_pools[0], local.machine_type, local.accelerator_type, local.accelerator_count, local.local_ssd_ephemeral_storage_count)]
 }
 
-output "subnetwork_name" {
-  value = local.subnetwork_name
+output "cluster_name" {
+  value = "${var.cluster_name}-${local.unique_res_id_short}"
 }
 
-
-output "gpu_pools_configured" {
-  value = local.gpu_pools_configured
+output "cluster_location" {
+  value = local.cluster_location
 }
 
 module "gke-cluster" {

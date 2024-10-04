@@ -318,21 +318,16 @@ variable "gpu_locations_h100_80gb" {
   type = map(string)
 
   # gcloud compute accelerator-types list \
-  # --filter="name:nvidia-h100-mega-80gb" \
+  # --filter="name:nvidia-h100-80gb" \
   # --format="value(zone)" \
   # | sort
 
   default = {
     "asia-northeast1"      = "asia-northeast1-b"
     "asia-southeast1"      = "asia-southeast1-b,asia-southeast1-c"
-    "australia-southeast1" = "australia-southeast1-c"
     "europe-west1"         = "europe-west1-b"
-    "europe-west2"         = "europe-west2-b"
-    "europe-west4"         = "europe-west4-b,europe-west4-c"
-    "us-central1"          = "us-central1-a,us-central1-b,us-central1-c"
-    "us-east4"             = "us-east4-a,us-east4-b,us-east4-c"
-    "us-east5"             = "us-east5-a"
-    "us-east7"             = "us-east7-b"
+    "us-central1"          = "us-central1-a"
+    "us-east4"             = "us-east4-a,us-east4-b"
     "us-west1"             = "us-west1-a,us-west1-b"
     "us-west4"             = "us-west4-a"
   }
