@@ -301,7 +301,7 @@ resource "null_resource" "get-signed-ngc-bundle-url" {
     shell_hash = "${sha256(file("${path.module}/fetch-ngc-url.sh"))}"
   }
   provisioner "local-exec" {
-    command = "/bin/sh -x ./fetch-ngc-url.sh > ${path.module}/ngc_signed_url.txt"
+    command = "/bin/sh ./fetch-ngc-url.sh > ${path.module}/ngc_signed_url.txt"
     environment = {
       NGC_EULA_TEXT  = "${data.local_file.ngc-eula[0].content}"
       NIM_GCS_BUCKET = "${local.ngc_bundle_gcs_bucket}"

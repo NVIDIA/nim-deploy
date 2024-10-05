@@ -24,11 +24,11 @@ if ! which gcloud > /dev/null; then
 }
 EOF
 
-  TOKEN="$(curl -s -v -X GET -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" | jq -r ".access_token")"
+  TOKEN="$(curl -s -X GET -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" | jq -r ".access_token")"
 
-  EMAIL="$(curl -s -v -X GET -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email")"
+  EMAIL="$(curl -s -X GET -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email")"
 
-  ID_TOKEN="$(curl -s -v -X POST \
+  ID_TOKEN="$(curl -s -X POST \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json; charset=utf-8" \
     -d "@$TEMP_DIR/id_request.json" \
@@ -47,6 +47,6 @@ cat <<EOF > "$TEMP_DIR/req.cred.json"
 }
 EOF
 
-HTTP_URL="$(curl -s -v -X POST -H 'accept: application/json' -H 'Content-Type: application/json' -d "@$TEMP_DIR/req.cred.json" "https://${SERVICE_FQDN}/v1/request/${GCS_FILENAME}" | sed 's/.*\(https.*\)\\\\n.*/\1/g')"
+HTTP_URL="$(curl -s -X POST -H 'accept: application/json' -H 'Content-Type: application/json' -d "@$TEMP_DIR/req.cred.json" "https://${SERVICE_FQDN}/v1/request/${GCS_FILENAME}" | sed 's/.*\(https.*\)\\\\n.*/\1/g')"
 
 echo -n "$HTTP_URL"
