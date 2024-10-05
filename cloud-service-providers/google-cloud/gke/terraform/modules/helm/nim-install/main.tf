@@ -59,7 +59,7 @@ resource "helm_release" "my_nim" {
     value = var.ksa_name
   }
 
-  timeout = 900
+  timeout = 7200
   wait    = true
 
 }
