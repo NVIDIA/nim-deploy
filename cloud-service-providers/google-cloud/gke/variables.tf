@@ -504,13 +504,13 @@ variable "tag" {
 variable "ngc_transfer_image" {
   type = string
   description = "Docker image of NGC transfer container"
-  default     = "us-central1-docker.pkg.dev/psch-joonix/psch-gke-nim-deploy-demo/ngc-download-image"
+  default     = "us-docker.pkg.dev/nvidia-vgpu-public/nim-deploy-gke/ngc-download"
 }
 
 variable "ngc_transfer_tag" {
   type = string
   description = "Docker repository tag of the NGC transfer container"
-  default     = "v2"
+  default     = "1.0.0"
 }
 
 variable "ngc_bundle_gcs_bucket" {
