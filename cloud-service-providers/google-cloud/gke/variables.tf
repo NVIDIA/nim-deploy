@@ -338,6 +338,7 @@ variable "vm_gpu_spec_list" {
     accelerator_type  = string
     accelerator_count = number
     local_ssd_count   = number
+    gpu_family        = string
   }))
   description = "A map of VMs and GPU specs"
 
@@ -346,36 +347,43 @@ variable "vm_gpu_spec_list" {
       accelerator_type  = "nvidia-l4"
       accelerator_count = 2
       local_ssd_count   = 2
+      gpu_family        = "l4"
     }
     g2-standard-48 = {
       accelerator_type  = "nvidia-l4"
       accelerator_count = 4
       local_ssd_count   = 4
+      gpu_family        = "l4"
     }
     g2-standard-96 = {
       accelerator_type  = "nvidia-l4"
       accelerator_count = 8
       local_ssd_count   = 8
+      gpu_family        = "l4"
     }
     a3-highgpu-8g = {
       accelerator_type  = "nvidia-h100-80gb"
       accelerator_count = 8
       local_ssd_count   = 16
+      gpu_family        = "h100"
     }
     a2-ultragpu-1g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 1
-      local_ssd_count   = 1
+      local_ssd_count   = 8
+      gpu_family        = "a100"
     }
     a2-ultragpu-4g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 4
-      local_ssd_count   = 4
+      local_ssd_count   = 8
+      gpu_family        = "a100"
     }
     a2-ultragpu-8g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 8
       local_ssd_count   = 8
+      gpu_family        = "a100"
     }
   }
 }
@@ -425,21 +433,54 @@ variable "ngc_bundle_gcs_bucket_list" {
 }
 
 ## NVIDIA NIM specific config
-variable "ngc_bundle_filename_list" {
-  type        = map(string)
+variable "ngc_bundle_filename_config_list" {
+  type        = map(object({
+    prefix         = string
+    has_gpu_suffix = bool
+  }))
   description = "A map of model to bundle tarball"
 
   default = {
-    "llama-3.1-8b-instruct"     = "meta-llama3-1-8b-instruct.tar"
-    "llama-3.1-70b-instruct"    = "meta-llama3-1-70b-instruct.tar"
-    "llama-3.1-405b-instruct"   = "meta-llama3-1-405b-instruct.tar"
-    "llama3-70b-instruct"       = "meta-llama3-70b-instruct.tar"
-    "llama3-8b-instruct"        = "meta-llama3-8b-instruct.tar"
-    "mistral-7b-instruct-v0.3"  = "mistralai-mistral-7b-instruct-v0-3.tar"
-    "mixtral-8x7b-instruct-v01" = "mistralai-mixtral-8x7b-instruct-v0-1.tar"
-    "nv-embedqa-e5-v5"          = "nvidia-nv-embedqa-e5-v5.tar"
-    "nv-embedqa-mistral-7b-v2"  = "nvidia-nv-embedqa-mistral-7b-v2.tar"
-    "nv-rerankqa-mistral-4b-v3" = "nvidia-nv-rerankqa-mistral-4b-v3.tar"
+    "llama-3.1-8b-instruct" = {
+      prefix         = "meta-llama3-1-8b-instruct"
+      has_gpu_suffix = true
+    }
+    "llama-3.1-70b-instruct" = {
+      prefix         = "meta-llama3-1-70b-instruct"
+      has_gpu_suffix = true
+    }
+    "llama-3.1-405b-instruct" = {
+      prefix         = "meta-llama3-1-405b-instruct"
+      has_gpu_suffix = true
+    }
+    "llama3-70b-instruct" = {
+      prefix         = "meta-llama3-70b-instruct"
+      has_gpu_suffix = true
+    }
+    "llama3-8b-instruct" = {
+      prefix         = "meta-llama3-8b-instruct"
+      has_gpu_suffix = true
+    }
+    "mistral-7b-instruct-v0.3" = {
+      prefix         = "mistralai-mistral-7b-instruct-v0-3"
+      has_gpu_suffix = true
+    }
+    "mixtral-8x7b-instruct-v01" = {
+      prefix         = "mistralai-mixtral-8x7b-instruct-v0-1"
+      has_gpu_suffix = true
+    }
+    "nv-embedqa-e5-v5" = {
+      prefix         = "nvidia-nv-embedqa-e5-v5"
+      has_gpu_suffix = false
+    }
+    "nv-embedqa-mistral-7b-v2" = {
+      prefix         = "nvidia-nv-embedqa-mistral-7b-v2"
+      has_gpu_suffix = false
+    }
+    "nv-rerankqa-mistral-4b-v3" = {
+      prefix         = "nvidia-nv-rerankqa-mistral-4b-v3"
+      has_gpu_suffix = false
+    }
   }
 }
 
@@ -511,18 +552,6 @@ variable "ngc_transfer_tag" {
   type = string
   description = "Docker repository tag of the NGC transfer container"
   default     = "1.0.0"
-}
-
-variable "ngc_bundle_gcs_bucket" {
-  type        = string
-  description = "GCS bucket containing NGC bucket with NIM profiles"
-  default     = ""
-}
-
-variable "ngc_bundle_filename" {
-  type        = string
-  description = "Filename containing NIM profiles from NGC"
-  default     = ""
 }
 
 variable "ngc_bundle_service_fqdn" {

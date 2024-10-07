@@ -82,8 +82,7 @@ spec:
       {{- end }}
       volumes:
         - name: model-store
-          persistentVolumeClaim:
-            claimName: scratch-pvc
+          emptyDir: {}
         - name: scripts-volume
           configMap:
             name: {{ .Release.Name }}-scripts-configmap

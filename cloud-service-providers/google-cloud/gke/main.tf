@@ -285,8 +285,11 @@ locals {
   image     = "${var.registry_server}/${var.repository}/${var.model_name}"
   ngc_transfer_image = var.ngc_transfer_image == "" ? local.image : var.ngc_transfer_image
   ngc_transfer_tag = var.ngc_transfer_tag == "" ? local.image_tag : var.ngc_transfer_tag
-  ngc_bundle_gcs_bucket = lookup(var.ngc_bundle_gcs_bucket_list, var.model_name, var.ngc_bundle_gcs_bucket)
-  ngc_bundle_filename = lookup(var.ngc_bundle_filename_list, var.model_name, var.ngc_bundle_filename)
+  ngc_bundle_gcs_bucket = lookup(var.ngc_bundle_gcs_bucket_list, var.model_name)
+  ngc_bundle_filename_config = lookup(var.ngc_bundle_filename_config_list, var.model_name)
+  ngc_bundle_filename_prefix = local.ngc_bundle_filename_config.prefix
+  ngc_bundle_filename_suffix = local.ngc_bundle_filename_config.has_gpu_suffix ? "-${local.gpu_type.gpu_family}" : ""
+  ngc_bundle_filename = "${local.ngc_bundle_filename_prefix}${local.ngc_bundle_filename_suffix}.tar.gz"
   ngc_bundle_size = lookup(var.ngc_bundle_size_list, var.model_name, "500Gi")
 }
 

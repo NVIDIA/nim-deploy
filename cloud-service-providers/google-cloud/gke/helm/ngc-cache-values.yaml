@@ -16,3 +16,5 @@ persistence:
     volumeHandle: ngc-gcs-cache
     readOnly: true
   storageClass: gcsfuse-sc
+nodeSelector:
+  cloud.google.com/gke-ephemeral-storage-local-ssd: "true"

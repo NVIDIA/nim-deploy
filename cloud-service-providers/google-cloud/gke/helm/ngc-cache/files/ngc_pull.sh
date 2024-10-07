@@ -11,7 +11,10 @@ if [ -n "${NGC_BUNDLE_URL:-}" ]; then
   MODEL_BUNDLE_FILENAME="model.tar"
   # Fetch and extract from the provided URL, with max concurrency
   aria2c -x 16 -s 16 -j 10 --dir "$CACHE_PATH" --out="$MODEL_BUNDLE_FILENAME" "$NGC_BUNDLE_URL"
-  tar xf "$CACHE_PATH/$MODEL_BUNDLE_FILENAME" -C "$CACHE_PATH"
+
+  echo "=== [START] Extracting $CACHE_PATH/$MODEL_BUNDLE_FILENAME ==="
+  pigz -dc "$CACHE_PATH/$MODEL_BUNDLE_FILENAME" | tar xf - -C "$CACHE_PATH"
+  echo "=== [DONE] Extracting $CACHE_PATH/$MODEL_BUNDLE_FILENAME ==="
   rm "$CACHE_PATH/$MODEL_BUNDLE_FILENAME"
 else
   # Fetch directly from NGC to $NIM_CACHE_PATH
