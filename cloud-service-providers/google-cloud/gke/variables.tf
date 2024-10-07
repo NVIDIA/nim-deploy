@@ -370,13 +370,13 @@ variable "vm_gpu_spec_list" {
     a2-ultragpu-1g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 1
-      local_ssd_count   = 8
+      local_ssd_count   = 1
       gpu_family        = "a100"
     }
     a2-ultragpu-4g = {
       accelerator_type  = "nvidia-a100-80gb"
       accelerator_count = 4
-      local_ssd_count   = 8
+      local_ssd_count   = 4
       gpu_family        = "a100"
     }
     a2-ultragpu-8g = {
