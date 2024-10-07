@@ -314,10 +314,19 @@ resource "null_resource" "get-signed-ngc-bundle-url" {
   }
 }
 
+resource "null_resource" "touch-ngc-signed-url" {
+  triggers = {
+    shell_hash = "${timestamp()}"
+  }
+  provisioner "local-exec" {
+    command = "/bin/sh -c \"[ -f ${path.module}/ngc_signed_url.txt ] || echo '' > ${path.module}/ngc_signed_url.txt\""
+  }
+}
+
 data "local_file" "ngc-bundle-url" {
   count = local.use_bundle_url ? 1 : 0
   filename = "${path.module}/ngc_signed_url.txt"
-  depends_on = [null_resource.get-signed-ngc-bundle-url]
+  depends_on = [null_resource.touch-ngc-signed-url, null_resource.get-signed-ngc-bundle-url]
 }
 
 resource "helm_release" "ngc_to_gcs_transfer" {
