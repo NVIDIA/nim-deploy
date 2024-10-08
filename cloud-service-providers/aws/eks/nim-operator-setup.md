@@ -20,7 +20,7 @@ We can also validate if the plugin installation was successful.
 
 2: Install the GPU Operator. https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#procedure
 
-   helm install --wait --generate-name -n gpu-operator --create-namespace nvidia/gpu-operator --version=v23.6.0 --set toolkit.enabled=false
+    helm install --wait --generate-name -n gpu-operator --create-namespace nvidia/gpu-operator --version=v23.6.0 --set toolkit.enabled=false
    
 3: Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
 
