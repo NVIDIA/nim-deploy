@@ -29,7 +29,7 @@ Note: Ensure that you are in the cloud-service-providers/aws/eks directory for t
 
 ## Cluster setup for inference:
 
-You can either use the NIM Helm Chart or NIM Operator. If you would like to use the NIM Operator, please see the instructions here. 
+You can either use the NIM Helm Chart or NIM Operator. If you would like to use the NIM Operator, please see the instructions ![here](nim-operator-setup.md). 
 
 To install the NIM Helm Chart, please follow the steps below:
 
