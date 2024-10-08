@@ -197,14 +197,8 @@ spec:
           enumValueLabels:
             - label: meta/llama-3.1-8b-instruct
               value: llama-3.1-8b-instruct
-            - label: meta/llama-3.1-70b-instruct
-              value: llama-3.1-70b-instruct   
-            - label: meta/llama-3.1-405b-instruct
-              value: llama-3.1-405b-instruct
             - label: meta/llama3-8b-instruct
               value: llama3-8b-instruct
-            - label: meta/llama3-70b-instruct
-              value: llama3-70b-instruct              
             - label: mistralai/mixtral-8x7b-instruct-v0.1
               value: mixtral-8x7b-instruct-v01
             - label: mistralai/mistral-7b-instruct-v0.3
