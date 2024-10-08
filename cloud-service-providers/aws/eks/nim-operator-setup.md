@@ -3,36 +3,9 @@
 Please see the NIM Operator documentation before you proceed: https://docs.nvidia.com/nim-operator/latest/index.html
 This repository is dedicated to testing NVIDIA NIM Operator on AWS EKS (Elastic Kubernetes Service).
 
-## AWS Infrastructure setup:
-
-1:Refer this high-level architecture diagram for an overview of the setup
-![High level architecture diagram](aws-eks-architecture.png)
-
-2: Refer this to prepare your local environment to run cdk
-https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html
-
-There are four stacks in the nim-eks-cdk/lib directory. You can either deploy all of them using `cdk deploy --all` or deploy each stack by specifying the stack name
-like `cdk deploy vpc-stack`
-
-Stack Deployment Order:
-
-    cdk deploy vpc-stack
-    cdk deploy eks-cluster-stack
-    cdk deploy efs-stack
-
-Note: Ensure that you are in the nim-eks-cdk directory to run the above mentioned commands
-
-ClusterAdmin user is created by the cdk. Create access keys for this user to run kubectl and helm commands. Once secret credentials are created run the following command to manage the cluster
-
-    aws eks update-kubeconfig --name <eks-cluster-name> --region <region-code> --profile <profile-name-if-any>
-
-Note: Ensure that you are in the cloud-service-providers/aws/eks directory for the rest of this guide.
-
 ## Cluster setup for inference:
 
-You can either use the NIM Helm Chart or NIM Operator. If you would like to use the NIM Operator, please see the instructions here. 
-
-To install the NIM Helm Chart, please follow the steps below:
+To install the pre-requisites for the NIM Operator, please follow the steps below:
 
 1: Install NVIDIA Device Plugin: Install NVIDIA device plugins to run GPU workloads. Check CUDA base image version for compatibility.
 
@@ -47,7 +20,7 @@ We can also validate if the plugin installation was successful.
 
 2: Install the GPU Operator. https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#procedure
 
-   helm install --wait --generate-name -n gpu-operator --create-namespace nvidia/gpu-operator --version=v23.6.0
+   helm install --wait --generate-name -n gpu-operator --create-namespace nvidia/gpu-operator --version=v23.6.0 --set toolkit.enabled=false
    
 3: Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
 
@@ -58,26 +31,29 @@ We can also validate if the plugin installation was successful.
 
     Note: This setup script (directory: nim-deploy/setup)creates two storage classes- EFS and EBS. The necessary csi drivers are installed as add-ons by the CDK.
 
-2.  Use Helm to deploy the custom-values.yaml.
+2.  Follow the instructions in the docs (https://docs.nvidia.com/nim-operator/latest/cache.html#procedure) using the sample yaml files below.
+   
     a) EBS volume:
 
-         helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-ebs-sc.yaml
+         kubectl apply -n nim-service -f storage/nim-operator-nim-cache-ebs.yaml
 
     b) EFS storage:
 
-         helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-efs-sc.yaml
+          kubectl apply -n nim-service -f storage/nim-operator-nim-cache-efs.yaml
 
-    c) Host path storage:
+ 
+# Creating a NIM Service 
 
-         helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-host-path.yaml
+1. Follow the instructions in the [docs](https://docs.nvidia.com/nim-operator/latest/service.html#procedure) using the sample yaml file below.
 
-         Note: Since we are running pods as non-root user, cache path specified in the custom-values-host-path.yaml should be created on the EC2 instance prior to installing helm. Also the directory ownership should be assigned to 1000:1000 (or any no root uid:gid as specified in the custom-values.yaml)
-
-3.  Use ingress.yaml to add an alb ingress controller.
+         kubectl apply -n nim-service -f storage/nim-operator-nim-service.yaml
+   
+2. Use ingress.yaml to add an alb ingress controller.
 
          kubectl apply -f ingress.yaml
 
 # Sample request and response:
+
 Get the DNS of the Load Balancer created in the previous step:
 ```
 ELB_DNS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[*].{DNSName:DNSName}")
