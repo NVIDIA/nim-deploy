@@ -27,7 +27,7 @@ We can also validate if the plugin installation was successful.
 
 # Caching Models
 
-1.         bash setup/setup.sh
+1.     bash setup/setup.sh
 
     Note: This setup script (directory: nim-deploy/setup)creates two storage classes- EFS and EBS. The necessary csi drivers are installed as add-ons by the CDK.
 
