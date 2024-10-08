@@ -1,0 +1,20 @@
+apiVersion: apps.nvidia.com/v1alpha1
+kind: NIMCache
+metadata:
+  name: meta-llama3-8b-instruct
+spec:
+  source:
+    ngc:
+      modelPuller: nvcr.io/nim/meta/llama3-8b-instruct:1.0.3
+      pullSecret: ngc-secret
+      authSecret: ngc-api-secret
+      model:
+        engine: tensorrt_llm
+        tensorParallelism: "1"
+  storage:
+    pvc:
+      create: true
+      storageClass: "efs-sc"
+      size: "50Gi"
+      volumeAccessMode: ReadWriteMany
+  resources: {}
