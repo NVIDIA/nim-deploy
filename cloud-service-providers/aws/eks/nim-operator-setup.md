@@ -50,7 +50,7 @@ We can also validate if the plugin installation was successful.
    
 2. Use ingress.yaml to add an alb ingress controller.
 
-         kubectl apply -f ingress.yaml
+         kubectl apply -f ingress.yaml -n nim-service
 
 # Sample request and response:
 
