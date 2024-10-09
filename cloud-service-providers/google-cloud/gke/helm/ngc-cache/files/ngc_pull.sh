@@ -13,7 +13,11 @@ if [ -n "${NGC_BUNDLE_URL:-}" ]; then
   aria2c -x 16 -s 16 -j 10 --dir "$CACHE_PATH" --out="$MODEL_BUNDLE_FILENAME" "$NGC_BUNDLE_URL"
 
   echo "=== [START] Extracting $CACHE_PATH/$MODEL_BUNDLE_FILENAME ==="
-  pigz -dc "$CACHE_PATH/$MODEL_BUNDLE_FILENAME" | tar xf - -C "$CACHE_PATH"
+  if file "$CACHE_PATH/$MODEL_BUNDLE_FILENAME" | grep -q "gzip compressed" ; then
+    tar -I pigz -xf "$CACHE_PATH/$MODEL_BUNDLE_FILENAME" -C "$CACHE_PATH"
+  else
+    tar -xf "$CACHE_PATH/$MODEL_BUNDLE_FILENAME" -C "$CACHE_PATH"
+  fi
   echo "=== [DONE] Extracting $CACHE_PATH/$MODEL_BUNDLE_FILENAME ==="
   rm "$CACHE_PATH/$MODEL_BUNDLE_FILENAME"
 else

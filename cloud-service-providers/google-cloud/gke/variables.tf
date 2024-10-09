@@ -437,6 +437,7 @@ variable "ngc_bundle_filename_config_list" {
   type        = map(object({
     prefix         = string
     has_gpu_suffix = bool
+    extension      = string
   }))
   description = "A map of model to bundle tarball"
 
@@ -444,42 +445,52 @@ variable "ngc_bundle_filename_config_list" {
     "llama-3.1-8b-instruct" = {
       prefix         = "meta-llama3-1-8b-instruct"
       has_gpu_suffix = true
+      extension      = "tar.gz"
     }
     "llama-3.1-70b-instruct" = {
       prefix         = "meta-llama3-1-70b-instruct"
       has_gpu_suffix = true
+      extension      = "tar.gz"
     }
     "llama-3.1-405b-instruct" = {
       prefix         = "meta-llama3-1-405b-instruct"
       has_gpu_suffix = true
+      extension      = "tar"
     }
     "llama3-70b-instruct" = {
       prefix         = "meta-llama3-70b-instruct"
       has_gpu_suffix = true
+      extension      = "tar.gz"
     }
     "llama3-8b-instruct" = {
       prefix         = "meta-llama3-8b-instruct"
       has_gpu_suffix = true
+      extension      = "tar.gz"
     }
     "mistral-7b-instruct-v0.3" = {
       prefix         = "mistralai-mistral-7b-instruct-v0-3"
       has_gpu_suffix = true
+      extension      = "tar.gz"
     }
     "mixtral-8x7b-instruct-v01" = {
       prefix         = "mistralai-mixtral-8x7b-instruct-v0-1"
       has_gpu_suffix = true
+      extension      = "tar.gz"
     }
     "nv-embedqa-e5-v5" = {
       prefix         = "nvidia-nv-embedqa-e5-v5"
       has_gpu_suffix = false
+      extension      = "tar.gz"
     }
     "nv-embedqa-mistral-7b-v2" = {
       prefix         = "nvidia-nv-embedqa-mistral-7b-v2"
       has_gpu_suffix = false
+      extension      = "tar.gz"
     }
     "nv-rerankqa-mistral-4b-v3" = {
       prefix         = "nvidia-nv-rerankqa-mistral-4b-v3"
       has_gpu_suffix = false
+      extension      = "tar.gz"
     }
   }
 }
@@ -551,7 +562,7 @@ variable "ngc_transfer_image" {
 variable "ngc_transfer_tag" {
   type = string
   description = "Docker repository tag of the NGC transfer container"
-  default     = "1.0.0"
+  default     = "1.1.0"
 }
 
 variable "ngc_bundle_service_fqdn" {

@@ -274,8 +274,12 @@ provider "helm" {
   alias = "helm_install"
   kubernetes {
     host                   = local.endpoint
-    token                  = local.token
     cluster_ca_certificate = local.ca_certificate
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      args        = ["./k8s-exec-token.sh"]
+      command     = "/bin/sh"
+    }
   }
 }
 
@@ -289,7 +293,7 @@ locals {
   ngc_bundle_filename_config = lookup(var.ngc_bundle_filename_config_list, var.model_name)
   ngc_bundle_filename_prefix = local.ngc_bundle_filename_config.prefix
   ngc_bundle_filename_suffix = local.ngc_bundle_filename_config.has_gpu_suffix ? "-${local.gpu_type.gpu_family}" : ""
-  ngc_bundle_filename = "${local.ngc_bundle_filename_prefix}${local.ngc_bundle_filename_suffix}.tar.gz"
+  ngc_bundle_filename = "${local.ngc_bundle_filename_prefix}${local.ngc_bundle_filename_suffix}.${local.ngc_bundle_filename_config.extension}"
   ngc_bundle_size = lookup(var.ngc_bundle_size_list, var.model_name, "500Gi")
 }
 
