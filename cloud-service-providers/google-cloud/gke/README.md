@@ -2,6 +2,8 @@
 
 This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs for hosting NIMs and carrying out inference. Meta's [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) serves as a demonstration model in this instance. The repository references the NVIDIA-provided [helm charts](https://github.com/NVIDIA/nim-deploy/tree/main/helm).
 
+NOTE: Try out NIM integrated as ready to deploy solution on GKE [here](https://console.cloud.google.com/marketplace/product/nvidia/nvidia-nim)
+
 ## Table of Contents
 
 - [Introduction to NVIDIA NIM](#introduction-to-nvidia-nim)
