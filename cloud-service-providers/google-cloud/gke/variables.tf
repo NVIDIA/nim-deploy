@@ -450,7 +450,7 @@ variable "ngc_bundle_filename_config_list" {
     "llama-3.1-70b-instruct" = {
       prefix         = "meta-llama3-1-70b-instruct"
       has_gpu_suffix = true
-      extension      = "tar.gz"
+      extension      = "tar"
     }
     "llama-3.1-405b-instruct" = {
       prefix         = "meta-llama3-1-405b-instruct"
@@ -460,7 +460,7 @@ variable "ngc_bundle_filename_config_list" {
     "llama3-70b-instruct" = {
       prefix         = "meta-llama3-70b-instruct"
       has_gpu_suffix = true
-      extension      = "tar.gz"
+      extension      = "tar"
     }
     "llama3-8b-instruct" = {
       prefix         = "meta-llama3-8b-instruct"
