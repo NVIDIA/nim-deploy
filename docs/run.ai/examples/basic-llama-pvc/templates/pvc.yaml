@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nim-cache
+  namespace: {{ .Values.namespace }}
+  annotations:
+    helm.sh/resource-policy: "keep"
+spec:
+  storageClassName: {{ .Values.storageClassName }}
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 32Gi
