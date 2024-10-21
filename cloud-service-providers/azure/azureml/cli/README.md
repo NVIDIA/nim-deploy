@@ -89,7 +89,7 @@ Required commands are provided in the `5_create_deployment.sh` script.
 ./5_create_deployment.sh
 ```
 
-## Verify Your Connection
+## Querying the model
 
 Verify your deployment using the `test_chat_completions.sh` script. Modify the URL to your endpoint URL and add the following headers:
 `-H 'Authorization: Bearer <your-azureml-endpoint-token>' -H 'azureml-model-deployment: <your-azureml-model-deployment-name>'`
@@ -100,7 +100,7 @@ For example:
 curl -X 'POST' \
   'https://llama3-8b-nim-endpoint-aml-1.southcentralus.inference.ml.azure.com/v1/chat/completions' \
   -H 'accept: application/json' \
-  -H 'Authorization: Bearer hNMiUaTjQGYT1FobgtzOEaYJ1ei6lPYt' \
+  -H 'Authorization: Bearer XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' \
   -H 'azureml-model-deployment: llama3-8b-nim-deployment-aml-1' \
   -H 'Content-Type: application/json' \
   -d '{
