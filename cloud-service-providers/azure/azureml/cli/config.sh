@@ -38,7 +38,7 @@ email_address="mreyesgomez@nvidia.com"
 acr_registry_name="nimdeploydemowsacr"
 
 image_name="llama3_8b_nim_ncd"
-ngc_container="nvcr.io/nim/meta/llama3-8b-instruct:1.0.0"
+ngc_container="nvcr.io/nim/meta/llama3-8b-instruct:1.0.3"
 
 # Endpoint related information
 endpoint_name="llama3-8b-nim-endpoint-aml-1"
