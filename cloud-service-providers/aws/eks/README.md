@@ -29,9 +29,9 @@ Note: Ensure that you are in the cloud-service-providers/aws/eks directory for t
 
 ## Cluster setup for inference:
 
-You can either use the NIM Helm Chart or NIM Operator. If you would like to use the NIM Operator, please see the instructions [here](nim-operator-setup.md). 
+For the NIM Operator, here are the [instructions](nim-operator-setup.md). 
 
-To install the NIM Helm Chart, please follow the steps below:
+To install the NIM Helm Chart, here are the steps:
 
 1: Install NVIDIA Device Plugin: Install NVIDIA device plugins to run GPU workloads. Check CUDA base image version for compatibility.
 
