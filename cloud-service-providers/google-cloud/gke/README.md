@@ -1,6 +1,8 @@
 # NVIDIA NIMs on GKE
 
-This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs for hosting NIMs and carrying out inference. Meta's [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) serves as a demonstration model in this instance. The repository contains the NVIDIA-provided [helm charts](https://github.com/NVIDIA/nim-deploy/tree/main/helm).
+This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs for hosting NIMs and carrying out inference. Meta's [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) serves as a demonstration model in this instance. The repository references the NVIDIA-provided [helm charts](https://github.com/NVIDIA/nim-deploy/tree/main/helm).
+
+NOTE: Try out NIM integrated as ready to deploy solution on GKE [here](https://console.cloud.google.com/marketplace/product/nvidia/nvidia-nim)
 
 ## Table of Contents
 
@@ -102,18 +104,49 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
   | `gpu_pools.accelerator_type` | NVIDIA GPU name | `nvidia-l4` |
   | `gpu_pools.accelerator_count` | GPU count | `1` |
 
-  Update variables in `infra/3-config/terraform.auto.tfvars`
+3. Update variables in `infra/3-config/terraform.auto.tfvars`
 
   | Variable | Description | Default | Need update? |
   |---|---|---|---|
   | `registry_server` | NVIDIA Registry that hosts the images | `nvcr.io` | *No* |
-  | `ngc_cli_api_key` | NGC API Key from NVIDIA | <> | *Yes* |
+  | `ngc_api_key` | NGC API Key from NVIDIA | <> | *Yes* |
   | `repository` | NIM image | `nvcr.io/nim/meta/llama3-8b-instruct` | *No* |
   | `tag` | Tag of image | `1.0.0` | *No* |
   | `model_name` | NIM Model name | `meta/llama3-8b-instruct` | *No* |
   | `gpu_limits` | GPU Limits | `1` | *No* |
 
-3. Provision infrastructure and helm charts
+4. Create a YAML file under `infra/3-config/helm/custom-values.yaml` with below contents:
+
+ ```yaml
+
+image:
+  repository: 
+  tag: 
+imagePullSecrets:
+  - name: registry-secret
+model:
+  name: 
+  ngcAPISecret: ngc-api
+  nimCache: /.cache
+persistence:
+  enabled: true
+  existingClaim: "ngc-cache"
+  accessMode: ReadOnlyMany
+statefulSet:
+  enabled: false
+# Uncomment if you want to control the number of GPUs
+# resources:
+#   limits:
+#     nvidia.com/gpu: 1
+podAnnotations:
+  gke-gcsfuse/volumes: "true"
+  gke-gcsfuse/cpu-limit: "0"
+  gke-gcsfuse/memory-limit: "0"
+  gke-gcsfuse/ephemeral-storage-limit: "0"
+
+ ```
+
+5. Provision infrastructure and helm charts
 
 ```shell
 bash 1.setup.sh
@@ -141,7 +174,7 @@ export NGC_API_KEY=<Your API KEY>
 
 helm --namespace nim install my-nim ../../../helm/nim-llm/ \
 -f ./infra/3-config/helm/custom-values.yaml \
---set model.ngcAPIKey=$NGC_CLI_API_KEY
+--set model.ngcAPIKey=$NGC_API_KEY
 ```
 
 4.Port forward to local at 8000 (change as needed) and update in the curl command as well.

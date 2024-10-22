@@ -1,0 +1,100 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- include "nim-llm.labels" . | nindent 4 }}
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "nim-llm.selectorLabels" . | nindent 8 }}
+        {{- if .Values.model.labels }}
+        {{- toYaml .Values.model.labels | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "nim-llm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - "download-to-cache && find $NIM_CACHE_PATH -type d -printf '%P\\n' | xargs -P 100 -I {} mkdir -p /upload-dir/{} && find $NIM_CACHE_PATH -type f,l -printf '%P\\n' | xargs -P 100 -I {} cp --no-dereference $NIM_CACHE_PATH/{} /upload-dir/{}"
+          env:
+            - name: NIM_CACHE_PATH
+              value: {{ .Values.model.nimCache | quote }}
+            - name: NGC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.model.ngcAPISecret }}
+                  key: NGC_API_KEY
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: model-store
+              {{- if .Values.model.legacyCompat }}
+              mountPath: {{ .Values.model.nimCache }}
+              subPath: {{ .Values.model.subPath }}
+              {{- else }}
+              mountPath: {{ .Values.model.nimCache }}
+              {{- end }}
+          {{- if .Values.extraVolumeMounts }}
+          {{- range $k, $v := .Values.extraVolumeMounts }}
+            - name: {{ $k }}
+              {{- toYaml $v | nindent 14 }}
+          {{- end }}
+          {{- end }}
+      terminationGracePeriodSeconds: 60
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: model-store
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName:  {{ .Values.persistence.existingClaim | default (include "nim-llm.fullname" .) }}
+          {{- else if .Values.hostPath.enabled }}
+          hostPath:
+            path: {{ .Values.hostPath.path }}
+            type: DirectoryOrCreate
+          {{- else if .Values.nfs.enabled }}
+          nfs:
+            server: {{ .Values.nfs.server | quote }}
+            path: {{ .Values.nfs.path }}
+            readOnly: {{ .Values.nfs.readOnly }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- if .Values.extraVolumes }}
+      {{- range $k, $v := .Values.extraVolumes }}
+        - name: {{ $k }}
+          {{- toYaml $v | nindent 10 }}
+      {{- end }}
+      {{- end }}
