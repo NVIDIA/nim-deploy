@@ -7,22 +7,11 @@ This repository is dedicated to testing NVIDIA NIM Operator on AWS EKS (Elastic 
 
 To install the pre-requisites for the NIM Operator, please follow the steps below:
 
-1: Install NVIDIA Device Plugin: Install NVIDIA device plugins to run GPU workloads. Check CUDA base image version for compatibility.
-
-    kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml
-
-Note: The CDK in this repo spins up AWS G5 instances with OS - Amazon linux 2.  
-`v0.14.1 version for Nvidia device plugins is compatible with Amazon linux 2`
-
-We can also validate if the plugin installation was successful.
-
-    kubectl get nodes "-o=custom-columns=NAME:.metadata.name,GPU:.status.allocatable.nvidia\.com/gpu"
-
-2: Install the GPU Operator. https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#procedure
+1: Install the GPU Operator. https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#procedure
 
     helm install --wait --generate-name -n gpu-operator --create-namespace nvidia/gpu-operator --version=v23.6.0 --set toolkit.enabled=false
    
-3: Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
+2: Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
 
 
 # Caching Models
@@ -39,7 +28,7 @@ We can also validate if the plugin installation was successful.
 
     b) EFS storage:
 
-          kubectl apply -n nim-service -f storage/nim-operator-nim-cache-efs.yaml
+         kubectl apply -n nim-service -f storage/nim-operator-nim-cache-efs.yaml
 
  
 # Creating a NIM Service 
@@ -118,7 +107,7 @@ Response:
 
       kubectl apply -f perf/gen-ai-perf.yaml
 
-ssh into the triton pod
+exec into the triton pod
 
       kubectl exec -it triton -- bash
 
