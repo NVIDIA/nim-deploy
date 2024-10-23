@@ -22,23 +22,21 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # AzureML Workspace and corresponding container registry related information
-subscription_id="ab221ca4-f098-422d-ab2f-5073b3851e68"
-resource_group="NIMDeploDemo_rg"
-workspace="NIMDeployDemo_ws"
-location="southcentralus"
+subscription_id="<your-azure-subscription-id>"
+resource_group="<your-resource-group>"
+workspace="<your-azureml-workspace-name>"
+location="<your-azureml-region>" # eg: "southcentralus", "westeurope" etc.
 
 # Azure keyvault creation related information
-ngc_api_key="azdwMG00YXNicWVzcnFrN3ZqMnFtcTAyb2U6NzRhZTUxODgtNzBhMS00ZDIzLThlODktZWNkNGQwMTE5OWRh"
+ngc_api_key="<your-ngc-api-key>"
 keyvault_name="NGC-Credentials"
-email_address="mreyesgomez@nvidia.com"
+email_address="<your-email-address>"
 
 # Container related information
  # NOTE: Verify that your AML workspace can access this ACR
-
-acr_registry_name="nimdeploydemowsacr"
-
-image_name="llama3_8b_nim_ncd"
-ngc_container="nvcr.io/nim/meta/llama3-8b-instruct:1.0.3"
+acr_registry_name="<your-azureml-registry-name>"
+image_name="<custom-name-for-nim-image>"
+ngc_container="nvcr.io/nim/meta/llama3-8b-instruct:1.0.0"
 
 # Endpoint related information
 endpoint_name="llama3-8b-nim-endpoint-aml-1"
