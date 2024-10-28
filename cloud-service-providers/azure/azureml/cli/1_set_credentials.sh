@@ -2,18 +2,46 @@
 set -x
 source config.sh
 
+CREATE_RESOURCE_GROUP=false
+CREATE_CONTAINER_REGISTRY=false
 CREATE_WORKSPACE=false
 
 for i in "$@"; do
   case $i in
-    --create_new_workspace) CREATE_WORKSPACE=true ;;
-    -*|--*) echo "Unknown option $i"; exit 1 ;;
+    --create_new_resource_group)
+      CREATE_RESOURCE_GROUP=true
+      shift # past argument with no value
+      ;;
+    --create_new_container_registry)
+      CREATE_CONTAINER_REGISTRY=true
+      shift # past argument with no value
+      ;;
+    --create_new_workspace)
+      CREATE_WORKSPACE=true
+      shift # past argument with no value
+      ;;
+    -*|--*)
+      echo "Unknown option $i"
+      exit 1
+      ;;
+    *)
+      ;;
   esac
 done
 
+# Create new resource group
+if $CREATE_RESOURCE_GROUP; then
+    az group create --name $resource_group --location $location
+fi
+
+# Create new container registry
+if $CREATE_CONTAINER_REGISTRY; then
+    az acr create --resource-group $resource_group --name $acr_registry_name --sku Basic
+fi
+
 # Create new workspace
 if $CREATE_WORKSPACE; then
-    az ml workspace create --name $workspace --resource-group $resource_group --location $location
+    az ml workspace create --name $workspace --resource-group $resource_group --location $location --container-registry /subscriptions/${subscription_id}/resourceGroups/${resource_group}/providers/Microsoft.ContainerRegistry/registries/${acr_registry_name}
 fi
 
 # Assign role permission to read secrets from workspace connections

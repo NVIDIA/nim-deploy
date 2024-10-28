@@ -3,7 +3,7 @@ name: deployment_name_placeholder
 endpoint_name: endpoint_name_placeholder
 environment: 
   name: image_name_placeholder-env
-  image: acr_registry_placeholder.azurecr.io/image_name_placeholder:v1
+  image: acr_registry_placeholder.azurecr.io/image_name_placeholder:latest
   inference_config:
       liveness_route:
           path: /v1/health/ready
