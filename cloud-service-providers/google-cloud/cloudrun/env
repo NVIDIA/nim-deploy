@@ -1,0 +1,10 @@
+export SERVICE_ACCOUNT_ID=nemoms-vertex-ai-study
+export PROJECTID=exploration
+export PROJECTUSER=nvidia
+export PROJECTNUM=1234567890123
+export REGION=us-central1
+export GCSBUCKET=my-model-data
+export SERVICE_NAME=llama-3-8b-instruct
+export ARTIFACT_REGISTRY_LOCATION=us
+# ---- entries below created by build_nim.sh
+export IMAGE=us-docker.pkg.dev/exploration/nvidia/llama-3-8b-instruct-l4:1.0

@@ -1,7 +1,9 @@
 #!/bin/bash
 # Get CloudFormation stack outputs
 echo "Fetching CloudFormation stack outputs..."
-efsoutput=$(aws cloudformation describe-stacks --stack-name efs-stack --query "Stacks[0].Outputs" --region us-east-1)
+region=$(aws configure get region)
+echo "Fetching current region $region"
+efsoutput=$(aws cloudformation describe-stacks --stack-name efs-stack --query "Stacks[0].Outputs" --region "$region")
 fileSystemId=$(echo "$efsoutput" | jq -r '.[] | select(.OutputKey=="FileSystemIdOutput") | .OutputValue')
 echo "Updating storage file..."
 sed -i '' "s/\${FileSystemIdOutput}/$fileSystemId/g" ./setup/storage.yaml
