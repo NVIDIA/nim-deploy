@@ -22,6 +22,7 @@ This repo showcases different ways NVIDIA NIMs can be deployed. This repo contai
 |                                    | **Amazon Web Services**                                     |             |
 |                                    | | [EKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/eks)                             |             |
 |                                    | | [Amazon SageMaker](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/sagemaker)                                   |             |
+|                                    | | [EKS Managed Kubernetes - NIM Operator](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/aws/eks/nim-operator-setup.md)                             |             |
 |                                    | **Google Cloud Platform**                                   |             |
 |                                    | | [GKE Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke)                             |             |
 |                                    | | [Google Cloud Vertex AI](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/vertexai/python)               |             |

@@ -1,0 +1,24 @@
+apiVersion: apps.nvidia.com/v1alpha1
+kind: NIMService
+metadata:
+  name: meta-llama3-8b-instruct
+spec:
+  image:
+    repository: nvcr.io/nim/meta/llama3-8b-instruct
+    tag: 1.0.3
+    pullPolicy: IfNotPresent
+    pullSecrets:
+      - ngc-secret
+  authSecret: ngc-api-secret
+  storage:
+    nimCache:
+      name: meta-llama3-8b-instruct
+      profile: ''
+  replicas: 1
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+  expose:
+    service:
+      type: ClusterIP
+      port: 8000

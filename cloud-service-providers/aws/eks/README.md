@@ -29,6 +29,10 @@ Note: Ensure that you are in the cloud-service-providers/aws/eks directory for t
 
 ## Cluster setup for inference:
 
+For the NIM Operator, here are the [instructions](nim-operator-setup.md). 
+
+To install the NIM Helm Chart, here are the steps:
+
 1: Install NVIDIA Device Plugin: Install NVIDIA device plugins to run GPU workloads. Check CUDA base image version for compatibility.
 
     kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.1/nvidia-device-plugin.yml
