@@ -2,10 +2,19 @@
 
 In this example, we will deploy the LLAMA3 8B model on AzureML. The same process can be used to deploy other NIM models. More instructions will be provided later.
 
+You can deploy using either of the two methods:
+- Method 1: [Running Azure CLI commmands inside script files](./scripts/)
+- Method 2: [Running Azure CLI commands inside a jupyter notebook](./nim_azureml.ipynb)
+
+The instructions to deploy using method 1 are provided below. If you prefer method 2 then proceed with the instructions provided in the jupyter notebook. Note that both methods execute the same Azure CLI commands, so you can use the instructions below to understand the flow of commands in the Jupyter notebook as well.
+
+Note: We recommend to deploy using the jupyter notebook method as it is easy to follow and also contains instructions for deploying NIMs in Airgapped mode.
+
 **Prerequisites:**
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - [Azure ML extension](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-configure-cli?view=azureml-api-2&tabs=public)
 - [NGC API Key](https://catalog.ngc.nvidia.com/)
+
 
 ## Setup Configuration
 

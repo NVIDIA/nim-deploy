@@ -42,7 +42,7 @@ sed -e '/timeoutSeconds: 300/r'<(cat <<EOF
       - csi:
           driver: gcsfuse.run.googleapis.com
           volumeAttributes:
-            bucketName: my-model-data
+            bucketName: ${GCSBUCKET?}
         name: gcs-1
 EOF
 ) ${SERVICE_NAME?}.yaml > $output
