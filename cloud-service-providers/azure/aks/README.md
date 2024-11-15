@@ -9,16 +9,16 @@ After you are ready to create AKS, the next thing is to choose the right GPU ins
 
 ## Prerequisites
 
-Please follow [Pre-requirement instruction](./prerequisites/README.md) to get ready for AKS creation.
+Please follow [Pre-requirement instructions](./prerequisites/README.md) to get ready for AKS creation.
 
 ## Create AKS
 
-Please follow [Create AKS instruction](./setup/README.md) to create AKS.
+Please follow [Create AKS instructions](./setup/README.md) to create AKS.
 
 ## Deploy NIM using Helm Chart
 
-Please follow [Deploy NIM instruction](../../../helm/README.md) to deploy NIM.
+Please follow [Deploy NIM instructions](../../../helm/README.md) to deploy NIM.
 
 ## Deploy NIM using NIM Operator
 
-Please follow [Deploy NIM Operator instruction](../nim-operator-setup.md) to deploy NIM Operator.
+Please follow [Deploy NIM Operator instructions](nim-operator-setup.md) to deploy NIM Operator.
