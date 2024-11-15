@@ -15,10 +15,11 @@ Please follow [Pre-requirement instructions](./prerequisites/README.md) to get r
 
 Please follow [Create AKS instructions](./setup/README.md) to create AKS.
 
-## Deploy NIM using Helm Chart
+## Deploy NIM 
+### Using Helm Chart
 
 Please follow [Deploy NIM instructions](../../../helm/README.md) to deploy NIM.
 
-## Deploy NIM using NIM Operator
+### Using NIM Operator
 
 Please follow [Deploy NIM Operator instructions](nim-operator-setup.md) to deploy NIM Operator.
