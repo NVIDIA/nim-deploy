@@ -1,35 +1,30 @@
 # NVIDIA NIM Operator on Azure AKS:
 
 Please see the NIM Operator documentation before you proceed: https://docs.nvidia.com/nim-operator/latest/index.html
-This repository is dedicated to testing NVIDIA NIM Operator on Azure AKS.
+The files in this repo are for reference, for the official NVIDIA AI Enterprise supported release, see NGC and the official documentation.
+Helm a and GPU Operator should be installed in the cluster before proceeding with the steps below. 
+Pre-requisites: https://docs.nvidia.com/nim-operator/latest/install.html#prerequisites
 
-## Cluster setup for inference:
-
-To install the pre-requisites for the NIM Operator, please follow the steps below:
-
-1: Install the GPU Operator. https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html#procedure
-
-    helm install --wait --generate-name -n gpu-operator --create-namespace nvidia/gpu-operator --version=v23.6.0 --set toolkit.enabled=false
-   
-2: Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
+Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
 
 
 # Caching Models
 
-1.     bash setup/setup.sh
+1.     Set your NGC_API_KEY and create secrets as show below:
 
-    Note: This setup script (directory: nim-deploy/setup)creates two storage classes- EFS and EBS. The necessary csi drivers are installed as add-ons by the CDK.
+
+If you have not set up NGC, see the [NGC Setup](https://ngc.nvidia.com/setup) topic.
+Set the **NGC_API_KEY** environment variable to your NGC API key, as shown in the following example.
+
+```bash
+export NGC_API_KEY="key from ngc"
+```
+
+
 
 2.  Follow the instructions in the docs (https://docs.nvidia.com/nim-operator/latest/cache.html#procedure) using the sample yaml files below.
    
-    a) ABS volume:
-
-         kubectl apply -n nim-service -f storage/nim-operator-nim-cache-abs.yaml
-
-    b) AFS storage:
-
-         kubectl apply -n nim-service -f storage/nim-operator-nim-cache-afs.yaml
-
+The image and the model files are fairly large (> 10GB, typically), so ensure that however you are managing the storage for your helm release, you have enough space to host both the image. If you have a persistent volume setup available to you, as you do in most cloud providers, it is recommended that you use it. If you need to be able to deploy pods quickly and would like to be able to skip the model download step, there is an advantage to using a shared volume such as NFS as your storage setup. To try this out, it is simplest to use a normal persistent volume claim. See the Kubernetes Persistent Volumes documentation for more information.
  
 # Creating a NIM Service 
 
