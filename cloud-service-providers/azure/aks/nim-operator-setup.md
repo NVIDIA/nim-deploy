@@ -3,16 +3,20 @@
 Please see the NIM Operator documentation before you proceed: https://docs.nvidia.com/nim-operator/latest/index.html
 The files in this repo are for reference, for the official NVIDIA AI Enterprise supported release, see NGC and the official documentation.
 Helm and GPU Operator should be installed in the cluster before proceeding with the steps below. 
-Pre-requisites: https://docs.nvidia.com/nim-operator/latest/install.html#prerequisites
+[Pre-requisites](https://docs.nvidia.com/nim-operator/latest/install.html#prerequisites)
 
 Follow the instructions for the NIM Operator installation: https://docs.nvidia.com/nim-operator/latest/install.html#install-nim-operator
 
 
 # Caching Models
 
-Follow the instructions in the docs (https://docs.nvidia.com/nim-operator/latest/cache.html#procedure) using the sample manifest file below.
+Follow the instructions in the [docs](https://docs.nvidia.com/nim-operator/latest/cache.html#procedure) using the sample manifest file below.
    
-The image and the model files are fairly large (> 10GB, typically), so ensure that however you are managing the storage for your helm release, you have enough space to host both the image. If you have a persistent volume setup available to you, as you do in most cloud providers, it is recommended that you use it. If you need to be able to deploy pods quickly and would like to be able to skip the model download step, there is an advantage to using a shared volume such as NFS as your storage setup. To try this out, it is simplest to use a normal persistent volume claim. See the Kubernetes [Persistent Volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) documentation for more information.
+The image and the model files are fairly large (> 10GB, typically), so ensure that however you are managing the storage for your helm release, you have enough space to host both the image. If you have a persistent volume setup available to you, as you do in most cloud providers, it is recommended that you use it. If you need to be able to deploy pods quickly and would like to be able to skip the model download step, there is an advantage to using a shared volume such as NFS as your storage setup.  
+
+Follow instructions to create a custom storage class that uses NFS protocol:  https://learn.microsoft.com/en-us/troubleshoot/azure/azure-kubernetes/storage/fail-to-mount-azure-file-share#solution-2-create-a-pod-that-can-be-scheduled-on-a-fips-enabled-node
+
+Create a nimcache using the sample file that leverages the custom storage class you created (e.g. azurefile-sc-fips):
 
 ```yaml
 apiVersion: apps.nvidia.com/v1alpha1
@@ -31,7 +35,7 @@ spec:
   storage:
     pvc:
       create: true
-      storageClass: azurefile-csi-premium
+      storageClass: azurefile-sc-fips
       size: "50Gi"
       volumeAccessMode: ReadWriteMany
   resources: {}
@@ -75,7 +79,7 @@ Avoid setting up external ingress without adding an authentication layer. This i
 Since this example assumes you aren't using an ingress controller, simply port-forward the service so that you can try it out directly.
 
 ```bash
-kubectl -n nim port-forward service/my-nim-nim-llm 8000:8000
+kubectl -n nim-service port-forward service/meta-llama3-8b-instruct 8000:8000
 ```
 
 Then try a request:
