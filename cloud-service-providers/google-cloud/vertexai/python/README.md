@@ -11,6 +11,25 @@ This repository demonstrates [llama3-8b-instruct NIM](https://build.nvidia.com/m
 * [gcloud CLI](https://cloud.google.com/sdk/docs/install)
 
 ## Run NIM on Vertex AI Workbench Instance
+
+To deploy NIM on Vertex AI, start by obtaining the required credentials and completing the prerequisite setup. 
+
+Next, create a Vertex AI Workbench instance with GPU support.
+
+Once your instance is ready, follow the instructions provided in the Jupyter notebook to complete the deployment process. 
+
+The steps are outlined below:
+
+* Pull NVIDIA NIM container from NGC.
+* Push NVIDIA NIM container to Artifact Registry.
+* Run NIM container to make inference within interface.
+* Upload NIM container as a Vertex AI Model resource.
+* Create a Vertex AI Endpoint resource.
+* Deploy the Model resource to the Endpoint resource.
+* Generate prediction responses from Endpoint resource.
+
+Finally, NIM will be capable of performing inferences both locally within the notebook interface and through the Vertex AI endpoint, which can be accessed via Vertex AI `Model Registry` and `Online prediction`.
+
 ### 1. Create a Vertex AI Workbench Instance
 Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html) for specific NIM.
 
