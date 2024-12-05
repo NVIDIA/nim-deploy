@@ -1,0 +1,27 @@
+apiVersion: run.ai/v2alpha1
+kind: InferenceWorkload
+metadata:
+  name: basic-llama
+  namespace: {{ .Values.namespace }}
+spec:
+  name:
+    value: basic-llama
+  environment:
+    items:
+      NGC_API_KEY:
+        value: SECRET:ngc-secret,NGC_API_KEY
+  gpu:
+    value: "1"
+  image:
+    value: "nvcr.io/nim/meta/llama-3.1-8b-instruct"
+  minScale:
+    value: 1
+  maxScale:
+    value: 2
+  ports:
+    items:
+      serving-port:
+        value:
+          container: 8000
+          protocol: http
+          serviceType: ServingPort
