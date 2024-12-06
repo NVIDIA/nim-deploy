@@ -19,29 +19,29 @@ Following is the example
 
 | GPU   | GPU Memory  | Precision | Profile    | # of GPUS | Azure VM Instance         | Azure VM Family |
 | ----- | ----------- | --------- | ---------- | --------- | ------------------------- | --------------- |
-| H100  | 80          | FP8       | Throughput | 1         | Standard_NC40adis_H100_v5 | NCads H100 v5   |
-| H100  | 80          | FP8       | Latency    | 2         | Standard_NC80adis_H100_v5 | NCads H100 v5   |
-| H100  | 80          | FP16      | Throughput | 1         | Standard_NC40adis_H100_v5 | NCads H100 v5   |
-| H100  | 80          | FP16      | Latency    | 2         | Standard_NC80adis_H100_v5 | NCads H100 v5   |
+| H100  | 94          | FP8       | Throughput | 1         | Standard_NC40adis_H100_v5 | NCads H100 v5   |
+| H100  | 188         | FP8       | Latency    | 2         | Standard_NC80adis_H100_v5 | NCads H100 v5   |
+| H100  | 94          | FP16      | Throughput | 1         | Standard_NC40adis_H100_v5 | NCads H100 v5   |
+| H100  | 188         | FP16      | Latency    | 2         | Standard_NC80adis_H100_v5 | NCads H100 v5   |
 | A100  | 80          | FP16      | Throughput | 1         | Standard_NC24ads_A100_v4​  | NCADS_A100_v4   |
-| A100  | 80          | FP16      | Latency    | 2         | Standard_NC48ads_A100_v4  | NCADS_A100_v4   |
+| A100  | 160         | FP16      | Latency    | 2         | Standard_NC48ads_A100_v4  | NCADS_A100_v4   |
 | L40S  | 48          | FP8       | Throughput | 1         |                                             |
-| L40S  | 48          | FP8       | Latency    | 2         |                                             |
+| L40S  | 96          | FP8       | Latency    | 2         |                                             |
 | L40S  | 48          | FP16      | Throughput | 1         |                                             |
 | A10G  | 24          | FP16      | Throughput | 1         | Standard_NV36ads_A10_v5   | NVadsA10 v5     |
-| A10G  | 24          | FP16      | Latency    | 2         | Standard_NV72ads_A10_v5   | NVadsA10 v5     |
+| A10G  | 48          | FP16      | Latency    | 2         | Standard_NV72ads_A10_v5   | NVadsA10 v5     |
 
 ### Llama 3 70B Instruct
 
 | GPU   | GPU Memory  | Precision | Profile    | # of GPUS | Azure VM Instance         | Azure VM Family |
 | ----- | ----------- | --------- | ---------- | --------- | ------------------------- | --------------- |
-| H100  | 80          | FP8       | Throughput | 4         | Standard_ND96isr_H100_v5  | ND H100 v5      |
-| H100  | 80          | FP8       | Latency    | 8         | Standard_ND96isr_H100_v5  | ND H100 v5      |
-! H100  | 80          | FP16      | Throughput | 4         | Standard_ND96isr_H100_v5  | ND H100 v5      |
-| H100  | 80          | FP16      | Latency    | 8         | Standard_ND96isr_H100_v5  | ND H100 v5      |
-| A100  | 80          | FP16      | Throughput | 4         | Standard_ND96amsr_A100_v4​ | NDAMSv4_A100    |
-| L40S  | 48          | FP8       | Throughput | 4         |
-| L40S  | 48          | FP8       | Latency    | 8         |
+| H100  | 320         | FP8       | Throughput | 4         | Standard_ND96isr_H100_v5  | ND H100 v5      |
+| H100  | 640         | FP8       | Latency    | 8         | Standard_ND96isr_H100_v5  | ND H100 v5      |
+| H100  | 320         | FP16      | Throughput | 4         | Standard_ND96isr_H100_v5  | ND H100 v5      |
+| H100  | 640         | FP16      | Latency    | 8         | Standard_ND96isr_H100_v5  | ND H100 v5      |
+| A100  | 320         | FP16      | Throughput | 4         | Standard_ND96amsr_A100_v4​ | NDAMSv4_A100    |
+| L40S  | 192         | FP8       | Throughput | 4         |
+| L40S  | 384         | FP8       | Latency    | 8         |
 
 ## Find the region has desired GPU
 
