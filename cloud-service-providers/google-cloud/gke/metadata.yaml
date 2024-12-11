@@ -24,9 +24,6 @@ spec:
         description: Additional labels to add to Kubernetes resources.
         varType: string
         defaultValue: "created-by=gke-ai-quick-start-solutions,ai.gke.io=nim"
-      - name: solution_deployment_view
-        varType: bool
-        required: true
       #- name: cluster_location
       #  varType: string
       #  required: true
