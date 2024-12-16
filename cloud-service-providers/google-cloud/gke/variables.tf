@@ -80,6 +80,7 @@ variable "cluster_labels" {
   description = "GKE cluster labels"
   default = {
     "created-by" = "nim-on-gke"
+    "goog-partner-solution" = "isol_plb32_0014m00001hpys5qag_iwykuqcrgtmoiokaxboelvp35cwormjz"
   }
 }
 
@@ -156,6 +157,7 @@ variable "all_node_pools_labels" {
   type = map(string)
   default = {
     "created-by" = "nim-on-gke"
+    "goog-partner-solution" = "isol_plb32_0014m00001hpys5qag_iwykuqcrgtmoiokaxboelvp35cwormjz"
   }
 }
 
@@ -574,4 +576,12 @@ variable "ngc_bundle_service_fqdn" {
 variable "goog_cm_deployment_name" {
   type    = string
   default = "nim-on-gke"
+}
+
+variable "goog_labels" {
+  type = map(string)
+
+  default = {
+    goog-partner-solution = "isol_plb32_0014m00001hpys5qag_iwykuqcrgtmoiokaxboelvp35cwormjz"
+  }
 }
