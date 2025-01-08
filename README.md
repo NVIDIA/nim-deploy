@@ -10,11 +10,9 @@ This repo showcases different ways NVIDIA NIMs can be deployed. This repo contai
 |------------------------------------|-------------------------------------------------------------|-------------|
 | **On-premise Deployments**         | **Helm**                                                    |             |
 |                                    | | [LLM NIM](https://github.com/NVIDIA/nim-deploy/tree/main/helm/nim-llm)                                            |             |
-|                                    | | LLM NIM on OpenShift Container Platform (coming soon) |             |
 |                                    | **Open Source Platforms**                                   |             |
 |                                    | | [KServe](https://github.com/NVIDIA/nim-deploy/tree/main/kserve)                                             |             |
 |                                    | **Independent Software Vendors**                            |             |
-|                                    | | Run.ai (coming soon)                               |             |
 | **Cloud Service Provider Deployments** | **Azure**                                                |             |
 |                                    | | [AKS Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/aks)                             |             |
 |                                    | | [Azure ML](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/azure/azureml)                                    |             |
