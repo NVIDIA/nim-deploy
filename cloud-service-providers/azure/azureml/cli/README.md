@@ -24,6 +24,8 @@ Modify the environment variables in the `./config.sh` file according to your nee
 vim ./config.sh
 ```
 
+Check configurations in `./azureml_files/deployment.yml` to make sure your endpoint deployment is tailored to the NIM you are deploying.
+
 ## Login to Azure with Your Credentials
 
 Ensure you have the Azure CLI installed.
