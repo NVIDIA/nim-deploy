@@ -26,7 +26,7 @@ instance_count: 1
 
 # Environment variables are the variables that are passed to further commands like docker run, so you can specify your docker run
 # params you use to configure NIMs here: https://docs.nvidia.com/nim/large-language-models/24.05.rc15/configuration.html
-# NIM_MANIFEST_ALLOW_UNSAFE allows you to select amodel profile not included in the original model_manifest.yaml or a profile that
+# NIM_MANIFEST_ALLOW_UNSAFE allows you to select a model profile not included in the original model_manifest.yaml or a profile that
 # is not detected to be compatible with the deployed hardware. Very useful for edge cases.
 # NIM_LOW_MEMORY_MODE is needed in case you have a scenario like running a Llama 70b model (FP16) on two A100s (total 160gb of GPU memory)
 # OMPI commands are needed if you are using multiple GPU Nodes
