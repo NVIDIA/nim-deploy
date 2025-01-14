@@ -20,9 +20,9 @@ instance_count: 1
 # Make sure to check (and uncomment) the Request Settings parameter if you want to serve concurrent requests
 # By default MSFT has set the max_concurrent_requests_per_instance value to 1
 # https://learn.microsoft.com/en-us/azure/machine-learning/reference-yaml-deployment-managed-online?view=azureml-api-2#requestsettings
-# request_settings:
-#     max_concurrent_requests_per_instance: 256
-#     request_timeout_ms: 180000
+request_settings:
+    max_concurrent_requests_per_instance: 256
+    request_timeout_ms: 180000
 
 # Environment variables are the variables that are passed to further commands like docker run, so you can specify your docker run
 # params you use to configure NIMs here: https://docs.nvidia.com/nim/large-language-models/24.05.rc15/configuration.html
@@ -42,11 +42,11 @@ environment_variables:
 
 # Please include the liveness/ readiness probe settings below if you are deploying a Big Container (like Llama 70b or bigger),
 # Otherwise the timeput will happen while the container is being built and it will be shutdown
-# liveness_probe:
-#     timeout: 300
-#     period: 300
-#     failure_threshold: 100
-# readiness_probe:
-#     timeout: 300
-#     period: 300
-#     failure_threshold: 100
+liveness_probe:
+    timeout: 300
+    period: 300
+    failure_threshold: 100
+readiness_probe:
+    timeout: 300
+    period: 300
+    failure_threshold: 100
