@@ -10,6 +10,13 @@ This repository is dedicated to testing NVIDIA NIM on AWS EKS (Elastic Kubernete
 2: Refer this to prepare your local environment to run cdk
 https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html
 
+Before running the CDK commands below, install all dependencies first:
+
+    cd nim-eks-cdk
+    npm install
+
+If this is the first time you're running CDK in your AWS account and region, [make sure to bootstrap your environment](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html) for use with AWS CDK first
+
 There are four stacks in the nim-eks-cdk/lib directory. You can either deploy all of them using `cdk deploy --all` or deploy each stack by specifying the stack name
 like `cdk deploy vpc-stack`
 
@@ -84,7 +91,7 @@ Note: If you are not logged in to the nvcr.io container registry, run docker log
 
     Note: This setup script (directory: nim-deploy/setup)creates two storage classes- EFS and EBS. The necessary csi drivers are installed as add-ons by the CDK.
 
-2.  Use Helm to deploy the custom-values.yaml.
+2.  Use Helm to deploy the custom-values.yaml of your choosing. Below are examples of EBS, EFS and host path storage
     a) EBS volume:
 
          helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-ebs-sc.yaml
@@ -106,8 +113,16 @@ Note: If you are not logged in to the nvcr.io container registry, run docker log
 # Sample request and response:
 Get the DNS of the Load Balancer created in the previous step:
 ```
-ELB_DNS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[*].{DNSName:DNSName}")
+ELB_DNS=$(aws elbv2 describe-load-balancers --query "LoadBalancers[*].DNSName" --output text)
 ```
+
+Check readiness and health of deployd NIM
+
+**STOP: Proceed only after you see a message saying that the service is ready**
+```
+curl http://${ELB_DNS}/v1/health/ready
+```
+
 Send as sample request:
 
 ```
