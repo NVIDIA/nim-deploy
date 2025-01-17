@@ -3,7 +3,7 @@ name: deployment_name_placeholder
 endpoint_name: endpoint_name_placeholder
 environment: 
   name: image_name_placeholder-env
-  image: acr_registry_placeholder.azurecr.io/image_name_placeholder:v1
+  image: acr_registry_placeholder.azurecr.io/image_name_placeholder:latest
   inference_config:
       liveness_route:
           path: /v1/health/ready
@@ -16,5 +16,37 @@ environment:
           port: 8000
 instance_type: instance_type_placeholder
 instance_count: 1
+
+# Make sure to check (and uncomment) the Request Settings parameter if you want to serve concurrent requests
+# By default MSFT has set the max_concurrent_requests_per_instance value to 1
+# https://learn.microsoft.com/en-us/azure/machine-learning/reference-yaml-deployment-managed-online?view=azureml-api-2#requestsettings
+request_settings:
+    max_concurrent_requests_per_instance: 256
+    request_timeout_ms: 180000
+
+# Environment variables are the variables that are passed to further commands like docker run, so you can specify your docker run
+# params you use to configure NIMs here: https://docs.nvidia.com/nim/large-language-models/24.05.rc15/configuration.html
+# NIM_MANIFEST_ALLOW_UNSAFE allows you to select a model profile not included in the original model_manifest.yaml or a profile that
+# is not detected to be compatible with the deployed hardware. Very useful for edge cases.
+# NIM_LOW_MEMORY_MODE is needed in case you have a scenario like running a Llama 70b model (FP16) on two A100s (total 160gb of GPU memory)
+# OMPI commands are needed if you are using multiple GPU Nodes
 environment_variables:
     NGC_API_KEY: ngc_api_key_placeholder
+    # shm-size: 16GB
+    # gpus: all
+    # OMPI_ALLOW_RUN_AS_ROOT: 1
+    # OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+    # NIM_LOW_MEMORY_MODE: 1
+    # NIM_MANIFEST_ALLOW_UNSAFE: 1
+    # NIM_MODEL_PROFILE: tensorrt_llm-a100-fp16-tp1-throughput
+
+# Please include the liveness/ readiness probe settings below if you are deploying a Big Container (like Llama 70b or bigger),
+# Otherwise the timeput will happen while the container is being built and it will be shutdown
+liveness_probe:
+    timeout: 300
+    period: 300
+    failure_threshold: 100
+readiness_probe:
+    timeout: 300
+    period: 300
+    failure_threshold: 100
