@@ -1,0 +1,8 @@
+google-api-core==2.23.0
+google-api-python-client==2.154.0
+google-auth==2.36.0
+google-cloud-aiplatform==1.73.0
+google-cloud-artifact-registry==1.13.1
+google-cloud-storage==2.18.2
+openai==1.55.2
+requests
