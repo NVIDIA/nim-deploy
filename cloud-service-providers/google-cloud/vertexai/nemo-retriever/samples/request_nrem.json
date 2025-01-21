@@ -1,0 +1,1 @@
+{"model": "nvidia/nv-embedqa-e5-v5", "input": ["Hello word"], "input_type": "query"}
