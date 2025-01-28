@@ -2,6 +2,7 @@
 
 This repository demonstrates NVIDIA NIM deployment on Google Cloud Platform CloudRun.
 
+
 #### Authenticate to Google Cloud
 ```
 $ gcloud auth login
