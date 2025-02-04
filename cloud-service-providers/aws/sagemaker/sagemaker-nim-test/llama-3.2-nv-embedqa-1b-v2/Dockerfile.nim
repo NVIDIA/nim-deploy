@@ -1,4 +1,4 @@
-FROM {{ SRC_IMAGE }}
+FROM nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:latest
 USER 0
 
 ENV CADDY_BINURL=https://caddyserver.com/api/download?os=linux&arch=amd64
