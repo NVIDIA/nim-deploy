@@ -1,0 +1,18 @@
+{
+  "model": "${SG_MODEL_NAME}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello! How are you?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi! I am quite well, how can I help you today?"
+    },
+    {
+      "role": "user",
+      "content": "Can you write me a song featuring 90s grunge rock vibes?"
+    }
+  ],
+  "max_tokens": 100
+}

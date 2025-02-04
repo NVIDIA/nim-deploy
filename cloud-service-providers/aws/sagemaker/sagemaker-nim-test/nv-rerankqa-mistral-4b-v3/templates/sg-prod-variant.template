@@ -1,0 +1,10 @@
+[
+    {
+        "VariantName": "AllTraffic",
+        "ModelName": "${SG_EP_NAME}",
+        "InstanceType": "${SG_INST_TYPE}",
+        "InitialInstanceCount": 1,
+        "InitialVariantWeight": 1.0,
+        "ContainerStartupHealthCheckTimeoutInSeconds": ${SG_CONTAINER_STARTUP_TIMEOUT}
+    }
+]
