@@ -1,5 +1,5 @@
 {
-  "model": "{{ SG_MODEL_NAME }}",
+  "model": "nvidia/llama-3.2-nv-rerankqa-1b-v2",
   "query": {"text": "which way did the traveler go?"},
   "passages": [
     {"text": "two roads diverged in a yellow wood, and sorry i could not travel both and be one traveler, long i stood and looked down one as far as i could to where it bent in the undergrowth;"},

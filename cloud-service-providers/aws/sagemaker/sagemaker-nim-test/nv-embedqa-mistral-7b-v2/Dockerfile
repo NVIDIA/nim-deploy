@@ -4,7 +4,7 @@ USER 0
 ENV CADDY_BINURL=https://caddyserver.com/api/download?os=linux&arch=amd64
 ENV CADDY_CONF=/opt/caddy-config.json
 ENV NIM_ENTRYPOINT=/opt/nvidia/nvidia_entrypoint.sh
-ENV NIM_CMD=/opt/nim/start-server.sh
+ENV NIM_CMD=/opt/nim/start_server.sh
 
 COPY launch.sh caddy-config.json /opt/
 

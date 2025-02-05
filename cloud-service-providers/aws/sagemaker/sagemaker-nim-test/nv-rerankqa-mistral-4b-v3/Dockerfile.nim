@@ -1,4 +1,4 @@
-FROM {{ SRC_IMAGE }}
+FROM nvcr.io/nim/nvidia/nv-rerankqa-mistral-4b-v3:1.0.2
 USER 0
 
 ENV CADDY_BINURL=https://caddyserver.com/api/download?os=linux&arch=amd64

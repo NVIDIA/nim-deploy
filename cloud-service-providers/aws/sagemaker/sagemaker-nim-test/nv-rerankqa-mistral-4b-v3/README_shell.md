@@ -30,6 +30,7 @@ Customize the environment variables below to match your AWS, NGC, etc. configura
 - `SG_INST_TYPE`
   - Note that `ml.p4d.24xlarge` or similar variants are required for larger models like llama3-70b. `ml.g5.4xlarge` will work fine for this model
 - `SG_EXEC_ROLE_ARN` (Create SageMaker Execution Role or use an existing one)
+- Install AWS CLI
 
 ```bash
 ### Set your NGC API Key
@@ -38,6 +39,7 @@ export NGC_API_KEY=nvapi-your-api-key
 export SRC_IMAGE_PATH=nvcr.io/nim/nvidia/nv-rerankqa-mistral-4b-v3:1.0.2
 export SRC_IMAGE_NAME="${SRC_IMAGE_PATH##*/}"
 export SRC_IMAGE_NAME="${SRC_IMAGE_NAME%%:*}"
+export SRC_IMAGE_NAME="${SRC_IMAGE_NAME//./-}"
 export SRC_IMAGE=${SRC_IMAGE_PATH}
 
 # Login to NVCR and pull source image
@@ -48,14 +50,14 @@ Password: <PASTE_API_KEY_HERE>
 docker pull ${SRC_IMAGE_PATH}
 
 # Create ECR repo and login to ECR
-DEFAULT_AWS_REGION = 'us-west-2'
+export DEFAULT_AWS_REGION=us-east-1
 export DST_REGISTRY=$(aws ecr create-repository --repository-name "$SRC_IMAGE_NAME" --query 'repository.repositoryUri' --output text)
-aws aws ecr get-login-password | docker login --username AWS --password-stdin ${DST_REGISTRY}
+aws ecr get-login-password | docker login --username AWS --password-stdin ${DST_REGISTRY}
 
 # Build shimmed image
-sed 's/{{ SRC_IMAGE }}/$SRC_IMAGE/g' Dockerfile > Dockerfile.tmp
-envsubst < Dockerfile.tmp > Dockerfile.nim
-docker build -f Dockerfile.nim -t ${DST_REGISTRY}:${SRC_IMAGE_NAME} -t nim-shim:latest .
+# sed 's/{{ SRC_IMAGE }}/$SRC_IMAGE/g' Dockerfile > Dockerfile.tmp # come back to fix command skip this
+# envsubst < Dockerfile.tmp > Dockerfile.nim # come back to fix command, skip this
+docker build -f Dockerfile.nim -t ${DST_REGISTRY}:${SRC_IMAGE_NAME} -t nim-shim-${SRC_IMAGE_NAME}:latest .
 docker push ${DST_REGISTRY}:${SRC_IMAGE_NAME}
 
 export SG_EP_NAME="nim-llm-${SRC_IMAGE_NAME}"
@@ -111,6 +113,7 @@ docker run -it --rm -v /opt/nim/cache:/opt/nim/.cache -e NGC_API_KEY=$NGC_API_KE
 ### Invocation
 ```bash
 # Generate sample payload JSON
+export SG_MODEL_NAME="nvidia/nv-rerankqa-mistral-4b-v3"
 envsubst < templates/sg-test-payload.template > sg-invoke-payload.json
 
 # Create sample invocation
@@ -132,58 +135,21 @@ curl -X GET 127.0.0.1:8080/ping -vvv
 ```
 
 ### Invocation
-
-#### Non-streaming
 ```bash
 curl -v -X 'POST' \
 'http://127.0.0.1:8080/invocations' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
-"model": "meta/llama3-8b-instruct",
-"messages": [
-{
-"role":"user",
-"content":"Hello! How are you?"
-},
-{
-"role":"assistant",
-"content":"Hi! I am quite well, how can I help you today?"
-},
-{
-"role":"user",
-"content":"Can you write me a song?"
-}
-],
-"max_tokens": 32
-}'
-```
-
-#### Streaming
-```bash
-curl -X 'POST' \
-'http://127.0.0.1:8080/invocations' \
-    -H 'accept: application/json' \
-    -H 'Content-Type: application/json' \
-	-H 'Content-Type: text/event-stream' \
-    -d '{
-"model": "meta/llama3-8b-instruct",
-"messages": [
-{
-"role":"user",
-"content":"Hello! How are you?"
-},
-{
-"role":"assistant",
-"content":"Hi! I am quite well, how can I help you today?"
-},
-{
-"role":"user",
-"content":"Can you write me a song featuring 90s grunge rock vibes?"
-}
-],
-"max_tokens": 320,
-"stream": true
+  "model": "nvidia/nv-rerankqa-mistral-4b-v3",
+  "query": {"text": "which way did the traveler go?"},
+  "passages": [
+    {"text": "two roads diverged in a yellow wood, and sorry i could not travel both and be one traveler, long i stood and looked down one as far as i could to where it bent in the undergrowth;"},
+    {"text": "then took the other, as just as fair, and having perhaps the better claim because it was grassy and wanted wear, though as for that the passing there had worn them really about the same,"},
+    {"text": "and both that morning equally lay in leaves no step had trodden black. oh, i marked the first for another day! yet knowing how way leads on to way i doubted if i should ever come back."},
+    {"text": "i shall be telling this with a sigh somewhere ages and ages hense: two roads diverged in a wood, and i, i took the one less traveled by, and that has made all the difference."}
+  ],
+  "truncate": "END"
 }'
 ```
 

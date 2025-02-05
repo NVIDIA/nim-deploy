@@ -1,4 +1,4 @@
-FROM {{ SRC_IMAGE }}
+FROM nvcr.io/nim/nvidia/nv-embedqa-mistral-7b-v2:1.0.1
 USER 0
 
 ENV CADDY_BINURL=https://caddyserver.com/api/download?os=linux&arch=amd64

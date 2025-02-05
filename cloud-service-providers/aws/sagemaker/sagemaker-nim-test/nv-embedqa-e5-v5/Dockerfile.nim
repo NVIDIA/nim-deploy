@@ -1,4 +1,4 @@
-FROM {{ SRC_IMAGE }}
+FROM nvcr.io/nim/nvidia/nv-embedqa-e5-v5:latest
 USER 0
 
 ENV CADDY_BINURL=https://caddyserver.com/api/download?os=linux&arch=amd64

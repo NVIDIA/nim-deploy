@@ -55,9 +55,9 @@ export DST_REGISTRY=$(aws ecr create-repository --repository-name "$SRC_IMAGE_NA
 aws ecr get-login-password | docker login --username AWS --password-stdin ${DST_REGISTRY}
 
 # Build shimmed image
-sed 's/{{ SRC_IMAGE }}/$SRC_IMAGE/g' Dockerfile > Dockerfile.tmp # come back to fix command skip this
-envsubst < Dockerfile.tmp > Dockerfile.nim # come back to fix command, skip this
-docker build -f Dockerfile.nim -t ${DST_REGISTRY}:${SRC_IMAGE_NAME} -t nim-shim:latest .
+# sed 's/{{ SRC_IMAGE }}/$SRC_IMAGE/g' Dockerfile > Dockerfile.tmp # come back to fix command skip this
+# envsubst < Dockerfile.tmp > Dockerfile.nim # come back to fix command, skip this
+docker build -f Dockerfile.nim -t ${DST_REGISTRY}:${SRC_IMAGE_NAME} -t nim-shim-${SRC_IMAGE_NAME}:latest .
 docker push ${DST_REGISTRY}:${SRC_IMAGE_NAME}
 
 export SG_EP_NAME="nim-llm-${SRC_IMAGE_NAME}"
@@ -135,8 +135,6 @@ curl -X GET 127.0.0.1:8080/ping -vvv
 ```
 
 ### Invocation
-
-#### Non-streaming
 ```bash
 curl -v -X 'POST' \
 'http://127.0.0.1:8080/invocations' \

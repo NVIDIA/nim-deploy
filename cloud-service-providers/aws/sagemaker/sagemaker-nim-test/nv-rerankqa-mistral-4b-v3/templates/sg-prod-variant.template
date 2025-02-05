@@ -5,6 +5,7 @@
         "InstanceType": "${SG_INST_TYPE}",
         "InitialInstanceCount": 1,
         "InitialVariantWeight": 1.0,
+        "InferenceAmiVersion": "al2-ami-sagemaker-inference-gpu-2",
         "ContainerStartupHealthCheckTimeoutInSeconds": ${SG_CONTAINER_STARTUP_TIMEOUT}
     }
 ]
