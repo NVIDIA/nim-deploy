@@ -175,8 +175,12 @@ resource "helm_release" "ngc_to_gcs_transfer" {
 resource "helm_release" "my_nim" {
   name       = "my-nim"
   namespace  = "nim"
-  repository = "nim-llm"
-  chart      = "../../../../../helm/nim-llm/"
+  repository = "https://helm.ngc.nvidia.com/nim"
+  chart      = "nim-llm"
+  version    = "1.3.0"
+
+  repository_username = "$oauthtoken"
+  repository_password = var.ngc_api_key
 
   values = [
     file("./helm/custom-values.yaml")
@@ -216,7 +220,6 @@ resource "helm_release" "my_nim" {
 
   timeout = 900
   wait    = true
-
 }
 
 # resource "kubernetes_service" "my_nim_service" {
