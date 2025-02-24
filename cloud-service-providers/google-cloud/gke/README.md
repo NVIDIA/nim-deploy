@@ -222,7 +222,7 @@ curl -X 'POST' \
   "top_p": 1,
   "n": 1,
   "stream": false,
-  "stop": "\n",
+  "stop": "",
   "frequency_penalty": 0.0
 }'
 ```
