@@ -170,11 +170,13 @@ spec:
           env:
             - name: NIM_CACHE_PATH
               value: {{ .Values.model.nimCache | quote }}
+            {{- if .Values.model.ngcAPISecret }}
             - name: NGC_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.model.ngcAPISecret }}
                   key: NGC_API_KEY
+            {{- end }}
             - name: OUTLINES_CACHE_DIR
               value: /tmp/outlines
             - name: NIM_SERVER_PORT

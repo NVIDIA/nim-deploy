@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-variable "registry_server" {
+variable "ngc_registry_server" {
   type        = string
   default     = "nvcr.io"
   description = "Registry that hosts the NIM images"
@@ -33,14 +33,34 @@ variable "ngc_api_key" {
   sensitive   = true
 }
 
-variable "repository" {
+variable "ngc_transfer_repository" {
+  type = string
+  description = "Docker image of NGC transfer container"
+}
+
+variable "ngc_transfer_tag" {
+  type = string
+  description = "Docker repository tag of the NGC transfer container"
+}
+
+variable "ngc_nim_repository" {
   type        = string
   description = "Docker image of NIM container"
 }
 
-variable "tag" {
+variable "ngc_nim_tag" {
   type        = string
   description = "Docker repository tag of NIM container"
+}
+
+variable "ngc_bundle_gcs_bucket" {
+  type        = string
+  description = "GCS bucket containing NGC bucket with NIM profiles"
+}
+
+variable "ngc_bundle_filename" {
+  type        = string
+  description = "Filename containing NIM profiles from NGC"
 }
 
 variable "model_name" {
