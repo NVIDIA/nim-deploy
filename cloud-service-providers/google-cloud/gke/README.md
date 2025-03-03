@@ -172,9 +172,14 @@ Update [custom-values.yaml](./infra/3-config/helm/custom-values.yaml) file
 ```shell
 export NGC_API_KEY=<Your API KEY>
 
-helm --namespace nim install my-nim ../../../helm/nim-llm/ \
--f ./infra/3-config/helm/custom-values.yaml \
---set model.ngcAPIKey=$NGC_API_KEY
+helm --namespace nim install my-nim \
+    --repo https://helm.ngc.nvidia.com/nim \
+    --username='$oauthtoken' \
+    --password=$NGC_API_KEY \
+    nim-llm \
+    --version 1.3.0 \
+    -f ./infra/3-config/helm/custom-values.yaml \
+    --set model.ngcAPIKey=$NGC_API_KEY
 ```
 
 4.Port forward to local at 8000 (change as needed) and update in the curl command as well.

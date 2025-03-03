@@ -15,6 +15,6 @@
 ngc_api_key = "<NGC API Key>"
 registry_server = "nvcr.io"
 repository      = "nvcr.io/nim/meta/llama3-8b-instruct"
-tag             = "1.0.0"
+tag             = "1.0.3"
 model_name      = "meta/llama3-8b-instruct"
 gpu_limits      = 1

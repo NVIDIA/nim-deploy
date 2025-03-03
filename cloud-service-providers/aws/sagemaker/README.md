@@ -6,6 +6,8 @@ NVIDIA NIM, a component of NVIDIA AI Enterprise, enhances your applications with
 
 
 - [Launch NIMs from AWS Marketplace on SageMaker](aws_marketplace_notebooks)
+    - [Llama 3.2 NV EmbedQA NIM Jupyter Notebook](aws_marketplace_notebooks/nim_llama3.2-nv-embedqa-1b-v2_aws_marketplace.ipynb)
+    - [Llama 3.2 NV RerankQA NIM Jupyter Notebook](aws_marketplace_notebooks/nim_llama3.2-nv-rerankqa-1b-v2_aws_marketplace.ipynb)
     - [LLaMa 3.1 8B NIM Jupyter Notebook](aws_marketplace_notebooks/nim_llama3.1-8b_aws_marketplace.ipynb)
     - [LLaMa 3.1 70B NIM Jupyter Notebook](aws_marketplace_notebooks/nim_llama3.1-70b_aws_marketplace.ipynb)
     - [Mixtral 8x7B NIM Jupyter Notebook](aws_marketplace_notebooks/nim_mixtral_aws_marketplace.ipynb)
