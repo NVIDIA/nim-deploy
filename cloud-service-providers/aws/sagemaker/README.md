@@ -27,6 +27,7 @@ This option is for users who have purchased an NVIDIA AI Enterprise license and 
 - [Deploy NIMs from NGC on SageMaker](notebooks)
     - [Llama 3.2 NV EmbedQA NIM Jupyter Notebook](notebooks/nim_llama3.2-nv-embedqa-1b-v2.ipynb)
     - [Llama 3.2 NV RerankQA NIM Jupyter Notebook](notebooks/nim_llama3.2-nv-rerankqa-1b-v2.ipynb)
+    - [Llama 3 70B and 8B Instruct Jupyter Notebook](notebooks/nim_llama3.ipynb)
 
 ## Deployment Methods
 
