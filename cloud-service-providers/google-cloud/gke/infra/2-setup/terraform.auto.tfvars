@@ -53,5 +53,5 @@ gpu_pools = [
     disk_type          = "pd-balanced"
     enable_gcfs        = true
     logging_variant    = "DEFAULT"
-    gpu_driver_version = "DEFAULT"
+    gpu_driver_version = "LATEST"
 }]
