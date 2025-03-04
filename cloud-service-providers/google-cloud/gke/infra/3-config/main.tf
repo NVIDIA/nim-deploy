@@ -28,6 +28,7 @@ data "google_project" "current" {
 locals {
   cluster_name     = data.terraform_remote_state.gke-cluster.outputs.cluster_name
   cluster_location = data.terraform_remote_state.gke-cluster.outputs.cluster_location
+  use_bundle_url   = var.ngc_bundle_gcs_bucket != "" && var.ngc_bundle_filename != ""
 }
 
 provider "kubernetes" {
@@ -48,13 +49,39 @@ resource "null_resource" "get-credentials" {
 
 }
 
+data "local_file" "ngc-eula" {
+  filename = "${path.module}/NIM_GKE_GCS_SIGNED_URL_EULA"
+}
+
+resource "null_resource" "get-signed-ngc-bundle-url" {
+  count = local.use_bundle_url ? 1 : 0
+  triggers = {
+    shell_hash = "${sha256(file("${path.module}/fetch-ngc-url.sh"))}"
+  }
+  provisioner "local-exec" {
+    command = "./fetch-ngc-url.sh > ${path.module}/ngc_signed_url.txt"
+    environment = {
+      NGC_EULA_TEXT  = "${data.local_file.ngc-eula.content}"
+      NIM_GCS_BUCKET = "${var.ngc_bundle_gcs_bucket}"
+      GCS_FILENAME   = "${var.ngc_bundle_filename}"
+      SERVICE_FQDN   = "nim-gke-gcs-signed-url-722708171432.us-central1.run.app"
+    }
+  }
+}
+
+data "local_file" "ngc-bundle-url" {
+  count = local.use_bundle_url ? 1 : 0
+  filename = "${path.module}/ngc_signed_url.txt"
+  depends_on = [null_resource.get-signed-ngc-bundle-url]
+}
+
 resource "kubernetes_namespace" "nim" {
   metadata {
     name = "nim"
   }
 }
 
-resource "kubernetes_secret" "registry_secret" {
+resource "kubernetes_secret" "ngc_registry_secret" {
   metadata {
     name      = "registry-secret"
     namespace = "nim"
@@ -65,7 +92,7 @@ resource "kubernetes_secret" "registry_secret" {
   data = {
     ".dockerconfigjson" = jsonencode({
       "auths" = {
-        "${var.registry_server}" = {
+        "${var.ngc_registry_server}" = {
           "username" = var.ngc_username
           "password" = var.ngc_api_key
           "auth"     = base64encode("${var.ngc_username}:${var.ngc_api_key}")
@@ -90,7 +117,22 @@ resource "kubernetes_secret" "ngc_api" {
   }
 
   depends_on = [kubernetes_namespace.nim]
+}
 
+resource "kubernetes_secret" "ngc_bundle_url" {
+  count = local.use_bundle_url ? 1 : 0
+  metadata {
+    name      = "ngc-bundle-url"
+    namespace = "nim"
+  }
+
+  type = "Opaque" # Generic secret type
+
+  data = {
+    "NGC_BUNDLE_URL" = "${data.local_file.ngc-bundle-url[0].content}"
+  }
+
+  depends_on = [kubernetes_namespace.nim]
 }
 
 resource "kubernetes_service_account" "ngc_gcs_ksa" {
@@ -101,9 +143,12 @@ resource "kubernetes_service_account" "ngc_gcs_ksa" {
   depends_on = [kubernetes_namespace.nim]
 }
 
+resource "random_uuid" "gcs_cache_uuid" {
+}
+
 resource "google_storage_bucket" "ngc_gcs_cache" {
   project       = data.google_project.current.name
-  name          = "${data.google_project.current.name}-ngc-gcs-cache"
+  name          = "ngc-gcs-cache-${random_uuid.gcs_cache_uuid.result}"
   location      = "US"
   force_destroy = true
 
@@ -143,12 +188,12 @@ resource "helm_release" "ngc_to_gcs_transfer" {
 
   set {
     name  = "image.repository"
-    value = var.repository
+    value = var.ngc_transfer_repository
   }
 
   set {
     name  = "image.tag"
-    value = var.tag
+    value = var.ngc_transfer_tag
   }
 
   set {
@@ -166,9 +211,9 @@ resource "helm_release" "ngc_to_gcs_transfer" {
     value = var.gpu_limits
   }
 
-  depends_on = [kubernetes_secret.ngc_api, google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
+  depends_on = [kubernetes_secret.ngc_api, kubernetes_secret.ngc_bundle_url, google_storage_bucket_iam_binding.ngc_gcs_ksa_binding]
 
-  timeout = 900
+  timeout = 3600
   wait    = true
 }
 
@@ -188,17 +233,17 @@ resource "helm_release" "my_nim" {
 
   set {
     name = "csi.volumeAttributes.bucketName"
-    value = google_storage_bucket.ngc_gcs_cache.name
+    value = "ngc-gcs-cache-5f0f6937-fad0-1df7-025e-a912ebf61647"
   }
 
   set {
     name  = "image.repository"
-    value = var.repository
+    value = var.ngc_nim_repository
   }
 
   set {
     name  = "image.tag"
-    value = var.tag
+    value = var.ngc_nim_tag
   }
 
   set {
