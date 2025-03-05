@@ -2,11 +2,11 @@
 
 ## Overview
 
-NVIDIA NIM, a component of NVIDIA AI Enterprise, enhances your applications with the power of state-of-the-art large language models (LLMs), providing unmatched natural language processing and understanding capabilities. Whether you're developing chatbots, content analyzers, or any application that needs to understand and generate human language, NVIDIA NIM for LLMs has you covered.
+NVIDIA NIM, a component of NVIDIA AI Enterprise, enhances your applications with the power of state-of-the-art large language models (LLMs), providing unmatched natural language processing and understanding capabilities. Whether you're developing chatbots, content analyzers, or any application that needs to understand and generate human language, NVIDIA NIM has you covered.
 
 ## Deployment Options
 
-There are two primary ways to deploy NVIDIA NIMs on AWS SageMaker:
+There are various ways to deploy NVIDIA NIMs on AWS SageMaker:
 
 ### 1. AWS Marketplace Deployment
 
@@ -20,15 +20,21 @@ This option is for users who want to deploy NIMs procured directly from the AWS 
     - [Mixtral 8x7B NIM Jupyter Notebook](aws_marketplace_notebooks/nim_mixtral_aws_marketplace.ipynb)
     - [Nemotron4-15B Jupyter Notebook](aws_marketplace_notebooks/nim_nemotron15B_aws_marketplace.ipynb)
 
-### 2. Direct NGC Deployment
+### 2. Direct Deployment from NVIDIA GPU Cloud (NGC)
 
 This option is for users who have purchased an NVIDIA AI Enterprise license and have an NGC API key. It allows you to download NIMs artifacts directly from NVIDIA NGC and deploy them on SageMaker.
 
-- [Deploy NIMs from NGC on SageMaker](notebooks)
-    - [Llama 3.2 NV EmbedQA NIM Jupyter Notebook](notebooks/nim_llama3.2-nv-embedqa-1b-v2.ipynb)
-    - [Llama 3.2 NV RerankQA NIM Jupyter Notebook](notebooks/nim_llama3.2-nv-rerankqa-1b-v2.ipynb)
-    - [Llama 3 70B and 8B Instruct Jupyter Notebook](notebooks/nim_llama3.ipynb)
+- [Deploy NIMs from NGC on SageMaker](deployment_notebooks)
+    - [Llama 3.2 NV EmbedQA NIM Jupyter Notebook](deployment_notebooks/nim_llama3.2-nv-embedqa-1b-v2.ipynb)
+    - [Llama 3.2 NV RerankQA NIM Jupyter Notebook](deployment_notebooks/nim_llama3.2-nv-rerankqa-1b-v2.ipynb)
+    - [Llama 3 70B and 8B Instruct Jupyter Notebook](deployment_notebooks/nim_llama3.ipynb)
 
+### 3. Direct Deployment from Amazon S3
+
+This option is for users who want a faster deployment by pre-uploading the NIMs model files to an S3 bucket and configuring SageMaker to preload the NIM files into the inference environment to the NIM cache location. With this option, the NIM does not download any files from NGC durign deployment 
+
+- [Deploy NIMs from S3 on SageMaker](s3_nim_sagemaker)
+    - [Llama 3.2 NV EmbedQA NIM Steps and Notebook](s3_nim_sagemaker/README.md)
 ## Deployment Methods
 
 > **Note:** To deploy a NIM on AWS SageMaker, the NIM container image must be adapted to meet SageMaker's container interface requirements. Both the AWS Marketplace deployment and direct NGC deployment options above use pre-configured images that are already SageMaker-compatible.
@@ -51,6 +57,6 @@ For users who prefer using AWS CLI and shell commands to build and deploy custom
 
 - AWS account with appropriate permissions
 - For AWS Marketplace deployment: Subscription to the desired model in AWS Marketplace
-- For NGC deployment: NVIDIA AI Enterprise license and NGC API key
+- For Direct NGC deployment: NVIDIA AI Enterprise license and NGC API key
 - Docker installed (for building custom images)
 - AWS CLI configured (for CLI and shell deployments)
