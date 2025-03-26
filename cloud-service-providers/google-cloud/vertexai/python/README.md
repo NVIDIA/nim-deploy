@@ -33,7 +33,7 @@ Finally, NIM will be capable of performing inferences both locally within the no
 ### 1. Create a Vertex AI Workbench Instance
 Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html) for specific NIM.
 
-Please note NIM supports pre-built [TensorRT-LLM](https://docs.nvidia.com/tensorrt-llm/index.html) profile on H200, H100, A100, L40S GPU types, Just-In-Time local built TensorRT-LLM profile and vLLM profile on all other GPU types. More details please check [Model Profiles](https://docs.nvidia.com/nim/large-language-models/latest/profiles.html#model-profiles).
+Please note NIM supports pre-built [TensorRT-LLM](https://docs.nvidia.com/tensorrt-llm/index.html) profile on H200, H100, A100 GPU types, Just-In-Time local built TensorRT-LLM profile and vLLM profile on all other GPU types. More details please check [Model Profiles](https://docs.nvidia.com/nim/large-language-models/latest/profiles.html#model-profiles).
 
 [<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
 
@@ -68,7 +68,9 @@ For GPU availability in Regions and Zones, please refer to Guide [here](https://
 ### 2. Run NIM on JupyterLab Notebook
 `OPEN JUPYTERLAB` of the instance, and install required packages per `requirements.txt`. 
 
-Run `nim-vertexai.ipynb` for vLLM, or `nim-vertexai-trtllm.ipynb` for TensorRT-LLM Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource.
+#### We recommend starting with TensorRT-LLM solution for its superior performance optimizations in LLM inference.
+
+Run `nim-vertexai.ipynb` for vLLM, or `nim-vertexai-trtllm.ipynb` for TensorRT-LLM Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource. 
 
 If NIM container has been successfully launched, you will see below output in cell or deployment log:
 
