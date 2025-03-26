@@ -6,6 +6,8 @@ ENV CADDY_CONF=/opt/caddy-config.json
 ENV NIM_ENTRYPOINT=/opt/nvidia/nvidia_entrypoint.sh
 ENV NIM_CMD=/opt/nim/start_server.sh
 
+# To use the 535 CUDA driver
+LABEL com.amazonaws.sagemaker.inference.cuda.verified_versions=12.2
 COPY launch.sh caddy-config.json /opt/
 
 RUN apt-get update && \
