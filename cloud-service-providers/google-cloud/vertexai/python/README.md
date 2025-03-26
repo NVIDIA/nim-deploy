@@ -33,14 +33,51 @@ Finally, NIM will be capable of performing inferences both locally within the no
 ### 1. Create a Vertex AI Workbench Instance
 Create a new Vertex AI Workbench instance and select `ADVANCED OPTIONS`. Choose NVIDIA GPUs (e.g. L4 for G2 machine series) and recommended [Disk Space](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html) for specific NIM.
 
-Please note NIM supports [TensorRT-LLM](https://docs.nvidia.com/tensorrt-llm/index.html) profile on L40S, A100, H100 GPU types, and vLLM profile on others.
+Please note NIM supports pre-built [TensorRT-LLM](https://docs.nvidia.com/tensorrt-llm/index.html) profile on H200, H100, A100 GPU types, Just-In-Time local built TensorRT-LLM profile and vLLM profile on all other GPU types. More details please check [Model Profiles](https://docs.nvidia.com/nim/large-language-models/latest/profiles.html#model-profiles).
 
 [<img src="imgs/vertexai_01.png" width="750"/>](HighLevelArch)
+
+#### GPU Requirements for NIM
+Optimized Configurations of different GPU types to run NIM could be found in [Support Matrix](https://docs.nvidia.com/nim/large-language-models/latest/support-matrix.html#), below are recommended GPUs available on GCP.
+
+###### Llama 3.1 8B Instruct
+
+| GPU  | Precision |   Profile  | \# of GPUS |  NIM Engine  |   GCP Machine Type  |         GPU Name        |
+| ---- | --------- | ---------- | ---------- | ------------ | ------------------- | ----------------------- |
+| H100 | FP8       | Throughput | 1          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| H100 | FP8       | Latency    | 2          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| H100 | BF16      | Throughput | 1          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| H100 | BF16      | Latency    | 2          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| A100 | BF16      | Throughput | 1          | TensorRT-LLM | A2 `a2-ultragpu-1g` | `nvidia-a100-80gb`      |
+| A100 | BF16      | Latency    | 2          | TensorRT-LLM | A2 `a2-ultragpu-1g` | `nvidia-a100-80gb`      |
+| L4   | BF16      |            | 4          | TensorRT-LLM | G2 `g2-standard-48` | `nvidia-l4`             |
+| L4   | BF16      |            | 1          | vLLM         | G2 `g2-standard-12` | `nvidia-l4`             |
+
+###### Llama 3.1 70B Instruct
+
+| GPU  | Precision |   Profile  | \# of GPUS |  NIM Engine  |   GCP Machine Type  |         GPU Name        |
+| ---- | --------- | ---------- | ---------- | ------------ | ------------------- | --------------------- |
+| H200 | FP8       | Throughput | 1          | TensorRT-LLM | A3 `a3-ultragpu-8g`  | `nvidia-h200-141gb` |
+| H200 | FP8       | Latency    | 2          | TensorRT-LLM | A3 `a3-ultragpu-8g`  | `nvidia-h200-141gb` |
+| H200 | BF16      | Throughput | 2          | TensorRT-LLM | A3 `a3-ultragpu-8g`  | `nvidia-h200-141gb` |
+| H200 | BF16      | Latency    | 4          | TensorRT-LLM | A3 `a3-ultragpu-8g`  | `nvidia-h200-141gb` |
+| H100 | FP8       | Throughput | 4          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| H100 | FP8       | Latency    | 8          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| H100 | BF16      | Throughput | 4          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| H100 | BF16      | Latency    | 8          | TensorRT-LLM | A3 `a3-megagpu-8g`  | `nvidia-h100-mega-80gb` |
+| A100 | BF16      | Throughput | 4          | TensorRT-LLM | A2 `a2-ultragpu-4g` | `nvidia-a100-80gb`      |
+| A100 | BF16      | Latency    | 8          | TensorRT-LLM | A2 `a2-ultragpu-4g` | `nvidia-a100-80gb`      |
+| L4   | BF16      |            | 32         | TensorRT-LLM | G2 `g2-standard-96` | `nvidia-l4`             |
+| L4   | BF16      |            | 8          | vLLM         | G2 `g2-standard-96` | `nvidia-l4`             |
+
+For GPU availability in Regions and Zones, please refer to Guide [here](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones).
 
 ### 2. Run NIM on JupyterLab Notebook
 `OPEN JUPYTERLAB` of the instance, and install required packages per `requirements.txt`. 
 
-Run `nim-vertexai.ipynb` Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource.
+#### We recommend starting with TensorRT-LLM solution for its superior performance optimizations in LLM inference.
+
+Run `nim-vertexai.ipynb` for vLLM, or `nim-vertexai-trtllm.ipynb` for TensorRT-LLM Python jupyter notebook, which provides step-to-step guidance on how to deploy and inference the NIM container within notebook interface or via Vertex AI endpoint resource. 
 
 If NIM container has been successfully launched, you will see below output in cell or deployment log:
 
@@ -176,7 +213,7 @@ Response
     --request POST \
     --header "Authorization: Bearer $(gcloud auth print-access-token)" \
     --header "Content-Type: application/json" \
-    https://us-central1-prediction-aiplatform.googleapis.com/v1/projects/$project_id/locations/$region/endpoints/$ENDPOINT_ID:rawPredict \
+    https://$region-prediction-aiplatform.googleapis.com/v1/projects/$project_id/locations/$region/endpoints/$ENDPOINT_ID:rawPredict \
     --data "@request.json"
 ```
 ```shell
