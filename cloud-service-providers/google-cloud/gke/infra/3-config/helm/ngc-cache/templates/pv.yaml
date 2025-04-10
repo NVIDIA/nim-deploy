@@ -13,7 +13,9 @@ spec:
 {{- end }}
 {{- if .Values.persistence.mountOptions }}
   mountOptions:
-    - {{ .Values.persistence.mountOptions | quote }}
+  {{- range .Values.persistence.mountOptions }}
+    - {{ . | quote }}
+  {{- end }}
 {{- end }}
 {{- if .Values.persistence.csi }}
   csi:

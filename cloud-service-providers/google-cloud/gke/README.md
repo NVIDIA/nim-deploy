@@ -108,10 +108,12 @@ cd nim-deploy/cloud-service-providers/google-cloud/gke
 
   | Variable | Description | Default | Need update? |
   |---|---|---|---|
-  | `registry_server` | NVIDIA Registry that hosts the images | `nvcr.io` | *No* |
+  | `ngc_transfer_repository` | NVIDIA Registry that hosts the images | `nvcr.io` | *No* |
   | `ngc_api_key` | NGC API Key from NVIDIA | <> | *Yes* |
-  | `repository` | NIM image | `nvcr.io/nim/meta/llama3-8b-instruct` | *No* |
-  | `tag` | Tag of image | `1.0.0` | *No* |
+  | `ngc_nim_repository` | NIM image | `nvcr.io/nim/meta/llama3-8b-instruct` | *No* |
+  | `ngc_nim_tag` | Tag of NIM image | `1.0.0` | *No* |
+  | `ngc_transfer_repository` | NGC transfer image | `nvcr.io/nim/meta/llama3-8b-instruct` | *No* |
+  | `ngc_transfer_tag` | Tag of NGC transfer image | `1.0.0` | *No* |
   | `model_name` | NIM Model name | `meta/llama3-8b-instruct` | *No* |
   | `gpu_limits` | GPU Limits | `1` | *No* |
 
@@ -127,7 +129,7 @@ imagePullSecrets:
 model:
   name: 
   ngcAPISecret: ngc-api
-  nimCache: /.cache
+  nimCache: /opt/nim/llm/.cache
 persistence:
   enabled: true
   existingClaim: "ngc-cache"
