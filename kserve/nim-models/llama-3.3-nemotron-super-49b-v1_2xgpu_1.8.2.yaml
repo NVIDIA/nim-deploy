@@ -1,0 +1,19 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    autoscaling.knative.dev/target: "10"
+  name: llama-3-3-nemotron-49b-2xgpu
+spec:
+  predictor:
+    minReplicas: 1
+    model:
+      modelFormat:
+        name: nvidia-nim-llama-nemotron-3.3-49b
+      resources:
+        limits:
+          nvidia.com/gpu: "2"
+        requests:
+          nvidia.com/gpu: "2"
+      runtime: llama-3.3-nemotron-super-49b-v1_2xgpu_1.8.2
+      storageUri: pvc://nvidia-nim-pvc/
