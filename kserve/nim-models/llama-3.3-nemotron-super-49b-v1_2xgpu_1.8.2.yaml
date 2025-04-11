@@ -15,5 +15,5 @@ spec:
           nvidia.com/gpu: "2"
         requests:
           nvidia.com/gpu: "2"
-      runtime: llama-3.3-Nemotron-Super-49B-v1_2xgpu_1.8.2
+      runtime: llama-3.3-nemotron-super-49b-v1_2xgpu_1.8.2
       storageUri: pvc://nvidia-nim-pvc/
