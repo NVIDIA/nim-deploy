@@ -60,7 +60,7 @@ export NGC_CLI_API_KEY="<YOUR NGC API KEY>"
 
 1. Fetch NIM LLM Helm Chart:
     ```
-    helm fetch https://helm.ngc.nvidia.com/nim/charts/nim-llm-1.1.2.tgz --username='$oauthtoken' --password=$NGC_CLI_API_KEY
+    helm fetch https://helm.ngc.nvidia.com/nim/charts/nim-llm-1.3.0.tgz --username='$oauthtoken' --password=$NGC_CLI_API_KEY
     ```
 
 2. Create a NIM Namespace:
