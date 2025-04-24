@@ -102,8 +102,8 @@ resource "kubernetes_service_account" "ngc_gcs_ksa" {
 }
 
 resource "google_storage_bucket" "ngc_gcs_cache" {
-  project       = data.google_project.current.name
-  name          = "${data.google_project.current.name}-ngc-gcs-cache"
+  project       = data.google_project.current.project_id
+  name          = "${lower(data.google_project.current.name)}-ngc-gcs-cache"
   location      = "US"
   force_destroy = true
 
