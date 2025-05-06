@@ -4,7 +4,7 @@
 This notebook demonstrates how to deploy the Llama 3.1 8B Instruct NIM (NVIDIA Inference Microservice) on Azure Kubernetes Service (AKS) with persistent storage using Azure Files for model weights caching.
 
 ## Prerequisites
-- Access to at least 1 GPU (Example uses A100 80GB GPU)
+- Access to at least 1 GPU (Example uses standard_nc24ads_a100_v4 - A100 80GB GPU)
 - Access to a GPU-enabled Kubernetes cluster
 - `kubectl` and `helm` CLI tools installed
 - Access to GPU node pools
