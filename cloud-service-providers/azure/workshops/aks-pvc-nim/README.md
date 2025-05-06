@@ -1,4 +1,4 @@
-# AKS PVC Installation and Llama 3.1 NIM Deployment Guide
+# Llama 3.1-8b  NIM Deployment Guide with AKS PVC Installation 
 
 ## Overview
 This notebook demonstrates how to deploy the Llama 3.1 8B Instruct NIM (NVIDIA Inference Microservice) on Azure Kubernetes Service (AKS) with persistent storage using Azure Files for model weights caching.
