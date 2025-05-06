@@ -46,6 +46,14 @@ For the rest of this guide, we will use the namespace `nim`.
 kubectl create namespace nim
 ```
 
+## Required permission for Openshift Container Platform 
+In order to install the helm chart on openshift container platform, a securityContextConstraints `anyuid` is needed for the `serviceAccount` that will run the pod, a `ClusterAdmin` `ClusterRole` is needed for the invoking user:
+```bash
+#Change to another service account name, but also set `serviceAccount.name` to this name and also `serviceAccount.create` = "true" in helm install  
+export SERVICE_ACCOUNT_NAME=default
+oc adm policy add-scc-to-user -z $SERVICE_ACCOUNT_NAME anyuid -n nim
+```
+
 ## Launching a NIM with a minimal configuration
 
 You can launch `llama3-8b-instruct` using a default configuration while only setting the NGC API key and persistence in one line with no extra files. Set `persistence.enabled` to **true** to ensure that permissions are set correctly and the container runtime filesystem isn't filled by downloading models.
