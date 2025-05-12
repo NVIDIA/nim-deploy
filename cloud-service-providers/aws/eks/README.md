@@ -91,20 +91,25 @@ Note: If you are not logged in to the nvcr.io container registry, run docker log
 
     Note: This setup script (directory: nim-deploy/setup)creates two storage classes- EFS and EBS. The necessary csi drivers are installed as add-ons by the CDK.
 
+2. fetch NIM LLM Helm Chart:
+```bash
+helm fetch https://helm.ngc.nvidia.com/nim/charts/nim-llm-1.3.0.tgz --username='$oauthtoken' --password=$NGC_API_KEY
+```
+
 2.  Use Helm to deploy the custom-values.yaml of your choosing. Below are examples of EBS, EFS and host path storage
     a) EBS volume:
 
-         helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-ebs-sc.yaml
+         helm install nim-llm nim-llm-1.3.0.tgz -f storage/custom-values-ebs-sc.yaml
 
     b) EFS storage:
 
-         helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-efs-sc.yaml
+         helm install nim-llm nim-llm-1.3.0.tgz -f storage/custom-values-efs-sc.yaml
 
     c) Host path storage:
 
-         helm install nim-llm ../../../helm/nim-llm/ -f storage/custom-values-host-path.yaml
+         helm install nim-llm nim-llm-1.3.0.tgz -f storage/custom-values-host-path.yaml
 
-         Note: Since we are running pods as non-root user, cache path specified in the custom-values-host-path.yaml should be created on the EC2 instance prior to installing helm. Also the directory ownership should be assigned to 1000:1000 (or any no root uid:gid as specified in the custom-values.yaml)
+        Note: Since we are running pods as non-root user, cache path specified in the custom-values-host-path.yaml should be created on the EC2 instance prior to installing helm. Also the directory ownership should be assigned to 1000:1000 (or any no root uid:gid as specified in the custom-values.yaml)
 
 3.  Use ingress.yaml to add an alb ingress controller.
 
