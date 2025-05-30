@@ -1,0 +1,45 @@
+nameOverride: "my-nim"
+fullnameOverride: "my-nim-nim-llm"
+
+replicaCount: 1
+
+image:
+  repository: nvcr.io/nim/meta/llama3-8b-instruct
+  tag: "1.0.3"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
+  requests:
+    nvidia.com/gpu: 1
+
+env:
+  - name: NIM_CACHE_PATH
+    value: /model-store
+  - name: NGC_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: ngc-api
+        key: NGC_API_KEY
+  - name: NIM_SERVER_PORT
+    value: "8000"
+  - name: NIM_LOG_LEVEL
+    value: "INFO"
+
+volumeMounts:
+  - name: model-store
+    mountPath: /model-store
+  - name: dshm
+    mountPath: /dev/shm
+
+volumes:
+  - name: model-store
+    emptyDir: {}   # Use in-memory model cache
+  - name: dshm
+    emptyDir:
+      medium: Memory
