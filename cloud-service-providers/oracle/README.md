@@ -11,7 +11,6 @@ This guide provides step-by-step instructions for deploying NVIDIA NIM (NVIDIA I
 - Proper IAM policies (ContainerEngine, Compute, VCNs, Subnets, Secrets, InstancePools)  
 - NVIDIA NGC API key (from [NGC](https://ngc.nvidia.com))  
 - Helm installed on your local machine  
-- Access to the [`nim-deploy`](https://github.com/NVIDIA/nim-deploy) GitHub repo  
 
 ---
 
@@ -84,32 +83,25 @@ kubectl create secret generic ngc-api -n nim \
 
 ---
 
-## 🚀 Helm Chart Deployment
+## 🚀 Helm Chart Deployment (via NGC)
 
-### 1. Clone the repo
+### 1. Authenticate and Fetch the Helm Chart from NGC
 
 ```bash
-git clone https://github.com/NVIDIA/nim-deploy.git
-cd nim-deploy/helm
+helm fetch https://helm.ngc.nvidia.com/nim/charts/nim-llm-1.7.0.tgz \
+  --username='$oauthtoken' \
+  --password=$NGC_API_KEY
+```
+
+```bash
+tar -xvzf nim-llm-1.7.0.tgz
+mkdir -p charts/
+mv nim-llm charts/
 ```
 
 ---
 
-### Option 1: Minimal Inline Install
-
-```bash
-export NGC_API_KEY=<your-ngc-api-key>
-
-helm --namespace nim install my-nim nim-llm/ \
-  --set model.ngcAPIKey=$NGC_API_KEY \
-  --set persistence.enabled=true
-```
-
----
-
-### Option 2: Custom `values.yaml` (Recommended)
-
-#### Create required secrets:
+### 2. Create Registry Secrets and Deploy
 
 ```bash
 kubectl -n nim create secret docker-registry registry-secret \
@@ -141,15 +133,15 @@ resources:
     nvidia.com/gpu: 1
 ```
 
-#### Deploy with values file:
+#### Deploy:
 
 ```bash
-helm --namespace nim install my-nim nim-llm/ -f ./values.yaml
+helm install my-nim ./charts/nim-llm -n nim -f ./values.yaml
 ```
 
 ---
 
-## 🧪 Port Forwarding for Local Testing
+## 🦪 Port Forwarding for Local Testing
 
 ```bash
 kubectl port-forward svc/my-nim-nim-llm -n nim 8000:8000
@@ -158,7 +150,7 @@ curl http://localhost:8000/v1/health/ready
 
 ---
 
-## 🧾 Sample cURL Test (LLaMA)
+## 🗏️ Sample cURL Test (LLaMA)
 
 ```bash
 curl http://localhost:8000/v1/completions \
@@ -172,65 +164,39 @@ curl http://localhost:8000/v1/completions \
   }'
 ```
 
-#### Sample Response:
-
-```json
-{
-  "id": "cmpl-xyz123",
-  "object": "text_completion",
-  "created": 1717070000,
-  "model": "meta/llama3-8b-instruct",
-  "choices": [
-    {
-      "text": "Cloud drifts over peaks, \nOracle powers the skies — \nData flows like wind.",
-      "index": 0,
-      "finish_reason": "stop"
-    }
-  ]
-}
-```
-
-> ✅ Note: Make sure your deployed NIM supports the model you're querying.
-
 ---
 
-## 🧯 Troubleshooting
+## 🚑 Troubleshooting
 
-### Problem: Pod in `CrashLoopBackOff`
-
+### Pod in `CrashLoopBackOff`
 ```bash
 kubectl logs -n nim <pod-name>
 ```
+- Check API key
+- Check outbound access
 
-- Common cause: Invalid NGC API key or no outbound internet access.
-
----
-
-### Problem: Hanging `curl` / No Response
-
+### Hanging `curl` / No Response
 ```bash
 kubectl run curl-test -n nim --image=ghcr.io/curl/curlimages/curl:latest \
   -it --rm --restart=Never -- \
   curl https://api.ngc.nvidia.com
 ```
 
-If this fails, outbound internet is blocked. Set up a NAT Gateway.
-
 ---
 
 ## ✅ Final Checklist
 
-- [ ] OKE cluster is active  
-- [ ] Node pool (A100) is ready  
-- [ ] NAT Gateway or outbound access configured  
-- [ ] NGC secret is created in the `nim` namespace  
-- [ ] Helm deployment is successful  
-- [ ] Service responds on port 8000  
+- [ ] OKE cluster is active
+- [ ] Node pool (A100) is ready
+- [ ] NAT Gateway or outbound access configured
+- [ ] NGC secret is created in the `nim` namespace
+- [ ] Helm deployment is successful
+- [ ] Service responds on port 8000
 
 ---
 
 ## 🔗 Resources
 
-- [NVIDIA NIM GitHub](https://github.com/NVIDIA/nim-deploy)  
-- [Oracle Cloud Infrastructure Docs](https://docs.oracle.com/en-us/iaas/Content/home.htm)  
-- [NVIDIA NGC](https://ngc.nvidia.com)  
+- [NVIDIA NIM GitHub](https://github.com/NVIDIA/nim-deploy)
+- [Oracle Cloud Infrastructure Docs](https://docs.oracle.com/en-us/iaas/Content/home.htm)
+- [NVIDIA NGC](https://ngc.nvidia.com)
