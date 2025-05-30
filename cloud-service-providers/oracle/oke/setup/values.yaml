@@ -1,4 +1,0 @@
-model: meta/llama3-8b-instruct
-port: 8000
-ngcApiKeySecret: nim-secret
-imagePullSecret: registry-secret
