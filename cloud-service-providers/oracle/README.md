@@ -1,126 +1,176 @@
-# NVIDIA NIM Deployment on Oracle Kubernetes Engine (OKE)
+NVIDIA NIM Deployment on Oracle Kubernetes Engine (OKE)
 
-This folder contains Kubernetes manifests to deploy NVIDIA's NIM LLM (LLaMA 3) container on Oracle Cloud Infrastructure (OCI) using Oracle Kubernetes Engine (OKE).
+This guide provides step-by-step instructions for deploying NVIDIA NIM (NVIDIA Inference Microservices) on Oracle Cloud Infrastructure (OCI) using Oracle Kubernetes Engine (OKE) and A100's. 
 
----
+**Prerequisites**
+	•	An active OCI account
+	•	OCI CLI installed and configured
+	•	Proper IAM policies for creating required resources (e.g., ContainerEngine, Compute, VCNs, Subnets, Secrets, InstancePools)
+	•	NVIDIA NGC API key (available from NGC)
+	•	Helm installed on your local machine
+	•	Access to NVIDIA’s nim-deploy GitHub repository
 
-## 🧠 Model Deployed
-- **Name:** `meta/llama3-8b-instruct`
-- **Framework:** NVIDIA Inference Microservice (NIM)
-- **Inference API:** OpenAI-compatible endpoint (`/v1/chat/completions`)
+**Infrastructure Setup**
 
----
+1. Create a Virtual Cloud Network (VCN)
+	•	Public Subnet: For OKE worker nodes
+	•	Private Subnet (optional): For internal services
+	•	NAT Gateway or Internet Gateway: If using public IPs
+	•	Ensure ports 443 and 8000 are allowed in your Network Security Group (NSG) or Security List if testing locally.
 
-## 🛠️ Prerequisites
+2. Create a NAT Gateway (Recommended)
+	•	Create a NAT Gateway in the same VCN
+	•	Update your public subnet’s route table:
 
-- ✅ OCI tenancy with GPU shapes (e.g. BM.GPU.A100)
-- ✅ OKE cluster up and running
-- ✅ `kubectl` and `helm` configured for your cluster
-- ✅ NVIDIA NGC API Key ([get one](https://ngc.nvidia.com/setup/api-key))
+oci network route-rule add --route-table-id <ROUTE_TABLE_OCID> \
+  --destination 0.0.0.0/0 --network-entity-id <NAT_GATEWAY_OCID>
 
----
+3. Create the OKE Cluster
 
-## 📁 File Structure
+oci ce cluster create \
+  --name NIM-OKE-Cluster \
+  --compartment-id <COMPARTMENT_OCID> \
+  --vcn-id <VCN_OCID> \
+  --kubernetes-version "v1.32.1" \
+  --subnet-ids '["<SUBNET_OCID>"]'
 
-cloud-service-providers/oracle/oke/
-├── prerequisites/
-│   └── OCI-Setup.md
-├── setup/
-│   ├── nim-deployment.yaml
-│   └── nim-service.yaml
-├── oracle-oke-architecture.png
-└── README.md
+4. Add Node Pool
 
----
+**Provision nodes with shape BM.GPU.A100-v2.8:**
 
-## 🔐 Secrets Setup
+oci ce node-pool create \
+  --cluster-id <CLUSTER_OCID> \
+  --name NIM-GPU-Pool \
+  --node-shape BM.GPU.A100-v2.8 \
+  --node-config-details file://node-config.json
 
-Create a Kubernetes secret for NGC API key:
+Sample node-config.json:
 
-```bash
-kubectl create secret generic nim-secret \
-  --from-literal=NGC_API_KEY=<YOUR_NGC_API_KEY>
-```
+{
+  "placementConfigs": [{
+    "availabilityDomain": "Uocm:US-ASHBURN-AD-1",
+    "subnetId": "<SUBNET_OCID>"
+  }],
+  "size": 1
+}
 
-Create a Docker registry secret for pulling NIM image:
+**Create Secret for NGC API Key**
 
-```bash
-kubectl create secret docker-registry registry-secret \
-  --docker-server=nvcr.io \
-  --docker-username='$oauthtoken' \
-  --docker-password=<YOUR_NGC_API_KEY>
-```
+kubectl create namespace nim
+kubectl create secret generic ngc-api -n nim \
+  --from-literal=NGC_API_KEY=<your-ngc-api-key>
 
----
+**Helm Chart Deployment**
 
-## 🚀 Deploy the Model
+Clone the nim-deploy repository and navigate to the Helm chart directory:
 
-```bash
-kubectl apply -f setup/nim-deployment.yaml
-kubectl apply -f setup/nim-service.yaml
-```
+git clone https://github.com/NVIDIA/nim-deploy.git
+cd nim-deploy/helm
 
-Watch the pod:
-```bash
-kubectl get pods -w
-```
+Option 1: Minimal Inline Install
 
----
+export NGC_API_KEY=<your-ngc-api-key>
+helm --namespace nim install my-nim nim-llm/ \
+  --set model.ngcAPIKey=$NGC_API_KEY \
+  --set persistence.enabled=true
 
-## 🔁 Port Forward for Local Testing
+Option 2: Custom values.yaml (Recommended)
 
-OCI LoadBalancers may take time to assign public IPs or require NSG config. Use port-forwarding for immediate access:
+**Create the required secrets:**
 
-```bash
-kubectl port-forward service/nim-llama 8000:8000
-```
+kubectl -n nim create secret docker-registry registry-secret \
+  --docker-server=nvcr.io --docker-username='$oauthtoken' --docker-password=$NGC_API_KEY
 
-Then test it:
-```bash
-curl -X POST http://localhost:8000/v1/chat/completions \
+kubectl -n nim create secret generic ngc-api \
+  --from-literal=NGC_API_KEY=$NGC_API_KEY
+
+Use the provided values.yaml file tailored for Oracle OKE, which includes configurations such as:
+
+image:
+  repository: nvcr.io/nim/meta/llama3-8b-instruct
+  tag: 1.0.0
+imagePullSecrets:
+  - name: registry-secret
+model:
+  name: meta/llama3-8b-instruct
+  ngcAPISecret: ngc-api
+persistence:
+  enabled: true
+statefulSet:
+  enabled: false
+resources:
+  limits:
+    nvidia.com/gpu: 1
+
+**Deploy using the custom values file:**
+
+helm --namespace nim install my-nim nim-llm/ -f ./values.yaml
+
+Port Forwarding for Local Testing
+
+Once the pod is READY, expose the service locally:
+
+kubectl port-forward svc/my-nim-nim-llm -n nim 8000:8000
+
+**Check readiness:**
+
+curl http://localhost:8000/v1/health/ready
+
+**Sample cURL Test (LLaMA)**
+
+Once the health check is ready, you can test the LLaMA NIM endpoint with a simple prompt:
+
+curl http://localhost:8000/v1/completions \
+  -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "model": "meta/llama3-8b-instruct",
-    "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "What is a fixed-rate mortgage?"}
-    ],
-    "max_tokens": 128,
-    "temperature": 0.7
+    "prompt": "Write a haiku about Oracle Cloud.",
+    "temperature": 0.7,
+    "max_tokens": 100
   }'
 
+Example response:
 
- Expected Response:
-  ```json
-  {
-    "choices": [
-      {
-        "message": {
-          "role": "assistant",
-          "content": "A fixed-rate mortgage is a type of home loan where the interest rate remains the same for the entire term..."
-        }
-      }
-    ]
+{
+  "id": "cmpl-xyz123",
+  "object": "text_completion",
+  "created": 1717070000,
+  "model": "meta/llama3-8b-instruct",
+  "choices": [
+    {
+      "text": "Cloud drifts over peaks, \nOracle powers the skies — \nData flows like wind.",
+      "index": 0,
+      "finish_reason": "stop"
+    }
+  ]
 }
 
-```
+Note: Ensure your deployed NIM supports meta/llama3-8b-instruct or adjust the model field accordingly.
 
----
+**Troubleshooting**
 
-## 🧼 Cleanup
+Problem: Pod in CrashLoopBackOff
+	•	Check logs: kubectl logs -n nim <pod-name>
+	•	Common Cause: NGC API key is invalid or outbound internet is blocked.
 
-```bash
-kubectl delete -f setup/nim-deployment.yaml
-kubectl delete -f setup/nim-service.yaml
-kubectl delete secret nim-secret registry-secret
-```
+Problem: Hanging curl or empty reply
+	•	Run:
 
----
+kubectl run curl-test -n nim --image=ghcr.io/curl/curlimages/curl:latest -it --rm --restart=Never -- \
+  curl https://api.ngc.nvidia.com
 
-## 📸 Screenshot (optional)
-> Include `kubectl get pods` + successful curl response as visual confirmation in GitHub PR.
+	•	If it fails, your cluster doesn’t have outbound internet. Use a NAT Gateway instead.
 
----
+**Final Checklist**
+	•	OKE Cluster is Active
+	•	Node Pool with GPU is Ready
+	•	Internet or NAT Gateway is configured
+	•	NGC secret is present in nim namespace
+	•	Helm deployment is successful
+	•	Port forwarding works and health check passes
 
-## ✅ Status
-**Working & tested on OCI A100 (OKE)** — powered by NVIDIA NIM 🚀
+**Resources**
+	•	NVIDIA NIM GitHub
+	•	Oracle Cloud Infrastructure Docs
+	•	NVIDIA NGC
