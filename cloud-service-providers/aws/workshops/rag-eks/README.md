@@ -687,11 +687,17 @@ We need to take a few steps in order to access the service.
 
 ## Congratulations!
 
-Congratulations! You've successfully deployed a RAG text Q&A agent microservice on AWS EKS using NVIDIA Inference Microservices. To validate that the system is working as expected, try uploading your own document and asking questions about its content. As a next step, you can begin exploring improvements like experimenting with different LLMs, fine-tuning the embedding model, or scaling the deployment for increased performance and availability.
+Congratulations! You've successfully deployed a RAG text Q&A agent microservice on AWS EKS using NVIDIA Inference Microservices. To validate that the system is working as expected, try uploading your own document and asking questions about its content. 
+
+**First upload a document to the knowledgebase and then converse to ask questions**
+
+**For testing purposes**, you can use the [NVIDIA CUDA C Programming Guide](https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf) as a sample document to upload and test the RAG functionality. This comprehensive technical document provides excellent content for testing question-answering capabilities.
 
 ![RAG Playground UI Add document](imgs/RAG-ui-add-document.png)
 
 ![RAG Playground UI](imgs/RAG-ui-question.png)
+
+As a next step, you can begin exploring improvements like experimenting with different LLMs, fine-tuning the embedding model, or scaling the deployment for increased performance and availability.
 
 NVIDIA offers NIMs with enterprise support through our AWS Marketplace listing, [NVIDIA AI Enterprise](https://aws.amazon.com/marketplace/seller-profile?id=c568fe05-e33b-411c-b0ab-047218431da9).
 
