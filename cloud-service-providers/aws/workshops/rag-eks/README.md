@@ -642,20 +642,24 @@ We need to take a few steps in order to access the service.
    > **Note**: The step below should be executed on your workstation NOT AWS Cloud Shell
 
    ```bash
-   MYIP=$(curl -s https://checkip.amazonaws.com)
-   CIDR="${MYIP%$'\r'}/32"
+   curl -s https://checkip.amazonaws.com
    ```
+
+   Copy the IP address returned from the above command. You'll need to use this IP address in the next step.
 
    Using the node port value, we create a firewall to enable TCP traffic using the following command:
 
-   > **Note**: Replace `31359` from the command below, with the nodePort value from the previous command
+   > **Note**: 
+   > - Replace `31359` from the command below with the nodePort value from the previous command
+   > - Replace `YOUR_WORKSTATION_IP` with the IP address you copied from running the curl command on your workstation
+   > - **Alternative for temporary testing**: You can use `0.0.0.0/0` instead of `YOUR_WORKSTATION_IP/32` to allow access from any IP address, but this is **NOT recommended for security reasons** and should be **removed immediately after testing**
 
    ```bash
    aws ec2 authorize-security-group-ingress \
          --group-id "$CLUSTER_SG" \
          --protocol tcp \
          --port "31359" \
-         --cidr "$CIDR" # This is your workstation IP address to allow you connect from your browser
+         --cidr "YOUR_WORKSTATION_IP/32" # Replace YOUR_WORKSTATION_IP with your actual IP address
    ```
 
    With this the AWS network security group rules has been configured. In addition, we need the external IP address of one of the nodes in the cluster. This can be done using the following command:
@@ -665,13 +669,21 @@ We need to take a few steps in order to access the service.
    kubectl get nodes --output wide
    ```
 
+   Output should look like the following:
+
+   ```
+   NAME                         STATUS   ROLES    AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE         KERNEL-VERSION    CONTAINER-RUNTIME
+   ip-192-168-34-216.ec2.internal   Ready    <none>   22m   v1.32.3   192.168.34.216   3.85.12.34    Amazon Linux 2   5.4.0-1043-aws    containerd://1.4.13
+   ```
+
    This output should yield information regarding the list of current nodes in the cluster. Each node may come configured with an internal and external IP address. To access the application, we get the external IP address the RAG playground service is running on.
 
    With both the external IP address and exposed node port, we can access the frontend service in our browser using the following address: `NODE_IP_ADDRESS:NODE_PORT/converse`.
 
-   From here, we should be able to interact with the service and get some outputs from the LLM. **First upload a document to the knowledgebase and then converse to ask questions**
-
-   Below screenshot shows the usage of [this NVIDIA CUDA documentation](https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf) for testing
+   **Example**: Using the values from the previous commands:
+   - NODE_IP_ADDRESS: `3.85.12.34` (EXTERNAL-IP from kubectl get nodes command)
+   - NODE_PORT: `31359` (nodePort from the service YAML)
+   - Full URL: `http://3.85.12.34:31359/converse`
 
 ## Congratulations!
 
