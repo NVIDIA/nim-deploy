@@ -20,6 +20,10 @@
 
 ![nim rag blueprint](imgs/architecture_diagram.png)
 
+**AWS Implementation Architecture:**
+
+![AWS RAG Architecture](imgs/architecture_diagram_aws.png)
+
 ## Introduction
 
 This workshop will guide you through deploying a [Retrieval Augmented Generation (RAG) text Q&A agent microservice](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/aiworkflows/helm-charts/rag-app-text-chatbot-langchain) on Amazon Elastic Kubernetes Service (EKS). You'll leverage the power of NVIDIA Inference Microservices (NIMs) and Nemo LLM Retriever Embedding to build a robust question-answering system. This system utilizes Milvus as the vector store to manage embeddings and generate accurate responses to user queries.
