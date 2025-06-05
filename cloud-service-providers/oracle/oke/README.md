@@ -378,7 +378,9 @@ nfd-worker-6zrwj                             1/1     Running   0          3m22s
 nfd-worker-nczl8                             1/1     Running   0          3m22s
 ```
 
-NFD automatically detects the NVIDIA GPUs in your cluster and adds appropriate labels to the nodes. Without this, Kubernetes wouldn't know which nodes have GPUs available.
+NFD automatically detects hardware capabilities—including NVIDIA GPUs—and labels nodes accordingly. While Kubernetes can still detect GPUs without NFD, these labels are essential for automated scheduling. Without NFD, the NIM Operator cannot use label-based node selection, and you must manually configure scheduling (e.g., using node selectors or tolerations).
+
+
 
 ## 9. Install NVIDIA NIM Operator
 **Deploying the custom resource controller for NIM services**
