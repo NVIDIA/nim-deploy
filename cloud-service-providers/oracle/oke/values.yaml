@@ -1,0 +1,298 @@
+# NVIDIA NIM Helm Values for Oracle Kubernetes Engine (OKE)
+# This is a comprehensive values.yaml for deploying NIM on OKE
+
+#-----------------------
+# Image Configuration
+#-----------------------
+image:
+  # Model image repository - uncomment the desired model
+  repository: nvcr.io/nim/meta/llama3-8b-instruct
+  # repository: nvcr.io/nim/meta/llama3-70b-instruct  # For larger models
+  # repository: nvcr.io/nim/mistralai/mistral-7b-instruct-v0.2  # For Mistral models
+  
+  # Image tag (version)
+  tag: 1.0.0
+  
+  # Image pull policy
+  pullPolicy: IfNotPresent
+
+#-----------------------
+# Image Pull Secrets
+#-----------------------
+imagePullSecrets:
+  - name: ngc-registry  # Secret created for NGC container registry
+
+#-----------------------
+# Model Configuration
+#-----------------------
+model:
+  # Model name in NGC catalog - should match the repository above
+  name: meta/llama3-8b-instruct
+  # name: meta/llama3-70b-instruct  # For larger models
+  # name: mistralai/mistral-7b-instruct-v0.2  # For Mistral models
+  
+  # NGC API key secret name - Created with: kubectl create secret generic ngc-api -n nim --from-literal=NGC_API_KEY=your_key
+  ngcAPISecret: ngc-api
+
+#-----------------------
+# Persistence Configuration
+#-----------------------
+persistence:
+  # Enable persistent storage for model weights
+  enabled: true
+  
+  # Storage size (increase for larger models)
+  size: 50Gi  # For 8B models
+  # size: 150Gi  # For 70B models
+  
+  # OCI Block Volume storage class
+  storageClass: "oci-bv"
+  
+  # Access mode for the volume
+  accessMode: ReadWriteOnce
+
+#-----------------------
+# StatefulSet Configuration
+#-----------------------
+statefulSet:
+  # Use Deployment instead of StatefulSet
+  enabled: false
+
+#-----------------------
+# Resource Configuration - Adjust based on GPU availability and model size
+#-----------------------
+resources:
+  limits:
+    # --- GPU Configurations ---
+    # A10G (24GB) - Good for smaller models
+    nvidia.com/gpu: 1
+    memory: "24Gi"
+    cpu: "8"
+    
+    # --- Uncomment for larger models/GPUs ---
+    # A100 (80GB) - Good for most models
+    # nvidia.com/gpu: 1
+    # memory: "80Gi"
+    # cpu: "12"
+    
+    # H100 (80GB) - Excellent for large models
+    # nvidia.com/gpu: 1
+    # memory: "80Gi"
+    # cpu: "16"
+    
+    # For 70B models on A100/H100 - Use 2 or more GPUs
+    # nvidia.com/gpu: 2
+    # memory: "160Gi"
+    # cpu: "24"
+  
+  requests:
+    # Keep requests slightly lower than limits
+    nvidia.com/gpu: 1
+    memory: "16Gi"
+    cpu: "4"
+    
+    # For larger configs, adjust accordingly
+    # nvidia.com/gpu: 2
+    # memory: "120Gi"
+    # cpu: "16"
+
+#-----------------------
+# Proxy Configuration - Uncomment if you need a proxy for outbound connections
+#-----------------------
+env:
+  # Uncomment proxy settings if needed
+  # - name: HTTP_PROXY
+  #   value: "http://squid-proxy.nim.svc.cluster.local:3128"
+  # - name: HTTPS_PROXY
+  #   value: "http://squid-proxy.nim.svc.cluster.local:3128"
+  # - name: NO_PROXY
+  #   value: "localhost,127.0.0.1,10.0.0.0/8,10.96.0.0/16"
+  
+  # Model parameters
+  - name: CONTEXT_WINDOW_SIZE
+    value: "4096"
+  - name: MAX_TOKENS
+    value: "4096"
+  # - name: TIMEOUT  # Uncomment to increase timeout for large generations
+  #   value: "300"
+
+#-----------------------
+# Health Probes - Adjust timeouts based on model size
+#-----------------------
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /v1/health/ready
+      port: 8000
+    failureThreshold: 240  # Increase for larger models (up to 360 for 70B)
+    initialDelaySeconds: 240  # Increase for larger models (up to 480 for 70B)
+    periodSeconds: 30
+  
+  liveness:
+    enabled: true
+    httpGet:
+      path: /v1/health/live
+      port: 8000
+    failureThreshold: 3
+    initialDelaySeconds: 60  # Give time for the model to load
+    periodSeconds: 30
+  
+  readiness:
+    enabled: true
+    httpGet:
+      path: /v1/health/ready
+      port: 8000
+    failureThreshold: 3
+    initialDelaySeconds: 60  # Give time for the model to load
+    periodSeconds: 30
+
+#-----------------------
+# Service Configuration
+#-----------------------
+service:
+  # LoadBalancer for external access
+  type: LoadBalancer
+  # Use ClusterIP if you prefer to access via port-forwarding or ingress
+  # type: ClusterIP
+  
+  # Service port
+  port: 8000
+  
+  # Additional annotations if needed for OCI LoadBalancer
+  annotations: {}
+    # service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: "None"
+    # service.beta.kubernetes.io/oci-load-balancer-shape: "flexible"
+    # service.beta.kubernetes.io/oci-load-balancer-shape-flex-min: "10"
+    # service.beta.kubernetes.io/oci-load-balancer-shape-flex-max: "100"
+
+#-----------------------
+# Security Context
+#-----------------------
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+#-----------------------
+# Affinity Configuration - Ensure pods are scheduled on GPU nodes
+#-----------------------
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: nvidia.com/gpu.present
+          operator: In
+          values:
+          - "true"
+
+#-----------------------
+# Topology Spread Constraints - Uncomment for multi-node clusters
+#-----------------------
+# topologySpreadConstraints:
+#  - maxSkew: 1
+#    topologyKey: kubernetes.io/hostname
+#    whenUnsatisfiable: DoNotSchedule
+#    labelSelector:
+#      matchLabels:
+#        app: nim-llm
+
+#-----------------------
+# Autoscaling - Optional for scaling based on GPU utilization
+#-----------------------
+# autoscaling:
+#   enabled: false
+#   minReplicas: 1
+#   maxReplicas: 3
+#   targetCPUUtilizationPercentage: 80
+#   targetMemoryUtilizationPercentage: 80
+
+#-----------------------
+# Additional Parameters - Uncomment if needed
+#-----------------------
+# serviceAccount:
+#   create: true
+#   name: ""
+
+# podSecurityContext:
+#   runAsNonRoot: true
+
+# initContainers: []
+
+# tolerations: []
+
+# nodeSelector: {}
+
+#-----------------------
+# Model-Specific Quick-Configuration Templates
+#-----------------------
+# UNCOMMENT ONE OF THESE BLOCKS TO QUICKLY CONFIGURE FOR SPECIFIC MODELS
+
+# --- LLaMA 3-8B on A10G GPU ---
+# image:
+#   repository: nvcr.io/nim/meta/llama3-8b-instruct
+#   tag: 1.0.0
+# model:
+#   name: meta/llama3-8b-instruct
+# resources:
+#   limits:
+#     nvidia.com/gpu: 1
+#     memory: "16Gi"
+#   requests:
+#     nvidia.com/gpu: 1
+#     memory: "12Gi"
+# persistence:
+#   size: 30Gi
+
+# --- LLaMA 3-8B on A100/L40S GPU ---
+# image:
+#   repository: nvcr.io/nim/meta/llama3-8b-instruct
+#   tag: 1.0.0
+# model:
+#   name: meta/llama3-8b-instruct
+# resources:
+#   limits:
+#     nvidia.com/gpu: 1
+#     memory: "40Gi"
+#   requests:
+#     nvidia.com/gpu: 1
+#     memory: "32Gi"
+# persistence:
+#   size: 50Gi
+
+# --- LLaMA 3-70B on A100/H100 GPUs ---
+# image:
+#   repository: nvcr.io/nim/meta/llama3-70b-instruct
+#   tag: 1.0.0
+# model:
+#   name: meta/llama3-70b-instruct
+# resources:
+#   limits:
+#     nvidia.com/gpu: 2
+#     memory: "160Gi"
+#   requests:
+#     nvidia.com/gpu: 2
+#     memory: "120Gi"
+# persistence:
+#   size: 150Gi
+# probes:
+#   startup:
+#     failureThreshold: 360
+#     initialDelaySeconds: 480
+
+# --- Mistral 7B on A10G/L40S ---
+# image:
+#   repository: nvcr.io/nim/mistralai/mistral-7b-instruct-v0.2
+#   tag: 1.0.0
+# model:
+#   name: mistralai/mistral-7b-instruct-v0.2
+# resources:
+#   limits:
+#     nvidia.com/gpu: 1
+#     memory: "16Gi"
+#   requests:
+#     nvidia.com/gpu: 1
+#     memory: "12Gi"
+# persistence:
+#   size: 30Gi 
