@@ -321,7 +321,7 @@ secret/ngc-registry created
 
 This isolates your NIM deployment from other applications in the cluster and securely stores your NGC API key, which is needed to pull NVIDIA's container images.
 
-## 8. Install Node Feature Discovery (NFD)
+## 8. Install Node Feature Discovery (NFD) (Optional but recommended for an easier setup)
 **Enabling Kubernetes to identify GPU-equipped nodes**
 
 NFD is a critical component that allows Kubernetes to identify and label nodes with their hardware capabilities, particularly GPUs:
