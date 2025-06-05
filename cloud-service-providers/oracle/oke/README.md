@@ -321,7 +321,7 @@ secret/ngc-registry created
 
 This isolates your NIM deployment from other applications in the cluster and securely stores your NGC API key, which is needed to pull NVIDIA's container images.
 
-## 8. Install Node Feature Discovery (NFD)
+## 8. Install Node Feature Discovery (NFD) (Optional but recommended for an easier setup)
 **Enabling Kubernetes to identify GPU-equipped nodes**
 
 NFD is a critical component that allows Kubernetes to identify and label nodes with their hardware capabilities, particularly GPUs:
@@ -378,7 +378,9 @@ nfd-worker-6zrwj                             1/1     Running   0          3m22s
 nfd-worker-nczl8                             1/1     Running   0          3m22s
 ```
 
-NFD automatically detects the NVIDIA GPUs in your cluster and adds appropriate labels to the nodes. Without this, Kubernetes wouldn't know which nodes have GPUs available.
+NFD automatically detects hardware capabilities—including NVIDIA GPUs—and labels nodes accordingly. While Kubernetes can still detect GPUs without NFD, these labels are essential for automated scheduling. Without NFD, the NIM Operator cannot use label-based node selection, and you must manually configure scheduling (e.g., using node selectors or tolerations).
+
+
 
 ## 9. Install NVIDIA NIM Operator
 **Deploying the custom resource controller for NIM services**
@@ -426,31 +428,7 @@ The NVIDIA NIM Operator has been installed. Check its status by running:
 
 This operator extends Kubernetes with custom resources for NIM deployments, making it easier to manage model deployments and their configurations.
 
-## 10. Create Registry Secret for NGC Images
-**Setting up authentication for NVIDIA's container registry**
-
-Create a Kubernetes secret to authenticate with NVIDIA's NGC container registry:
-
-```bash
-# Get your NGC API key
-NGC_API_KEY=<YOUR_NGC_API_KEY>
-
-# Create a secret for pulling images from NGC
-kubectl create secret docker-registry ngc-registry \
-  --docker-server=nvcr.io \
-  --docker-username='$oauthtoken' \
-  --docker-password=$NGC_API_KEY \
-  -n nim
-```
-
-**Expected Output:**
-```
-secret/ngc-registry created
-```
-
-This secret allows Kubernetes to pull the necessary container images from NVIDIA's private registry. Without this, image pulls would fail with authentication errors.
-
-## 11. Enable Internet Access via Proxy (Optional)
+## 10. Enable Internet Access via Proxy (Optional)
 **Deploying a proxy solution for restricted network environments**
 
 In enterprise environments, OKE clusters often lack direct internet access. If needed, set up a proxy to allow model downloads:
@@ -477,7 +455,7 @@ The Squid proxy has been deployed to your cluster.
 
 This deploys a Squid proxy in your cluster that uses hostNetwork to bypass network restrictions. The NIM services will be configured to use this proxy for downloading model files from NVIDIA's servers.
 
-## 12. Deploy LLaMA 3-8B Model Using Helm
+## 11. Deploy LLaMA 3-8B Model Using Helm
 **Installing and configuring the LLaMA model with persistent storage**
 
 Now it's time to deploy the actual LLaMA 3-8B model using Helm:
@@ -553,7 +531,7 @@ The persistence configuration is critical to ensure that model weights are store
 
 The deployment will take several minutes as it downloads the model weights and initializes the service.
 
-## 13. Monitor Deployment Status
+## 12. Monitor Deployment Status
 **Verifying the successful deployment of your model**
 
 Monitor the deployment to ensure everything is running correctly:
@@ -625,7 +603,7 @@ These commands help you verify that:
 
 The pod may initially show a status of "ContainerCreating" as it downloads the large model files.
 
-## 14. Accessing the Model via LoadBalancer
+## 13. Accessing the Model via LoadBalancer
 **Establishing external access for production use**
 
 The LoadBalancer service provides a stable, externally accessible endpoint for your model:
@@ -700,7 +678,7 @@ The LoadBalancer provides several benefits for production use:
 
 Note that it may take several minutes for the LoadBalancer to provision and for the external IP to become accessible. If the readiness probe is failing, the LoadBalancer might not route traffic to the pod until it's ready.
 
-## 15. Alternative: Test the Model via Port Forwarding
+## 14. Alternative: Test the Model via Port Forwarding
 **Creating a secure tunnel to access your model during development**
 
 > **Note:** This alternative method is only needed if your LoadBalancer is not yet provisioned or if you're working in an environment where LoadBalancer services aren't available.
