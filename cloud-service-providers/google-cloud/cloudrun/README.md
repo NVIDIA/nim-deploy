@@ -103,7 +103,8 @@ spec:
           timeoutSeconds: 240
           periodSeconds: 240
           failureThreshold: 10
-          tcpSocket:
+          httpGet:
+            path: /v1/health/ready
             port: 8000
       nodeSelector:
         run.googleapis.com/accelerator: nvidia-l4
@@ -118,14 +119,20 @@ gcloud run services replace deployment.yaml \
   --project=${PROJECT_ID}
 ```
 
-### 10. Test Deployment
+### 10. verify deployment was successful
+
+```shell
+gcloud run services list --project ${PROJECT_ID} --region ${REGION}
+```
+
+### 11. Test Deployment
 
 ```shell
 # Get service URL
-export TESTURL=$(gcloud run services list --project ${PROJECT_ID} --region ${REGION} | awk '/SERVICE: '${CLOUD_RUN_SERVICE_NAME}'/ {getline; getline; print $2}')/v1/chat/completions
+export TESTURL=$(gcloud run services list --project ${PROJECT_ID} --region ${REGION} --format="value(status.url)" --filter="metadata.name=${CLOUD_RUN_SERVICE_NAME}")/v1/chat/completions
 
 # Get authentication token
-TOKEN=$(gcloud auth print-identity-token)
+export TOKEN=$(gcloud auth print-identity-token)
 
 # Send test request
 curl -X POST ${TESTURL} \
@@ -148,7 +155,7 @@ curl -X POST ${TESTURL} \
 }'
 ```
 
-### 11. Cleanup
+### 12. Cleanup
 
 ```shell
 # Delete Cloud Run service
