@@ -1,84 +1,168 @@
-# NVIDIA NIM on GCP CloudRun
+# Deploying NIMs to Google Cloud Run
 
-This repository demonstrates NVIDIA NIM deployment on Google Cloud Platform CloudRun.
+This guide outlines the steps to deploy a NIM LLM to Google Cloud Run.
 
+---
 
-#### Authenticate to Google Cloud
-```
-$ gcloud auth login
-```
-#### Create a GCS bucket
+## Prerequisites
 
-A GCS bucket provides model persistence between service restarts and helps
-mitigate timeout restrictions and improves performance in the CloudRun deployment:
-```
-$ gcloud storage buckets create gs://my-model-data
-```
-#### Define NGC token
+- [NGC API KEY](https://build.nvidia.com/)
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+- Docker CLI
+- Permissions (ask your administrator to grant you):
+  - Cloud Run Developer (`roles/run.developer`)
+  - Service Account User (`roles/iam.serviceAccountUser`)
+  - Artifact Registry Reader (`roles/artifactregistry.reader`)
 
-An NGC token is required for model and image artifacts. It is a good practice to
-store the token in a local file system, insure it is not included in any code repository (`.gitignore`) and
-is readable only to the owner; treat it as you would an `~/.ssh/id_rsa` private key.
+---
 
-All programmatic access to the token should be non-exposing syntax such as the following.
+## Deployment Steps
 
-Create a file with your NGC token in `source/ngc-token`, then
-create a secret from your NGC token for use by the NIM:
-```
-$ echo -n $(cat source/ngc-token) | gcloud secrets create nim-ngc-token \
-    --replication-policy="automatic" \
-    --data-file=-
-```
-#### Define Environment variables
+### 1. Set Environment Variables
 
-Create an env file to place all exported environment variables.
-
-Here is a complete example:
-```
-$ cat env
-export SERVICE_ACCOUNT_ID=nemoms-vertex-ai-study
-export PROJECTID=exploration
-export PROJECTUSER=nvidia
-export PROJECTNUM=123467890123
-export REGION=us-central1
-export GCSBUCKET=my-model-data
-export SERVICE_NAME=llama-3-8b-instruct
-export ARTIFACT_REGISTRY_LOCATION=us
-```
-#### Choose a model
-
-Edit `Dockerfile` and place the desired model URL from NGC in the FROM statement. e.g.
-```
-FROM nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
-```
-#### Create the shim container
-```
-$ . ./env && ./build_nim.sh
+```shell
+export PROJECT_ID=<PASTE_PROJECT_ID_HERE>
+export REGION=<PASTE_REGION_HERE> # e.g. us-central1
+export NGC_API_KEY=<PASTE_API_KEY_HERE>
+export ARTIFACT_REGISTRY_NAME=<DEFINE_ARTIFACT_REGISTRY_NAME_HERE>
+export CLOUD_RUN_SERVICE_NAME=<DEFINE_CLOUD_RUN_SERVICE_NAME_HERE>
 ```
 
-#### Deploy the NIM
-```
-$ . ./env &&  ./run.sh 
+### 2. Log in to NVIDIA NGC Registry (using environment variable)
+
+```shell
+echo $NGC_API_KEY | docker login nvcr.io --username '$oauthtoken' --password-stdin
 ```
 
-#### Test the NIM
-```
-$ export TESTURL=$(gcloud run services list --project ${PROJECTID?} \
-  --region ${REGION?} | grep ${SERVICE_NAME?} | \
-  awk '/https/ {print $4}')/v1/completions
+### 3. Pull Docker Image from NGC
 
-$ curl -X POST  ${TESTURL?}  \
+```shell
+docker pull nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
+```
+
+### 4. Authenticate to Google Cloud
+
+```shell
+gcloud auth login
+```
+
+### 5. Create Artifact Registry Repository
+
+```shell
+gcloud artifacts repositories create $ARTIFACT_REGISTRY_NAME \
+    --repository-format=docker \
+    --location=$REGION \
+    --project=$PROJECT_ID
+```
+
+### 6. Log in to Artifact Registry
+
+```shell
+gcloud auth configure-docker ${REGION}-docker.pkg.dev
+```
+
+### 7. Tag and Push Image to Artifact Registry
+
+```shell
+docker tag nvcr.io/nim/meta/llama3-8b-instruct:1.0.0 \
+  ${REGION}-docker.pkg.dev/${PROJECT_ID}/$ARTIFACT_REGISTRY_NAME/llama3-8b-instruct:1.0.0
+
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/$ARTIFACT_REGISTRY_NAME/llama3-8b-instruct:1.0.0
+```
+
+### 8. Create `deployment.yaml` with Environment Variables
+
+```shell
+cat << EOF > deployment.yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${CLOUD_RUN_SERVICE_NAME}
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '2'
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/gpu-zonal-redundancy-disabled: "true"
+    spec:
+      containers:
+      - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/llama3-8b-instruct:1.0.0
+        env:
+          - name: NGC_API_KEY
+            value: ${NGC_API_KEY}
+        ports:
+          - containerPort: 8000
+        resources:
+          limits:
+            cpu: "8"
+            memory: "32Gi"
+            nvidia.com/gpu: "1"
+        startupProbe:
+          initialDelaySeconds: 100
+          timeoutSeconds: 240
+          periodSeconds: 240
+          failureThreshold: 10
+          tcpSocket:
+            port: 8000
+      nodeSelector:
+        run.googleapis.com/accelerator: nvidia-l4
+EOF
+```
+
+### 9. Deploy to Cloud Run
+
+```shell
+gcloud run services replace deployment.yaml \
+  --region=${REGION} \
+  --project=${PROJECT_ID}
+```
+
+### 10. Test Deployment
+
+```shell
+# Get service URL
+export TESTURL=$(gcloud run services list --project ${PROJECT_ID} --region ${REGION} | awk '/SERVICE: '${CLOUD_RUN_SERVICE_NAME}'/ {getline; getline; print $2}')/v1/chat/completions
+
+# Get authentication token
+TOKEN=$(gcloud auth print-identity-token)
+
+# Send test request
+curl -X POST ${TESTURL} \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{
+  "messages": [
+    {
+      "content": "You are a polite and respectful chatbot helping people plan a vacation.",
+      "role": "system"
+    },
+    {
+      "content": "What should I do for a 4 week vacation in Europe?",
+      "role": "user"
+    }
+  ],
   "model": "meta/llama3-8b-instruct",
-  "prompt": "Once upon a time",
-  "max_tokens": 100,
-  "temperature": 1,
-  "top_p": 1,
-  "n": 1,
-  "stream": false,
-  "stop": "string",
-  "frequency_penalty": 0.0
+  "max_tokens": 256
 }'
+```
+
+### 11. Cleanup
+
+```shell
+# Delete Cloud Run service
+gcloud run services delete ${CLOUD_RUN_SERVICE_NAME} --region=${REGION} --project=${PROJECT_ID}
+
+# Delete Artifact Registry repository
+gcloud artifacts repositories delete ${ARTIFACT_REGISTRY_NAME} \
+    --location=${REGION} \
+    --project=${PROJECT_ID}
+
+# Remove local Docker images
+docker rmi nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
+docker rmi ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/llama3-8b-instruct:1.0.0
+
+# Logout from NGC registry
+docker logout nvcr.io
 ```
