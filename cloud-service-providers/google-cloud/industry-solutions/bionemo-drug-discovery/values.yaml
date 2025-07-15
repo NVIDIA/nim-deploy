@@ -1,0 +1,101 @@
+replicaCount: 1
+
+msa:
+  containerName: msa
+  containerPort: 8000
+  repository: nvcr.io/nim/colabfold/msa-search
+  tag: "1.0"
+  pullPolicy: Always
+  cacheFolder: /opt/nim/.cache
+  servicePort: 8081
+  resources:
+    requests:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "1.5Ti"
+    limits:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "1.5Ti"
+
+openfold2:
+  containerName: openfold2
+  containerPort: 8000
+  repository: nvcr.io/nim/openfold/openfold2
+  tag: "1.0"
+  pullPolicy: Always
+  cacheFolder: /opt/nim/.cache
+  servicePort: 8082
+  resources:
+    requests:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "500Gi"
+    limits:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "500Gi"
+
+genmol:
+  containerName: genoml
+  containerPort: 8000
+  repository: nvcr.io/nim/nvidia/genmol
+  tag: "1.0"
+  pullPolicy: Always
+  cacheFolder: /opt/nim/.cache
+  servicePort: 8083
+  resources:
+    requests:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "100Gi"
+    limits:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "100Gi"
+
+diffdock:
+  containerName: diffdock
+  containerPort: 8000
+  tritonPort: 8003
+  repository: nvcr.io/nim/mit/diffdock
+  tag: "2.0"
+  pullPolicy: Always
+  cacheFolder: /opt/nim/.cache
+  servicePort: 8084
+  resources:
+    requests:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "100Gi"
+    limits:
+      nvidia.com/gpu: 1
+      ephemeral-storage: "100Gi"
+
+imagePullSecret:
+  registry: "nvcr.io"
+  name: "ngc-secret-docker-registry"
+  create: true
+  username: '$oauthtoken'
+  secretName: ngc-registry-secret
+  secretKey: NGC_REGISTRY_KEY
+
+service:
+  type: ClusterIP
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
+  requests:
+    nvidia.com/gpu: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+persistence:
+  enabled: false
+  existingClaim: ""
+  storageClass: standard
+  accessMode: ReadWriteMany
+  hostPath: /data/nim
+  size: 1.5Ti
+
+nodeSelector: 
+  cloud.google.com/gke-ephemeral-storage-local-ssd: "true"
+ 
