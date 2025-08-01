@@ -82,8 +82,6 @@ gcloud container node-pools create gpupool \
 git clone https://github.com/NVIDIA-BioNeMo-blueprints/generative-virtual-screening.git
 
 cd generative-virtual-screening
-
-git checkout 50c39b742c05b0aca492dca8b6ef53f98b11ff52
 ```
 
 2. Move configuration file to helm chart
