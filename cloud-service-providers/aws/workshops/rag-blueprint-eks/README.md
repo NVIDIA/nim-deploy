@@ -314,11 +314,11 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
 
 1. **Create the Custom Values File**
 
-   The `custom-values.yaml` file is already provided in your workshop directory. Verify its contents:
+   The `values.yaml` file is already provided in your workshop directory. Verify its contents:
 
    ```bash
-   ls -la custom-values.yaml
-   cat custom-values.yaml | head -20
+   ls -la values.yaml
+   cat values.yaml | head -20
    ```
 
    This file contains optimized configurations for:
@@ -338,7 +338,7 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
      --password "${NGC_API_KEY}" \
      --set imagePullSecret.password=$NGC_API_KEY \
      --set ngcApiSecret.password=$NGC_API_KEY \
-     -f custom-values.yaml \
+     -f values.yaml \
      --create-namespace
    ```
 
