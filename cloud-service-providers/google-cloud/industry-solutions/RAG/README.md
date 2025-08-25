@@ -145,14 +145,3 @@ After you have finished, run the following command to delete the GKE cluster and
 ```bash
 gcloud container clusters delete $CLUSTER_NAME --zone=$ZONE
 ```
-
-
-
-
-Of course! Here are the completed "Prerequisites" and "Hardware Requirements" sections for your guide.
-
-***
-
-
-
-
