@@ -426,19 +426,80 @@ Now you'll test the complete RAG pipeline by uploading documents and asking ques
 
    Switch back to the RAG UI and test the RAG capabilities
 
-## Alternative: Interact with RAG via APIs
+## Validate RAG Backend APIs (Optional)
 
-In addition to using the web interface, you can interact with the Enterprise RAG Blueprint programmatically using the REST APIs. This is ideal for integrating the RAG system into your own applications or for automated workflows.
+<details>
+<summary>Click to expand API validation steps</summary>
 
-### API Documentation and Examples
+Test the RAG backend APIs directly to ensure they're functioning correctly:
 
-The NVIDIA Enterprise RAG Blueprint provides comprehensive API endpoints for both document ingestion and retrieval operations. You can find detailed examples and usage patterns in these Jupyter notebooks:
+```bash
+# Port forward RAG services for testing (run in separate terminals)
+kubectl port-forward service/rag-server 8081:8081 -n nv-nvidia-blueprint-rag &
+kubectl port-forward service/ingestor-server 8082:8082 -n nv-nvidia-blueprint-rag &
+```
 
-1. **Ingestion API Usage**: Learn how to programmatically upload and process documents using the ingestion API
-   - [Ingestion API Usage Notebook](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/notebooks/ingestion_api_usage.ipynb)
+**Test the APIs:**
 
-2. **Retriever API Usage**: Understand how to query the RAG system and retrieve responses programmatically
-   - [Retriever API Usage Notebook](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/notebooks/retriever_api_usage.ipynb)
+```bash
+# 1. Test RAG server health
+curl -X GET "http://localhost:8081/v1/health" \
+  -H "accept: application/json"
+
+# 2. Test ingestor server health  
+curl -X GET "http://localhost:8082/v1/health" \
+  -H "accept: application/json"
+
+# 3. List existing collections
+curl -X GET "http://localhost:8082/v1/collections" \
+  -H "accept: application/json"
+
+# 4. Create the default multimodal_data collection
+curl -X POST "http://localhost:8082/v1/collection" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection_name": "multimodal_data",
+    "configuration": {}
+  }'
+
+# 5. Verify the collection was created
+curl -X GET "http://localhost:8082/v1/collections" \
+  -H "accept: application/json"
+
+# 6. Test RAG generation endpoint (requires documents in collection)
+curl -X POST "http://localhost:8081/v1/generate" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {
+        "role": "user", 
+        "content": "What is the main topic or subject discussed in the documents?"
+      }
+    ],
+    "collection_names": ["multimodal_data"],
+    "temperature": 0.5,
+    "top_p": 0.9,
+    "reranker_top_k": 10,
+    "vdb_top_k": 100,
+    "use_knowledge_base": true,
+    "enable_citations": true,
+    "enable_guardrails": false,
+    "model": "nvidia/llama-3.1-nemotron-nano-8b-v1",
+    "embedding_model": "nvidia/llama-3.2-nv-embedqa-1b-v2",
+    "reranker_model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+  }'
+```
+
+**Stop port forwarding when done:**
+```bash
+# Stop the background port forwarding processes
+pkill -f "kubectl port-forward.*rag-server"
+pkill -f "kubectl port-forward.*ingestor-server"
+```
+
+</details>
 
 For detailed examples and comprehensive API documentation, refer to the [NVIDIA AI Blueprints RAG repository](https://github.com/NVIDIA-AI-Blueprints/rag) which contains the complete source code and additional usage examples.
 
