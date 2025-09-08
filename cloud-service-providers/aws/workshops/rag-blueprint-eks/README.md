@@ -521,7 +521,7 @@ kubectl top pods -n nv-nvidia-blueprint-rag
 
 ## Congratulations!
 
-Congratulations! You've successfully deployed the complete NVIDIA Enterprise RAG Blueprint on Amazon EKS. Your deployment includes:
+Congratulations! You've successfully deployed the complete NVIDIA Enterprise RAG Blueprint on Amazon EKS.
 
 ### Next Steps
 
