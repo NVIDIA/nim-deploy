@@ -344,7 +344,7 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
 
 3. **Monitor Deployment Progress**
 
-   The deployment will take 10-15 minutes as it downloads large model artifacts. Monitor the progress:
+   The deployment will take 15-20 minutes. Please be patient and wait for all pods to reach the running state. Monitor the progress:
 
    ```bash
    # Watch all pods in the namespace
@@ -352,6 +352,8 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
    ```
 
    Use `Ctrl+C` to stop watching when all pods are running.
+
+   > **Note**: The initial deployment can take up to 20 minutes for container initialization. Do not interrupt the process - allow sufficient time for all components to start properly.
 
 4. **Verify Deployment**
 
@@ -404,32 +406,9 @@ The RAG Blueprint includes a web-based frontend for interacting with the system.
 
 ## Task 7. Test the RAG Application
 
-Now you'll test the complete RAG pipeline by uploading documents and asking questions.
+Now you'll test the complete RAG pipeline. We recommend starting with the API testing approach as it's more reliable for validating the backend functionality.
 
-1. **Explore the RAG Playground Interface**
-
-   You should see the RAG Playground home page with the main interface:
-
-   ![RAG Playground UI](imgs/RAG-UI.png)
-
-2. **Upload a Document**
-
-   To test the RAG capabilities with your own content:
-   
-   - Click on the **"New Collection"** tab
-   - Add your document and **"Create Collection"** (you can use the [NVIDIA CUDA C Programming Guide](https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf) for testing)
-   - Wait for the document to be processed and embedded
-
-   ![RAG Playground UI Add document](imgs/RAG-Add-Document.png)
-
-3. **Ask Questions**
-
-   Switch back to the RAG UI and test the RAG capabilities
-
-## Validate RAG Backend APIs (Optional)
-
-<details>
-<summary>Click to expand API validation steps</summary>
+### Method 1: API Testing (Recommended)
 
 Test the RAG backend APIs directly to ensure they're functioning correctly:
 
@@ -499,9 +478,34 @@ pkill -f "kubectl port-forward.*rag-server"
 pkill -f "kubectl port-forward.*ingestor-server"
 ```
 
-</details>
-
 For detailed examples and comprehensive API documentation, refer to the [NVIDIA AI Blueprints RAG repository](https://github.com/NVIDIA-AI-Blueprints/rag) which contains the complete source code and additional usage examples.
+
+### Method 2: UI Testing (Optional)
+
+<details>
+<summary>Click to expand UI testing steps</summary>
+
+1. **Explore the RAG Playground Interface**
+
+   You should see the RAG Playground home page with the main interface:
+
+   ![RAG Playground UI](imgs/RAG-UI.png)
+
+2. **Upload a Document**
+
+   To test the RAG capabilities with your own content:
+   
+   - Click on the **"New Collection"** tab
+   - Add your document and **"Create Collection"** (you can use the [NVIDIA CUDA C Programming Guide](https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf) for testing)
+   - Wait for the document to be processed and embedded
+
+   ![RAG Playground UI Add document](imgs/RAG-Add-Document.png)
+
+3. **Ask Questions**
+
+   Switch back to the RAG UI and test the RAG capabilities.
+
+</details>
 
 ## Monitor Backend Services
 

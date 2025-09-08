@@ -167,8 +167,8 @@ ingestor-server:
     APP_VECTORSTORE_URL: "http://milvus:19530"
     APP_VECTORSTORE_NAME: "milvus"
     APP_VECTORSTORE_SEARCHTYPE: "dense"
-    APP_VECTORSTORE_ENABLEGPUINDEX: "True"
-    APP_VECTORSTORE_ENABLEGPUSEARCH: "True"
+    APP_VECTORSTORE_ENABLEGPUINDEX: "False"
+    APP_VECTORSTORE_ENABLEGPUSEARCH: "False"
     COLLECTION_NAME: "multimodal_data"
 
     # === MinIO Configurations ===
