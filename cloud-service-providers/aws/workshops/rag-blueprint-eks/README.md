@@ -8,9 +8,9 @@
 - [Learn the Components](#learn-the-components)
 - [Setup and Requirements](#setup-and-requirements)
 - [Task 1. Infrastructure Deployment](#task-1-infrastructure-deployment)
-- [Task 2. Configure NVIDIA NGC API Key](#task-2-configure-nvidia-ngc-api-key)
-- [Task 3. Install NVIDIA GPU Operator](#task-3-install-nvidia-gpu-operator)
-- [Task 4. Deploy Storage Class](#task-4-deploy-storage-class)
+- [Task 2. Install NVIDIA GPU Operator](#task-2-install-nvidia-gpu-operator)
+- [Task 3. Deploy Storage Class](#task-3-deploy-storage-class)
+- [Task 4. Configure NVIDIA NGC API Key](#task-4-configure-nvidia-ngc-api-key)
 - [Task 5. Deploy Enterprise RAG Blueprint](#task-5-deploy-enterprise-rag-blueprint)
 - [Task 6. Access the RAG Frontend Service](#task-6-access-the-rag-frontend-service)
 - [Task 7. Test the RAG Application](#task-7-test-the-rag-application)
@@ -209,6 +209,8 @@ It takes a few moments to provision and connect to the environment.
 
 4. **Create GPU Node Group**
 
+   Create GPU-enabled worker nodes using the Amazon Linux 2 GPU-optimized AMI:
+
    ```bash
    eksctl create nodegroup \
      --cluster "${CLUSTER_NAME}" \
@@ -217,8 +219,12 @@ It takes a few moments to provision and connect to the environment.
      --node-type "${GPU_INSTANCE_TYPE}" \
      --node-volume-size "${NODE_VOLUME_SIZE}" \
      --nodes "${MAIN_NODES}" \
-     --node-labels role=gpu-main
+     --node-labels role=gpu-main \
+     --ami-type AL2_x86_64_GPU \
+     --kubernetes-version 1.32
    ```
+
+   > **Note**: We explicitly specify `AL2_x86_64_GPU` AMI type and Kubernetes version 1.32 to ensure compatibility with the NVIDIA Container Toolkit version used by the GPU Operator.
 
    Verify the nodes are ready:
 
@@ -228,21 +234,7 @@ It takes a few moments to provision and connect to the environment.
 
    You should see 2 nodes in Ready status.
 
-## Task 2. Configure NVIDIA NGC API Key
-
-The Enterprise RAG Blueprint requires access to NVIDIA's container registry and model repositories. You'll need an [NGC API key](https://org.ngc.nvidia.com/setup/api-key) to proceed.
-
-1. **Set your NGC API Key**
-
-   Export your NGC API key as an environment variable:
-
-   ```bash
-   export NGC_API_KEY="<YOUR_NGC_API_KEY>"
-   ```
-
-   > **Important**: Replace `<YOUR_NGC_API_KEY>` with your actual NGC API key from the NVIDIA NGC portal.
-
-## Task 3. Install NVIDIA GPU Operator
+## Task 2. Install NVIDIA GPU Operator
 
 The GPU Operator manages the lifecycle of NVIDIA software components needed for GPU workloads.
 
@@ -264,7 +256,7 @@ The GPU Operator manages the lifecycle of NVIDIA software components needed for 
 3. **Install GPU Operator**
 
    ```bash
-   # Install GPU Operator
+   # Install GPU Operator (toolkit version matches AL2 GPU AMI)
    helm upgrade -i gpu-operator nvidia/gpu-operator \
      -n "${GPU_OPERATOR_NS}" --create-namespace \
      --set driver.enabled=false \
@@ -285,9 +277,100 @@ The GPU Operator manages the lifecycle of NVIDIA software components needed for 
 
    You should see 8 total GPUs available (4 per g5.12xlarge instance × 2 instances).
 
-## Task 4. Deploy Storage Class
+## Task 3. Deploy Storage Class
 
-Deploy a local path provisioner for persistent storage needs.
+Choose between AWS EBS CSI driver (recommended for production) or local path provisioner (for quick POC testing).
+
+### Option 1: AWS EBS CSI Driver (Recommended)
+
+The AWS EBS CSI driver provides persistent, high-performance storage suitable for production workloads.
+
+1. **Associate IAM OIDC Provider with Cluster**
+
+   First, associate an IAM OIDC provider with your EKS cluster:
+
+   ```bash
+   # Associate IAM OIDC provider with the cluster
+   eksctl utils associate-iam-oidc-provider \
+     --region=$AWS_REGION \
+     --cluster=$CLUSTER_NAME \
+     --approve
+   ```
+
+2. **Create IAM Service Account for EBS CSI Driver**
+
+   ```bash
+   # Create IAM service account with required permissions
+   eksctl create iamserviceaccount \
+     --name ebs-csi-controller-sa \
+     --namespace kube-system \
+     --cluster $CLUSTER_NAME \
+     --role-name AmazonEKS_EBS_CSI_DriverRole \
+     --role-only \
+     --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+     --approve
+   ```
+
+3. **Install AWS EBS CSI Driver Add-on**
+
+   ```bash
+   # Get the AWS account ID
+   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+   
+   # Install the EBS CSI driver add-on
+   eksctl create addon \
+     --name aws-ebs-csi-driver \
+     --cluster $CLUSTER_NAME \
+     --service-account-role-arn arn:aws:iam::${ACCOUNT_ID}:role/AmazonEKS_EBS_CSI_DriverRole \
+     --force
+   ```
+
+4. **Verify EBS CSI Driver Installation**
+
+   ```bash
+   # Check if the EBS CSI driver pods are running
+   kubectl get pods -n kube-system -l app=ebs-csi-controller
+   kubectl get pods -n kube-system -l app=ebs-csi-node
+   ```
+
+5. **Create GP3 Storage Class (Recommended)**
+
+   Create a high-performance GP3 storage class:
+
+   ```bash
+   cat << 'EOF' | kubectl apply -f -
+   apiVersion: storage.k8s.io/v1
+   kind: StorageClass
+   metadata:
+     name: ebs-gp3
+     annotations:
+       storageclass.kubernetes.io/is-default-class: "true"
+   provisioner: ebs.csi.aws.com
+   parameters:
+     type: gp3
+     iops: "3000"
+     throughput: "125"
+     encrypted: "true"
+   allowVolumeExpansion: true
+   volumeBindingMode: WaitForFirstConsumer
+   EOF
+   ```
+
+6. **Verify Storage Class Configuration**
+
+   ```bash
+   kubectl get storageclass
+   kubectl describe storageclass ebs-gp3
+   ```
+
+   You should see the `ebs-gp3` storage class marked as default.
+
+### Option 2: Local Path Provisioner (Alternative for Quick POC)
+
+<details>
+<summary>Click to expand local path provisioner setup</summary>
+
+Use this option for quick proof-of-concept testing when persistent storage across node restarts is not required.
 
 1. **Install Local Path Provisioner**
 
@@ -307,6 +390,24 @@ Deploy a local path provisioner for persistent storage needs.
    kubectl get storageclass
    kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
    ```
+
+> **Note**: Local path provisioner stores data directly on the node's filesystem. Data will be lost if the pod is scheduled to a different node or if the node is terminated.
+
+</details>
+
+## Task 4. Configure NVIDIA NGC API Key
+
+The Enterprise RAG Blueprint requires access to NVIDIA's container registry and model repositories. You'll need an [NGC API key](https://org.ngc.nvidia.com/setup/api-key) to proceed.
+
+1. **Set your NGC API Key**
+
+   Export your NGC API key as an environment variable:
+
+   ```bash
+   export NGC_API_KEY="<YOUR_NGC_API_KEY>"
+   ```
+
+   > **Important**: Replace `<YOUR_NGC_API_KEY>` with your actual NGC API key from the NVIDIA NGC portal.
 
 ## Task 5. Deploy Enterprise RAG Blueprint
 
