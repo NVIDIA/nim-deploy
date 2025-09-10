@@ -275,7 +275,7 @@ ingestor-server:
       YOLOX_TABLE_STRUCTURE_INFER_PROTOCOL: grpc
 
     paddleocr-nim:
-      deployed: false
+      deployed: true
       replicaCount: 1
       image:
         repository: nvcr.io/nim/baidu/paddleocr
@@ -289,7 +289,7 @@ ingestor-server:
           nvidia.com/gpu: 1
 
     nemoretriever-graphic-elements-v1:
-      deployed: false
+      deployed: true
       replicaCount: 1
       image:
         repository: nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1
@@ -313,7 +313,7 @@ ingestor-server:
           nvidia.com/gpu: 1
 
     nemoretriever-table-structure-v1:
-      deployed: false
+      deployed: true
       replicaCount: 1
       image:
         repository: nvcr.io/nim/nvidia/nemoretriever-table-structure-v1

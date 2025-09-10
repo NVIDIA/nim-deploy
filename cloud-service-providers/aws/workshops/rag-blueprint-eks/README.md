@@ -26,10 +26,12 @@
 The NVIDIA Enterprise RAG Blueprint provides a comprehensive solution for Retrieval Augmented Generation, featuring:
 
 - **Reasoning Model**: `llama-3.1-nemotron-nano-8b-v1` for intelligent query processing
-- **Report Generation Model**: `meta/llama-3.1-8b-instruct` for generating comprehensive responses
 - **NeMo Retriever Embedding**: `llama-3.2-nv-embedqa-1b-v2` for semantic search
 - **NeMo Retriever Reranking**: `llama-3.2-nv-rerankqa-1b-v2` for improved relevance
 - **Page Elements Model**: `nemoretriever-page-elements-v2` for document understanding
+- **Table Structure Model**: `nemoretriever-table-structure-v1` for table extraction and understanding
+- **Graphic Elements Model**: `nemoretriever-graphic-elements-v1` for chart and diagram processing
+- **OCR Engine**: `paddleocr-nim` for optical character recognition
 - **Vector Database**: Milvus for efficient embedding storage and retrieval
 - **Frontend**: React-based RAG Playground for user interaction
 
@@ -37,7 +39,6 @@ The NVIDIA Enterprise RAG Blueprint provides a comprehensive solution for Retrie
 
 This workshop will guide you through deploying the complete [NVIDIA Enterprise RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) on Amazon Elastic Kubernetes Service (EKS). You'll leverage the power of NVIDIA Inference Microservices (NIMs) and NeMo Retriever to build a production-ready retrieval augmented generation system optimized for enterprise workloads. For more deployment details of this blueprint, see the [Github Repository](https://github.com/NVIDIA-AI-Blueprints/rag/tree/main)
 
-We will be deploying the [text-only](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/text_only_ingest.md) ingestion portion for this Blueprint
 
 This workshop is ideal for developers, data scientists, and architects interested in:
 
@@ -91,7 +92,7 @@ The blueprint integrates with Milvus vector database, providing GPU-accelerated 
 To complete this lab, you need:
 
 - Access to a standard internet browser (Chrome browser recommended).
-- Access to an AWS Account with access to GPU instances (g5.12xlarge recommended). You will need a minimum of **7 A10G GPUs** (2 x g5.12xlarge instances) for the optimized deployment.
+- Access to an AWS Account with access to GPU instances (g5.12xlarge recommended). You will need a minimum of **8 A10G GPUs** (2 x g5.12xlarge instances) for the optimized deployment.
 - Sufficient AWS IAM permissions to create EKS clusters and manage resources.
 - An [NVIDIA NGC API Key](https://org.ngc.nvidia.com/setup/personal-keys) for accessing NVIDIA container registry and models.
 - Time to complete the lab (approximately 2-3 hours).
@@ -100,12 +101,14 @@ To complete this lab, you need:
 
 The optimized deployment requires:
 
-**Main Node Group (2 x g5.12xlarge instances = 8 total A10G GPUs, using 7):**
+**Main Node Group (2 x g5.12xlarge instances = 8 total A10G GPUs, using 8):**
 1. **Reasoning Model** (`llama-3.1-nemotron-nano-8b-v1`) → 2 A10G GPUs
-2. **Report Generation Model** (`meta/llama-3.1-8b-instruct`) → 2 A10G GPUs  
-3. **NeMo Retriever Embedding Model** (`llama-3.2-nv-embedqa-1b-v2`) → 1 A10G GPU
-4. **NeMo Retriever Reranking Model** (`llama-3.2-nv-rerankqa-1b-v2`) → 1 A10G GPU
-5. **Page Elements Model** (`nemoretriever-page-elements-v2`) → 1 A10G GPU
+2. **NeMo Retriever Embedding Model** (`llama-3.2-nv-embedqa-1b-v2`) → 1 A10G GPU
+3. **NeMo Retriever Reranking Model** (`llama-3.2-nv-rerankqa-1b-v2`) → 1 A10G GPU
+4. **Page Elements Model** (`nemoretriever-page-elements-v2`) → 1 A10G GPU
+5. **Table Structure Model** (`nemoretriever-table-structure-v1`) → 1 A10G GPU
+6. **Graphic Elements Model** (`nemoretriever-graphic-elements-v1`) → 1 A10G GPU
+7. **OCR Engine** (`paddleocr-nim`) → 1 A10G GPU
 
 ### How to start your lab and sign in to the AWS Console
 
@@ -445,7 +448,7 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
 
 3. **Monitor Deployment Progress**
 
-   The deployment will take 15-20 minutes. Please be patient and wait for all pods to reach the running state. Monitor the progress:
+   The deployment will take 10-20 minutes. Please be patient and wait for all pods to reach the running state. Monitor the progress:
 
    ```bash
    # Watch all pods in the namespace
@@ -629,9 +632,10 @@ Congratulations! You've successfully deployed the complete NVIDIA Enterprise RAG
 Consider exploring these advanced capabilities:
 
 1. **Scale the Deployment**: Increase replica counts for higher throughput
-3. **Enable Monitoring**: Deploy Prometheus and Grafana for observability
-4. **Production Hardening**: Implement LoadBalancer services and ingress controllers
-5. **Multi-modal RAG**: Enable VLM capabilities for image and document understanding
+2. **Enable Monitoring**: Deploy Prometheus and Grafana for observability
+3. **Production Hardening**: Implement LoadBalancer services and ingress controllers
+4. **Advanced Document Processing**: Test complex documents with tables, charts, and mixed content using the deployed OCR and structure extraction models
+5. **Custom Document Types**: Integrate additional document processing models for domain-specific content
 
 NVIDIA offers enterprise support for production deployments through [NVIDIA AI Enterprise](https://aws.amazon.com/marketplace/seller-profile?id=c568fe05-e33b-411c-b0ab-047218431da9) available on AWS Marketplace.
 
