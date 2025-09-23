@@ -15,7 +15,7 @@
 - [Task 6. Deploy Enterprise RAG Blueprint](#task-6-deploy-enterprise-rag-blueprint)
 - [Task 7. Access the RAG Frontend Service](#task-7-access-the-rag-frontend-service)
 - [Task 8. Test the RAG Application](#task-8-test-the-rag-application)
-- [Data Ingestion Options](#data-ingestion-options)
+- [S3 Data Ingestion](#s3-data-ingestion)
 - [Congratulations!](#congratulations)
 - [Cleanup and Uninstallation](#cleanup-and-uninstallation)
 
@@ -611,11 +611,6 @@ The RAG Blueprint includes a web-based frontend for interacting with the system.
 
    > **Note**: It may take a few minutes for the AWS Load Balancers to be provisioned and become available.
 
-   **Alternative: Local Access via Port Forwarding**
-   ```bash
-   kubectl port-forward service/rag-frontend 3000:3000 -n nv-nvidia-blueprint-rag
-   ```
-   Then navigate to `http://localhost:3000`.
 
 ## Task 8. Test the RAG Application
 
@@ -625,7 +620,6 @@ Now you'll test the complete RAG pipeline. We recommend starting with the API te
 
 Test the RAG backend APIs directly to ensure they're functioning correctly:
 
-**Option 1: Use LoadBalancer URLs (Recommended for Production)**
 ```bash
 # Get the Load Balancer URLs
 export RAG_SERVER_URL=$(kubectl get svc rag-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -635,32 +629,23 @@ echo "RAG Server: http://$RAG_SERVER_URL:8081"
 echo "Ingestor Server: http://$INGESTOR_URL:8082"
 ```
 
-**Option 2: Use Port Forwarding for Local Testing**
-```bash
-# Port forward RAG services for testing (run in separate terminals)
-kubectl port-forward service/rag-server 8081:8081 -n nv-nvidia-blueprint-rag &
-kubectl port-forward service/ingestor-server 8082:8082 -n nv-nvidia-blueprint-rag &
-```
-
 **Test the APIs:**
-
-> **Note**: The following examples use localhost URLs (Option 2). If using LoadBalancer URLs (Option 1), replace `localhost:8081` with `$RAG_SERVER_URL:8081` and `localhost:8082` with `$INGESTOR_URL:8082`.
 
 ```bash
 # 1. Test RAG server health
-curl -X GET "http://localhost:8081/v1/health" \
+curl -X GET "http://$RAG_SERVER_URL:8081/v1/health" \
   -H "accept: application/json"
 
 # 2. Test ingestor server health  
-curl -X GET "http://localhost:8082/v1/health" \
+curl -X GET "http://$INGESTOR_URL:8082/v1/health" \
   -H "accept: application/json"
 
 # 3. List existing collections
-curl -X GET "http://localhost:8082/v1/collections" \
+curl -X GET "http://$INGESTOR_URL:8082/v1/collections" \
   -H "accept: application/json"
 
 # 4. Create the default multimodal_data collection
-curl -X POST "http://localhost:8082/v1/collection" \
+curl -X POST "http://$INGESTOR_URL:8082/v1/collection" \
   -H "accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{
@@ -669,11 +654,11 @@ curl -X POST "http://localhost:8082/v1/collection" \
   }'
 
 # 5. Verify the collection was created
-curl -X GET "http://localhost:8082/v1/collections" \
+curl -X GET "http://$INGESTOR_URL:8082/v1/collections" \
   -H "accept: application/json"
 
 # 6. Test RAG generation endpoint (requires documents in collection)
-curl -X POST "http://localhost:8081/v1/generate" \
+curl -X POST "http://$RAG_SERVER_URL:8081/v1/generate" \
   -H "accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{
@@ -695,13 +680,6 @@ curl -X POST "http://localhost:8081/v1/generate" \
     "embedding_model": "nvidia/llama-3.2-nv-embedqa-1b-v2",
     "reranker_model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
   }'
-```
-
-**Stop port forwarding when done:**
-```bash
-# Stop the background port forwarding processes
-pkill -f "kubectl port-forward.*rag-server"
-pkill -f "kubectl port-forward.*ingestor-server"
 ```
 
 For detailed examples and comprehensive API documentation, refer to the [NVIDIA AI Blueprints RAG repository](https://github.com/NVIDIA-AI-Blueprints/rag) which contains the complete source code and additional usage examples.
@@ -733,20 +711,9 @@ For detailed examples and comprehensive API documentation, refer to the [NVIDIA 
 
 </details>
 
-## Data Ingestion Options
+## S3 Data Ingestion
 
-Now that your RAG system is deployed and tested, you have multiple options for ingesting documents into the vector database:
-
-### Option 1: UI-Based Document Upload (Covered Above)
-
-Use the RAG Playground interface to upload documents directly through the web UI. This is ideal for:
-- Testing and experimentation
-- Small document collections
-- Interactive document processing
-
-### Option 2: S3 Data Ingestion (Recommended for Scale)
-
-For large-scale document processing, you can ingest PDF documents directly from an S3 bucket into the vector database.
+Now that your RAG system is deployed and tested, you can ingest PDF documents directly from an S3 bucket into the vector database for large-scale document processing.
 
 **Prerequisites:** AWS CLI configured, S3 bucket with PDF files, RAG system deployed
 
@@ -833,11 +800,6 @@ For large-scale document processing, you can ingest PDF documents directly from 
    ```bash
    curl -s -X GET "http://$INGESTOR_URL/v1/documents?collection_name=$COLLECTION_NAME" -H "accept: application/json" | jq '.total_documents // 0'
    ```
-
-> **Note**: If you're using port forwarding instead of LoadBalancer, replace the INGESTOR_URL with:
-> ```bash
-> export INGESTOR_URL="localhost:8082"
-> ```
 
 ## Monitor Backend Services
 
