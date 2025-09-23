@@ -10,10 +10,12 @@
 - [Task 1. Infrastructure Deployment](#task-1-infrastructure-deployment)
 - [Task 2. Install NVIDIA GPU Operator](#task-2-install-nvidia-gpu-operator)
 - [Task 3. Deploy Storage Class](#task-3-deploy-storage-class)
-- [Task 4. Configure NVIDIA NGC API Key](#task-4-configure-nvidia-ngc-api-key)
-- [Task 5. Deploy Enterprise RAG Blueprint](#task-5-deploy-enterprise-rag-blueprint)
-- [Task 6. Access the RAG Frontend Service](#task-6-access-the-rag-frontend-service)
-- [Task 7. Test the RAG Application](#task-7-test-the-rag-application)
+- [Task 4. Install AWS Load Balancer Controller](#task-4-install-aws-load-balancer-controller)
+- [Task 5. Configure NVIDIA NGC API Key](#task-5-configure-nvidia-ngc-api-key)
+- [Task 6. Deploy Enterprise RAG Blueprint](#task-6-deploy-enterprise-rag-blueprint)
+- [Task 7. Access the RAG Frontend Service](#task-7-access-the-rag-frontend-service)
+- [Task 8. Test the RAG Application](#task-8-test-the-rag-application)
+- [Data Ingestion Options](#data-ingestion-options)
 - [Congratulations!](#congratulations)
 - [Cleanup and Uninstallation](#cleanup-and-uninstallation)
 
@@ -398,7 +400,81 @@ Use this option for quick proof-of-concept testing when persistent storage acros
 
 </details>
 
-## Task 4. Configure NVIDIA NGC API Key
+## Task 4. Install AWS Load Balancer Controller
+
+The AWS Load Balancer Controller is required for LoadBalancer services to provision AWS Network Load Balancers (NLB) and Application Load Balancers (ALB).
+
+### Install AWS Load Balancer Controller with Helm (AWS Recommended Method)
+
+Following the [official AWS documentation](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html), use Helm to install the AWS Load Balancer Controller:
+
+1. **Download and Create IAM Policy**
+
+   ```bash
+   # Download the IAM policy for AWS Load Balancer Controller
+   curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.13.3/docs/install/iam_policy.json
+   
+   # Create IAM policy
+   aws iam create-policy \
+     --policy-name AWSLoadBalancerControllerIAMPolicy \
+     --policy-document file://iam_policy.json
+   ```
+
+2. **Create IAM Service Account**
+
+   ```bash
+   # Get your AWS Account ID
+   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+   
+   # Create IAM service account with the specific policy
+   eksctl create iamserviceaccount \
+     --cluster=$CLUSTER_NAME \
+     --namespace=kube-system \
+     --name=aws-load-balancer-controller \
+     --attach-policy-arn=arn:aws:iam::${ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy \
+     --override-existing-serviceaccounts \
+     --region $REGION \
+     --approve
+   ```
+
+3. **Install via Helm**
+
+   ```bash
+   # Add the EKS chart repository
+   helm repo add eks https://aws.github.io/eks-charts
+   helm repo update eks
+   
+   # Install AWS Load Balancer Controller
+   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+     -n kube-system \
+     --set clusterName=$CLUSTER_NAME \
+     --set serviceAccount.create=false \
+     --set serviceAccount.name=aws-load-balancer-controller \
+     --set region=$REGION \
+     --set vpcId=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query "cluster.resourcesVpcConfig.vpcId" --output text) \
+     --version 1.13.0
+   ```
+
+### Verify Installation
+
+```bash
+# Check if the controller deployment is ready
+kubectl get deployment -n kube-system aws-load-balancer-controller
+
+# Check if the controller pods are running
+kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+
+# Check controller logs (optional)
+kubectl logs -n kube-system deployment/aws-load-balancer-controller
+```
+
+Expected output should show:
+```
+NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
+aws-load-balancer-controller   2/2     2            2           84s
+```
+
+## Task 5. Configure NVIDIA NGC API Key
 
 The Enterprise RAG Blueprint requires access to NVIDIA's container registry and model repositories. You'll need an [NGC API key](https://org.ngc.nvidia.com/setup/api-key) to proceed.
 
@@ -412,7 +488,7 @@ The Enterprise RAG Blueprint requires access to NVIDIA's container registry and 
 
    > **Important**: Replace `<YOUR_NGC_API_KEY>` with your actual NGC API key from the NVIDIA NGC portal.
 
-## Task 5. Deploy Enterprise RAG Blueprint
+## Task 6. Deploy Enterprise RAG Blueprint
 
 Now you'll deploy the complete Enterprise RAG Blueprint using the optimized configuration.
 
@@ -479,36 +555,69 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
    - `rag-minio` - Object storage
    - `rag-frontend` - Web interface
 
-## Task 6. Access the RAG Frontend Service
+## Task 7. Access the RAG Frontend Service
 
 The RAG Blueprint includes a web-based frontend for interacting with the system.
 
-1. **Check Frontend Service**
+1. **Configure Load Balancers for Internet Access**
+
+   Patch both services to expose them properly via AWS Load Balancers:
 
    ```bash
-   kubectl get service rag-frontend -n nv-nvidia-blueprint-rag
+   # Patch the frontend service to LoadBalancer with internet-facing access
+   kubectl patch svc rag-frontend -n nv-nvidia-blueprint-rag -p '{
+     "spec": {
+       "type": "LoadBalancer"
+     },
+     "metadata": {
+       "annotations": {
+         "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+         "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+         "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+       }
+     }
+   }'
+
+   # Patch the ingestor-server service to LoadBalancer with internet-facing access
+   kubectl patch svc ingestor-server -n nv-nvidia-blueprint-rag -p '{
+     "spec": {
+       "type": "LoadBalancer"
+     },
+     "metadata": {
+       "annotations": {
+         "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+         "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing", 
+         "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+       }
+     }
+   }'
    ```
 
-   The service is configured as a NodePort for easy access.
+2. **Get Load Balancer URLs**
 
-2. **Port Forward to Access Frontend**
+   The RAG frontend is now accessible via AWS Load Balancer. Get the Load Balancer URL:
 
    ```bash
-   kubectl port-forward service/rag-frontend 3000:3000 -n nv-nvidia-blueprint-rag
-   ```
+   # Get the RAG frontend Load Balancer URL
+   kubectl get svc rag-frontend -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
-   > **Note**: Keep this terminal open while using the application. You can open a new terminal tab for additional commands.
+   # Get the Ingestor server Load Balancer URL  
+   kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+   ```
 
 3. **Access the Frontend**
 
-   Open your web browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
+   Open your web browser and navigate to `http://<LOAD_BALANCER_URL>:3000` to access the RAG frontend.
 
-   You should see the RAG Playground interface.
+   > **Note**: It may take a few minutes for the AWS Load Balancers to be provisioned and become available.
 
-## Task 7. Test the RAG Application
+   **Alternative: Local Access via Port Forwarding**
+   ```bash
+   kubectl port-forward service/rag-frontend 3000:3000 -n nv-nvidia-blueprint-rag
+   ```
+   Then navigate to `http://localhost:3000`.
+
+## Task 8. Test the RAG Application
 
 Now you'll test the complete RAG pipeline. We recommend starting with the API testing approach as it's more reliable for validating the backend functionality.
 
@@ -516,6 +625,17 @@ Now you'll test the complete RAG pipeline. We recommend starting with the API te
 
 Test the RAG backend APIs directly to ensure they're functioning correctly:
 
+**Option 1: Use LoadBalancer URLs (Recommended for Production)**
+```bash
+# Get the Load Balancer URLs
+export RAG_SERVER_URL=$(kubectl get svc rag-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+echo "RAG Server: http://$RAG_SERVER_URL:8081"
+echo "Ingestor Server: http://$INGESTOR_URL:8082"
+```
+
+**Option 2: Use Port Forwarding for Local Testing**
 ```bash
 # Port forward RAG services for testing (run in separate terminals)
 kubectl port-forward service/rag-server 8081:8081 -n nv-nvidia-blueprint-rag &
@@ -523,6 +643,8 @@ kubectl port-forward service/ingestor-server 8082:8082 -n nv-nvidia-blueprint-ra
 ```
 
 **Test the APIs:**
+
+> **Note**: The following examples use localhost URLs (Option 2). If using LoadBalancer URLs (Option 1), replace `localhost:8081` with `$RAG_SERVER_URL:8081` and `localhost:8082` with `$INGESTOR_URL:8082`.
 
 ```bash
 # 1. Test RAG server health
@@ -610,6 +732,23 @@ For detailed examples and comprehensive API documentation, refer to the [NVIDIA 
    Switch back to the RAG UI and test the RAG capabilities.
 
 </details>
+
+## Data Ingestion Options
+
+Now that your RAG system is deployed and tested, you have multiple options for ingesting documents into the vector database:
+
+### Option 1: UI-Based Document Upload (Covered Above)
+
+Use the RAG Playground interface to upload documents directly through the web UI. This is ideal for:
+- Testing and experimentation
+- Small document collections
+- Interactive document processing
+
+### Option 2: S3 Data Ingestion (Recommended for Production)
+
+For production deployments and large-scale document processing, you can ingest Multi-modal PDF documents directly from S3 into the vector database.
+
+For complete setup instructions and usage, see the dedicated **[S3 Data Ingestion Guide](s3_data_ingestion/README.md)**.
 
 ## Monitor Backend Services
 
