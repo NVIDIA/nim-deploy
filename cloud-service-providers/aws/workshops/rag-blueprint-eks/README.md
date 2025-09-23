@@ -39,12 +39,12 @@ The NVIDIA Enterprise RAG Blueprint provides a comprehensive solution for Retrie
 
 ## Introduction
 
-This workshop will guide you through deploying the complete [NVIDIA Enterprise RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) on Amazon Elastic Kubernetes Service (EKS). You'll leverage the power of NVIDIA Inference Microservices (NIMs) and NeMo Retriever to build a production-ready retrieval augmented generation system optimized for enterprise workloads. For more deployment details of this blueprint, see the [Github Repository](https://github.com/NVIDIA-AI-Blueprints/rag/tree/main)
+This workshop will guide you through deploying the complete [NVIDIA Enterprise RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) on Amazon Elastic Kubernetes Service (EKS). You'll leverage the power of NVIDIA Inference Microservices (NIMs) and NeMo Retriever to build a comprehensive retrieval augmented generation system optimized for enterprise workloads. For more deployment details of this blueprint, see the [Github Repository](https://github.com/NVIDIA-AI-Blueprints/rag/tree/main)
 
 
 This workshop is ideal for developers, data scientists, and architects interested in:
 
-- **Building enterprise-grade RAG applications**: Learn how to deploy a complete, production-ready RAG pipeline using NVIDIA's enterprise blueprint.
+- **Building enterprise-grade RAG applications**: Learn how to deploy a complete RAG pipeline using NVIDIA's enterprise blueprint.
 - **Optimizing GPU utilization**: Explore how to efficiently deploy multiple AI models across GPU resources for maximum performance.
 - **Leveraging advanced retrieval**: Understand how to implement sophisticated embedding and reranking models for improved accuracy.
 - **Scaling AI workloads**: Learn to manage and scale complex AI deployments using Kubernetes orchestration.
@@ -56,13 +56,13 @@ By the end of this workshop, you will have hands-on experience with:
 1. **Deploying the Enterprise RAG Blueprint on EKS**: Learn to deploy a complete enterprise-grade RAG solution including multiple NIM models, vector databases, and frontend services onto your EKS cluster.
 2. **Managing GPU resources efficiently**: Understand how to optimize GPU allocation across multiple AI models for cost-effective deployment.
 3. **Integrating advanced retrieval components**: Gain familiarity with NeMo Retriever's embedding and reranking capabilities for superior document understanding.
-4. **Operating production RAG systems**: Explore techniques for monitoring, scaling, and maintaining enterprise RAG deployments using Kubernetes best practices.
+4. **Operating enterprise RAG systems**: Explore techniques for monitoring, scaling, and maintaining enterprise RAG deployments using Kubernetes best practices.
 
 ## Learn the Components
 
 ### NVIDIA Enterprise RAG Blueprint
 
-The [NVIDIA Enterprise RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) is a comprehensive, production-ready solution that combines multiple NVIDIA AI microservices to deliver enterprise-grade retrieval augmented generation capabilities. It includes optimized models for reasoning, embedding, reranking, and document processing.
+The [NVIDIA Enterprise RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) is a comprehensive solution that combines multiple NVIDIA AI microservices to deliver enterprise-grade retrieval augmented generation capabilities. It includes optimized models for reasoning, embedding, reranking, and document processing.
 
 ### GPUs in Amazon Elastic Kubernetes Service (EKS)
 
@@ -70,7 +70,7 @@ GPUs accelerate AI workloads running on your nodes, particularly machine learnin
 
 ### NVIDIA NIMs (NVIDIA Inference Microservices)
 
-[NVIDIA NIMs](https://www.nvidia.com/en-us/ai/) are containerized AI inference microservices that provide easy-to-deploy, scalable, and secure AI model serving. NIMs include optimized runtimes, pre-built containers, and enterprise support for production deployments.
+[NVIDIA NIMs](https://www.nvidia.com/en-us/ai/) are containerized AI inference microservices that provide easy-to-deploy, scalable, and secure AI model serving. NIMs include optimized runtimes, pre-built containers, and enterprise support.
 
 ### NVIDIA NeMo Retriever
 
@@ -284,11 +284,11 @@ The GPU Operator manages the lifecycle of NVIDIA software components needed for 
 
 ## Task 3. Deploy Storage Class
 
-Choose between AWS EBS CSI driver (recommended for production) or local path provisioner (for quick POC testing).
+Choose between AWS EBS CSI driver (recommended) or local path provisioner (for quick POC testing).
 
 ### Option 1: AWS EBS CSI Driver (Recommended)
 
-The AWS EBS CSI driver provides persistent, high-performance storage suitable for production workloads.
+The AWS EBS CSI driver provides persistent, high-performance storage suitable for enterprise workloads.
 
 1. **Associate IAM OIDC Provider with Cluster**
 
@@ -744,11 +744,100 @@ Use the RAG Playground interface to upload documents directly through the web UI
 - Small document collections
 - Interactive document processing
 
-### Option 2: S3 Data Ingestion (Recommended for Production)
+### Option 2: S3 Data Ingestion (Recommended for Scale)
 
-For production deployments and large-scale document processing, you can ingest Multi-modal PDF documents directly from S3 into the vector database.
+For large-scale document processing, you can ingest PDF documents directly from an S3 bucket into the vector database.
 
-For complete setup instructions and usage, see the dedicated **[S3 Data Ingestion Guide](s3_data_ingestion/README.md)**.
+**Prerequisites:** AWS CLI configured, S3 bucket with PDF files, RAG system deployed
+
+1. **Set Environment Variables**
+
+   ```bash
+   # Set your S3 bucket and prefix
+   export S3_BUCKET_NAME="your-pdf-bucket-name"          # Replace with your S3 bucket name
+   export S3_PREFIX=""                     # Optional: S3 prefix/folder (e.g., "documents/", "reports/2024/", or "" for root)
+   export COLLECTION_NAME="multimodal_data"              # Collection name for ingestion
+
+   # Get the ingestor server endpoint
+   export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):8082
+
+   echo "Using Ingestor URL: http://$INGESTOR_URL"
+   echo "S3 Bucket: $S3_BUCKET_NAME"
+   echo "S3 Prefix: $S3_PREFIX"
+   ```
+
+2. **Check Ingestor Server Health**
+
+   ```bash
+   curl -s -X GET "http://$INGESTOR_URL/v1/health" -H "accept: application/json" | jq .
+   ```
+
+3. **Create Collection**
+
+   ```bash
+   curl -s -X POST "http://$INGESTOR_URL/v1/collection" \
+     -H "accept: application/json" \
+     -H "Content-Type: application/json" \
+     -d "{
+       \"collection_name\": \"$COLLECTION_NAME\",
+       \"embedding_dimension\": 2048
+     }" | jq .
+   ```
+
+4. **List Collections to Verify**
+
+   ```bash
+   curl -s -X GET "http://$INGESTOR_URL/v1/collections" -H "accept: application/json" | jq .
+   ```
+
+5. **Download and Ingest All PDFs from S3**
+
+   ```bash
+   # Create temporary directory
+   mkdir -p /tmp/s3_ingestion
+
+   # Process each PDF in the S3 path (bucket + prefix)
+   aws s3api list-objects-v2 --bucket $S3_BUCKET_NAME --prefix "$S3_PREFIX" --query 'Contents[?ends_with(Key, `.pdf`)].[Key]' --output text | while read -r s3_key; do
+       if [ -n "$s3_key" ]; then
+           filename=$(basename "$s3_key")
+           local_path="/tmp/s3_ingestion/$filename"
+           
+           echo "Processing: $s3_key"
+           
+           aws s3 cp "s3://$S3_BUCKET_NAME/$s3_key" "$local_path"
+           
+           if [ -f "$local_path" ]; then
+               response=$(curl -s -X POST "http://$INGESTOR_URL/v1/documents" \
+                 -F "documents=@$local_path;type=application/pdf" \
+                 -F "data={\"collection_name\":\"$COLLECTION_NAME\",\"blocking\":false,\"split_options\":{\"chunk_size\":512,\"chunk_overlap\":150},\"generate_summary\":false};type=application/json")
+               
+               task_id=$(echo "$response" | jq -r '.task_id // empty')
+               
+               if [ -n "$task_id" ]; then
+                   echo "✅ Upload successful for $filename (Task ID: $task_id)"
+               else
+                   echo "❌ Upload failed for $filename"
+               fi
+               
+               rm -f "$local_path"
+           fi
+       fi
+   done
+
+   # Clean up
+   rm -rf /tmp/s3_ingestion
+   ```
+
+6. **Verify Collection Has Documents**
+
+   ```bash
+   curl -s -X GET "http://$INGESTOR_URL/v1/documents?collection_name=$COLLECTION_NAME" -H "accept: application/json" | jq '.total_documents // 0'
+   ```
+
+> **Note**: If you're using port forwarding instead of LoadBalancer, replace the INGESTOR_URL with:
+> ```bash
+> export INGESTOR_URL="localhost:8082"
+> ```
 
 ## Monitor Backend Services
 
@@ -772,11 +861,11 @@ Consider exploring these advanced capabilities:
 
 1. **Scale the Deployment**: Increase replica counts for higher throughput
 2. **Enable Monitoring**: Deploy Prometheus and Grafana for observability
-3. **Production Hardening**: Implement LoadBalancer services and ingress controllers
+3. **Enterprise Hardening**: Implement LoadBalancer services and ingress controllers
 4. **Advanced Document Processing**: Test complex documents with tables, charts, and mixed content using the deployed OCR and structure extraction models
 5. **Custom Document Types**: Integrate additional document processing models for domain-specific content
 
-NVIDIA offers enterprise support for production deployments through [NVIDIA AI Enterprise](https://aws.amazon.com/marketplace/seller-profile?id=c568fe05-e33b-411c-b0ab-047218431da9) available on AWS Marketplace.
+NVIDIA offers enterprise support through [NVIDIA AI Enterprise](https://aws.amazon.com/marketplace/seller-profile?id=c568fe05-e33b-411c-b0ab-047218431da9) available on AWS Marketplace.
 
 ## Cleanup and Uninstallation
 
