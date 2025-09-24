@@ -225,8 +225,7 @@ It takes a few moments to provision and connect to the environment.
      --node-volume-size "${NODE_VOLUME_SIZE}" \
      --nodes "${MAIN_NODES}" \
      --node-labels role=gpu-main \
-     --ami-type AL2_x86_64_GPU \
-     --kubernetes-version 1.32
+     --node-ami-family AmazonLinux2
    ```
 
    > **Note**: We explicitly specify `AL2_x86_64_GPU` AMI type and Kubernetes version 1.32 to ensure compatibility with the NVIDIA Container Toolkit version used by the GPU Operator.
