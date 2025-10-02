@@ -13,12 +13,14 @@ There are various ways to deploy NVIDIA NIMs on AWS SageMaker:
 This option is for users who want to deploy NIMs procured directly from the AWS Marketplace.
 
 - [Launch NIMs from AWS Marketplace on SageMaker](aws_marketplace_notebooks)
-    - [Llama 3.1 Nemotron Nano 8B NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-nemotron-nano-8b-v1_aws_marketplace.ipynb)
-    - [Llama 3.3 Nemotron Super 49B NIM Notebook](aws_marketplace_notebooks/nim_nim_llama3.3-nemotron-super-49b-v1_aws_marketplace.ipynb)
+    - [Llama 3.1 8B NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-8b_aws_marketplace.ipynb)
+    - [Llama 3.1 70B NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-70b_aws_marketplace.ipynb)
+    - [Llama 3.1 Nemotron Nano 8B v1 NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-nemotron-nano-8b-v1_aws_marketplace.ipynb)
+    - [Llama 3.1 Nemotron Ultra 253B NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-nemotron-ultra-253b-v1_aws_marketplace.ipynb)
     - [Llama 3.2 NV EmbedQA NIM Notebook](aws_marketplace_notebooks/nim_llama3.2-nv-embedqa-1b-v2_aws_marketplace.ipynb)
     - [Llama 3.2 NV RerankQA NIM Notebook](aws_marketplace_notebooks/nim_llama3.2-nv-rerankqa-1b-v2_aws_marketplace.ipynb)
-    - [LLaMa 3.1 8B NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-8b_aws_marketplace.ipynb)
-    - [LLaMa 3.1 70B NIM Notebook](aws_marketplace_notebooks/nim_llama3.1-70b_aws_marketplace.ipynb)
+    - [Llama 3.3 Nemotron Super 49B v1 NIM Notebook](aws_marketplace_notebooks/nim_llama3.3-nemotron-super-49b-v1_aws_marketplace.ipynb)
+    - [Llama 3.3 Nemotron Super 49B v1.5 NIM Notebook](aws_marketplace_notebooks/nim_llama3.3-nemotron-super-49b-v1-5_aws_marketplace.ipynb)
     - [Mixtral 8x7B NIM Notebook](aws_marketplace_notebooks/nim_mixtral_aws_marketplace.ipynb)
     - [Nemotron4-15B Notebook](aws_marketplace_notebooks/nim_nemotron15B_aws_marketplace.ipynb)
 
@@ -27,9 +29,12 @@ This option is for users who want to deploy NIMs procured directly from the AWS 
 This option is for users who have purchased an NVIDIA AI Enterprise license and have an NGC API key. It allows you to download NIMs artifacts directly from NVIDIA NGC and deploy them on SageMaker.
 
 - [Deploy NIMs from NGC on SageMaker](deployment_notebooks)
+    - [Llama 3 70B and 8B Instruct Notebook](deployment_notebooks/nim_llama3.ipynb)
+    - [Llama 3.1 Nemotron Nano 8B v1 NIM Notebook](deployment_notebooks/nim_llama3.1-nemotron-nano-8b-v1.ipynb)
     - [Llama 3.2 NV EmbedQA NIM Notebook](deployment_notebooks/nim_llama3.2-nv-embedqa-1b-v2.ipynb)
     - [Llama 3.2 NV RerankQA NIM Notebook](deployment_notebooks/nim_llama3.2-nv-rerankqa-1b-v2.ipynb)
-    - [Llama 3 70B and 8B Instruct Notebook](deployment_notebooks/nim_llama3.ipynb)
+    - [Llama 3.3 Nemotron Super 49B v1 NIM Notebook](deployment_notebooks/nim_llama3.3-nemotron-super-49b-v1.ipynb)
+    - [Llama 3.3 Nemotron Super 49B v1.5 NIM Notebook](deployment_notebooks/nim_llama3.3-nemotron-super-49b-v1.5.ipynb)
 
 ### 3. Direct Deployment from Amazon S3
 
