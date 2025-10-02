@@ -23,6 +23,7 @@ This option is for users who want to deploy NIMs procured directly from the AWS 
     - [Llama 3.3 Nemotron Super 49B v1.5 NIM Notebook](aws_marketplace_notebooks/nim_llama3.3-nemotron-super-49b-v1-5_aws_marketplace.ipynb)
     - [Mixtral 8x7B NIM Notebook](aws_marketplace_notebooks/nim_mixtral_aws_marketplace.ipynb)
     - [Nemotron4-15B Notebook](aws_marketplace_notebooks/nim_nemotron15B_aws_marketplace.ipynb)
+    - [NVIDIA Nemotron Nano 9B v2 NIM Notebook](aws_marketplace_notebooks/nim_nvidia-nemotron-nano-9b-v2_aws_marketplace.ipynb)
 
 ### 2. Direct Deployment from NVIDIA GPU Cloud (NGC)
 
@@ -30,11 +31,13 @@ This option is for users who have purchased an NVIDIA AI Enterprise license and 
 
 - [Deploy NIMs from NGC on SageMaker](deployment_notebooks)
     - [Llama 3 70B and 8B Instruct Notebook](deployment_notebooks/nim_llama3.ipynb)
+    - [Llama 3.1 Nemotron Nano 4B v1.1 NIM Notebook](deployment_notebooks/nim_llama3.1-nemotron-nano-4b-v1.1.ipynb)
     - [Llama 3.1 Nemotron Nano 8B v1 NIM Notebook](deployment_notebooks/nim_llama3.1-nemotron-nano-8b-v1.ipynb)
     - [Llama 3.2 NV EmbedQA NIM Notebook](deployment_notebooks/nim_llama3.2-nv-embedqa-1b-v2.ipynb)
     - [Llama 3.2 NV RerankQA NIM Notebook](deployment_notebooks/nim_llama3.2-nv-rerankqa-1b-v2.ipynb)
     - [Llama 3.3 Nemotron Super 49B v1 NIM Notebook](deployment_notebooks/nim_llama3.3-nemotron-super-49b-v1.ipynb)
     - [Llama 3.3 Nemotron Super 49B v1.5 NIM Notebook](deployment_notebooks/nim_llama3.3-nemotron-super-49b-v1.5.ipynb)
+    - [NVIDIA Nemotron Nano 9B v2 NIM Notebook](deployment_notebooks/nim_nvidia-nemotron-nano-9b-v2.ipynb)
 
 ### 3. Direct Deployment from Amazon S3
 
