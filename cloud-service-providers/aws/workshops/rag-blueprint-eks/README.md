@@ -13,9 +13,11 @@
 - [Task 4. Install AWS Load Balancer Controller](#task-4-install-aws-load-balancer-controller)
 - [Task 5. Configure NVIDIA NGC API Key](#task-5-configure-nvidia-ngc-api-key)
 - [Task 6. Deploy Enterprise RAG Blueprint](#task-6-deploy-enterprise-rag-blueprint)
-- [Task 7. Access the RAG Frontend Service](#task-7-access-the-rag-frontend-service)
-- [Task 8. Test the RAG Application](#task-8-test-the-rag-application)
-- [S3 Data Ingestion](#s3-data-ingestion)
+- [Task 7. Access the RAG App Services](#task-7-access-the-rag-app-services)
+- [Task 8. Test the RAG Application via UI](#task-8-test-the-rag-application-via-ui)
+- [Task 9. Test the RAG Application via API](#task-9-test-the-rag-application-via-api)
+- [S3 Data Ingestion (Optional)](#s3-data-ingestion-optional)
+- [Monitor Backend Services](#monitor-backend-services)
 - [Congratulations!](#congratulations)
 - [Cleanup and Uninstallation](#cleanup-and-uninstallation)
 
@@ -512,7 +514,7 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
 
    ```bash
    helm upgrade --install rag -n nv-nvidia-blueprint-rag \
-     https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.2.0.tgz \
+     https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz  \
      --username '$oauthtoken' \
      --password "${NGC_API_KEY}" \
      --set imagePullSecret.password=$NGC_API_KEY \
@@ -523,7 +525,7 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
 
 3. **Monitor Deployment Progress**
 
-   The deployment will take 10-20 minutes. Please be patient and wait for all pods to reach the running state. Monitor the progress:
+   The deployment will take 10-15 minutes. Please be patient and wait for all pods to reach the running state. Monitor the progress:
 
    ```bash
    # Watch all pods in the namespace
@@ -547,23 +549,23 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
    - `ingestor-server` - Document processing service
    - `nim-llm` - Language model inference
    - `nemoretriever-embedding-ms` - Embedding model
-   - `nemoretriever-reranking-ms` - Reranking model
+   - `nemoretriever-ranking-ms` - Reranking model
    - `nemoretriever-page-elements-v2` - Document parsing
    - `milvus` - Vector database
    - `rag-redis` - Caching and task management
    - `rag-minio` - Object storage
    - `rag-frontend` - Web interface
 
-## Task 7. Access the RAG Frontend Service
+## Task 7. Access the RAG App Services
 
-The RAG Blueprint includes a web-based frontend for interacting with the system.
 
 1. **Configure Load Balancers for Internet Access**
 
-   Patch both services to expose them properly via AWS Load Balancers:
+   Patch all three services to expose them properly via AWS Load Balancers.
+
+   **Patch the frontend service:**
 
    ```bash
-   # Patch the frontend service to LoadBalancer with internet-facing access
    kubectl patch svc rag-frontend -n nv-nvidia-blueprint-rag -p '{
      "spec": {
        "type": "LoadBalancer"
@@ -576,8 +578,28 @@ The RAG Blueprint includes a web-based frontend for interacting with the system.
        }
      }
    }'
+   ```
 
-   # Patch the ingestor-server service to LoadBalancer with internet-facing access
+   **Patch the rag-server service:**
+
+   ```bash
+   kubectl patch svc rag-server -n nv-nvidia-blueprint-rag -p '{
+     "spec": {
+       "type": "LoadBalancer"
+     },
+     "metadata": {
+       "annotations": {
+         "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+         "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+         "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+       }
+     }
+   }'
+   ```
+
+   **Patch the ingestor-server service:**
+
+   ```bash
    kubectl patch svc ingestor-server -n nv-nvidia-blueprint-rag -p '{
      "spec": {
        "type": "LoadBalancer"
@@ -594,101 +616,33 @@ The RAG Blueprint includes a web-based frontend for interacting with the system.
 
 2. **Get Load Balancer URLs**
 
-   The RAG frontend is now accessible via AWS Load Balancer. Get the Load Balancer URL:
+   All services are now accessible via AWS Load Balancers. Retrieve the Load Balancer URLs:
 
    ```bash
-   # Get the RAG frontend Load Balancer URL
-   kubectl get svc rag-frontend -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+   # Export the Load Balancer URLs as environment variables
+   export FRONTEND_URL=$(kubectl get svc rag-frontend -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+   export RAG_SERVER_URL=$(kubectl get svc rag-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+   export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 
-   # Get the Ingestor server Load Balancer URL  
-   kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+   # Display the URLs
+   echo "RAG Frontend: http://$FRONTEND_URL:3000"
+   echo "RAG Server: http://$RAG_SERVER_URL:8081"
+   echo "Ingestor Server: http://$INGESTOR_URL:8082"
    ```
 
-3. **Access the Frontend**
+   > **Note**: It takes a few minutes for the AWS Load Balancers to be provisioned and become available.
 
-   Open your web browser and navigate to `http://<LOAD_BALANCER_URL>:3000` to access the RAG frontend.
+## Task 8. Test the RAG Application via UI
 
-   > **Note**: It may take a few minutes for the AWS Load Balancers to be provisioned and become available.
+Now you'll test the RAG application using the web-based frontend interface.
 
+1. **Access the RAG Playground**
 
-## Task 8. Test the RAG Application
-
-Now you'll test the complete RAG pipeline. We recommend starting with the API testing approach as it's more reliable for validating the backend functionality.
-
-### Method 1: API Testing (Recommended)
-
-Test the RAG backend APIs directly to ensure they're functioning correctly:
-
-```bash
-# Get the Load Balancer URLs
-export RAG_SERVER_URL=$(kubectl get svc rag-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-
-echo "RAG Server: http://$RAG_SERVER_URL:8081"
-echo "Ingestor Server: http://$INGESTOR_URL:8082"
-```
-
-**Test the APIs:**
-
-```bash
-# 1. Test RAG server health
-curl -X GET "http://$RAG_SERVER_URL:8081/v1/health" \
-  -H "accept: application/json"
-
-# 2. Test ingestor server health  
-curl -X GET "http://$INGESTOR_URL:8082/v1/health" \
-  -H "accept: application/json"
-
-# 3. List existing collections
-curl -X GET "http://$INGESTOR_URL:8082/v1/collections" \
-  -H "accept: application/json"
-
-# 4. Create the default multimodal_data collection
-curl -X POST "http://$INGESTOR_URL:8082/v1/collection" \
-  -H "accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "collection_name": "multimodal_data",
-    "configuration": {}
-  }'
-
-# 5. Verify the collection was created
-curl -X GET "http://$INGESTOR_URL:8082/v1/collections" \
-  -H "accept: application/json"
-
-# 6. Test RAG generation endpoint (requires documents in collection)
-curl -X POST "http://$RAG_SERVER_URL:8081/v1/generate" \
-  -H "accept: application/json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [
-      {
-        "role": "user", 
-        "content": "What is the main topic or subject discussed in the documents?"
-      }
-    ],
-    "collection_names": ["multimodal_data"],
-    "temperature": 0.5,
-    "top_p": 0.9,
-    "reranker_top_k": 10,
-    "vdb_top_k": 100,
-    "use_knowledge_base": true,
-    "enable_citations": true,
-    "enable_guardrails": false,
-    "model": "nvidia/llama-3.1-nemotron-nano-8b-v1",
-    "embedding_model": "nvidia/llama-3.2-nv-embedqa-1b-v2",
-    "reranker_model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
-  }'
-```
-
-For detailed examples and comprehensive API documentation, refer to the [NVIDIA AI Blueprints RAG repository](https://github.com/NVIDIA-AI-Blueprints/rag) which contains the complete source code and additional usage examples.
-
-### Method 2: UI Testing (Optional)
-
-<details>
-<summary>Click to expand UI testing steps</summary>
-
-1. **Explore the RAG Playground Interface**
+   Open your web browser and navigate to the frontend URL:
+   
+   ```
+   http://<FRONTEND_URL>:3000
+   ```
 
    You should see the RAG Playground home page with the main interface:
 
@@ -706,99 +660,171 @@ For detailed examples and comprehensive API documentation, refer to the [NVIDIA 
 
 3. **Ask Questions**
 
-   Switch back to the RAG UI and test the RAG capabilities.
+   Switch back to the **Chat** tab and start asking questions about your uploaded documents. The RAG system will retrieve relevant context and generate informed responses.
 
-</details>
+## Task 9. Test the RAG Application via API
 
-## S3 Data Ingestion
+You can also interact with the RAG system programmatically using the REST APIs. This is useful for integration with other applications or automated testing.
 
-Now that your RAG system is deployed and tested, you can ingest PDF documents directly from an S3 bucket into the vector database for large-scale document processing.
+1. **Verify Service Health**
 
-**Prerequisites:** AWS CLI configured, S3 bucket with PDF files, RAG system deployed
+   Test that all services are responding correctly:
+
+   ```bash
+   # Test RAG server health
+   curl -X GET "http://$RAG_SERVER_URL:8081/v1/health" \
+     -H "accept: application/json"
+
+   # Test ingestor server health  
+   curl -X GET "http://$INGESTOR_URL:8082/v1/health" \
+     -H "accept: application/json"
+   ```
+
+2. **Manage Collections**
+
+   Create and manage vector database collections:
+
+   ```bash
+   # List existing collections
+   curl -X GET "http://$INGESTOR_URL:8082/v1/collections" \
+     -H "accept: application/json"
+
+   # Create a new collection
+   curl -X POST "http://$INGESTOR_URL:8082/v1/collection" \
+     -H "accept: application/json" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "collection_name": "multimodal_data",
+       "configuration": {}
+     }'
+
+   # Verify the collection was created
+   curl -X GET "http://$INGESTOR_URL:8082/v1/collections" \
+     -H "accept: application/json"
+   ```
+
+3. **Test RAG Generation**
+
+   Query the RAG system with a question (requires documents in the collection):
+
+   ```bash
+   curl -X POST "http://$RAG_SERVER_URL:8081/v1/generate" \
+     -H "accept: application/json" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "messages": [
+         {
+           "role": "user", 
+           "content": "What is the main topic or subject discussed in the documents?"
+         }
+       ],
+       "collection_names": ["multimodal_data"],
+       "temperature": 0.5,
+       "top_p": 0.9,
+       "reranker_top_k": 10,
+       "vdb_top_k": 100,
+       "use_knowledge_base": true,
+       "enable_citations": true,
+       "enable_guardrails": false,
+       "model": "nvidia/llama-3.1-nemotron-nano-8b-v1",
+       "embedding_model": "nvidia/llama-3.2-nv-embedqa-1b-v2",
+       "reranker_model": "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+     }'
+   ```
+
+For detailed examples and comprehensive API documentation, refer to the [NVIDIA AI Blueprints RAG repository](https://github.com/NVIDIA-AI-Blueprints/rag) which contains the complete source code and additional usage examples.
+
+## S3 Data Ingestion (Optional)
+
+<details>
+<summary>Click to expand S3 data ingestion instructions</summary>
+
+For large-scale document processing, you can ingest documents directly from an S3 bucket and use the RAG Blueprint's batch ingestion script.
+
+**Prerequisites:** AWS CLI configured, S3 bucket with documents (PDF, DOCX, TXT), RAG system deployed, Python 3 installed
 
 1. **Set Environment Variables**
 
    ```bash
    # Set your S3 bucket and prefix
    export S3_BUCKET_NAME="your-pdf-bucket-name"          # Replace with your S3 bucket name
-   export S3_PREFIX=""                     # Optional: S3 prefix/folder (e.g., "documents/", "reports/2024/", or "" for root)
-   export COLLECTION_NAME="multimodal_data"              # Collection name for ingestion
+   export S3_PREFIX=""                                   # Optional: S3 prefix/folder (e.g., "documents/", or "" for root)
+   export RAG_COLLECTION_NAME="multimodal_data"          # Collection name for ingestion
+   export LOCAL_DATA_DIR="/tmp/s3_ingestion"             # Local temporary directory
+   export UPLOAD_BATCH_SIZE="100"                        # Number of files to upload per batch
 
-   # Get the ingestor server endpoint
-   export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):8082
+   # Get the ingestor server endpoint (hostname only, without port)
+   export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+   export INGESTOR_PORT="8082"
 
-   echo "Using Ingestor URL: http://$INGESTOR_URL"
-   echo "S3 Bucket: $S3_BUCKET_NAME"
-   echo "S3 Prefix: $S3_PREFIX"
+   echo "S3 Bucket: s3://$S3_BUCKET_NAME/$S3_PREFIX"
+   echo "Ingestor URL: http://$INGESTOR_URL:$INGESTOR_PORT"
+   echo "Collection: $RAG_COLLECTION_NAME"
    ```
 
-2. **Check Ingestor Server Health**
+2. **Download Documents from S3**
 
    ```bash
-   curl -s -X GET "http://$INGESTOR_URL/v1/health" -H "accept: application/json" | jq .
+   # Create local directory and sync documents from S3
+   mkdir -p "$LOCAL_DATA_DIR"
+   aws s3 sync "s3://$S3_BUCKET_NAME/$S3_PREFIX" "$LOCAL_DATA_DIR" \
+     --exclude "*" --include "*.pdf" --include "*.docx" --include "*.txt"
+
+   echo "Downloaded $(find $LOCAL_DATA_DIR -type f | wc -l) files"
    ```
 
-3. **Create Collection**
+3. **Set Up Python Virtual Environment**
 
    ```bash
-   curl -s -X POST "http://$INGESTOR_URL/v1/collection" \
-     -H "accept: application/json" \
-     -H "Content-Type: application/json" \
-     -d "{
-       \"collection_name\": \"$COLLECTION_NAME\",
-       \"embedding_dimension\": 2048
-     }" | jq .
+   # Create and activate virtual environment
+   python3 -m venv rag_venv
+   source rag_venv/bin/activate
    ```
 
-4. **List Collections to Verify**
+4. **Download and Run Batch Ingestion Script**
 
    ```bash
-   curl -s -X GET "http://$INGESTOR_URL/v1/collections" -H "accept: application/json" | jq .
+   # Download the batch ingestion script and requirements
+   curl -o batch_ingestion.py https://raw.githubusercontent.com/NVIDIA-AI-Blueprints/rag/v2.3.0/scripts/batch_ingestion.py
+   curl -o requirements.txt https://raw.githubusercontent.com/NVIDIA-AI-Blueprints/rag/v2.3.0/scripts/requirements.txt
+
+   # Install required dependencies in virtual environment
+   pip install -q -r requirements.txt
+
+   # Run batch ingestion
+   python3 batch_ingestion.py \
+     --folder "$LOCAL_DATA_DIR" \
+     --collection-name "$RAG_COLLECTION_NAME" \
+     --create_collection \
+     --ingestor-host "$INGESTOR_URL" \
+     --ingestor-port "$INGESTOR_PORT" \
+     --upload-batch-size "$UPLOAD_BATCH_SIZE" \
+     -v
+
+   # Deactivate virtual environment
+   deactivate
    ```
 
-5. **Download and Ingest All PDFs from S3**
+5. **Clean Up**
 
    ```bash
-   # Create temporary directory
-   mkdir -p /tmp/s3_ingestion
-
-   # Process each PDF in the S3 path (bucket + prefix)
-   aws s3api list-objects-v2 --bucket $S3_BUCKET_NAME --prefix "$S3_PREFIX" --query 'Contents[?ends_with(Key, `.pdf`)].[Key]' --output text | while read -r s3_key; do
-       if [ -n "$s3_key" ]; then
-           filename=$(basename "$s3_key")
-           local_path="/tmp/s3_ingestion/$filename"
-           
-           echo "Processing: $s3_key"
-           
-           aws s3 cp "s3://$S3_BUCKET_NAME/$s3_key" "$local_path"
-           
-           if [ -f "$local_path" ]; then
-               response=$(curl -s -X POST "http://$INGESTOR_URL/v1/documents" \
-                 -F "documents=@$local_path;type=application/pdf" \
-                 -F "data={\"collection_name\":\"$COLLECTION_NAME\",\"blocking\":false,\"split_options\":{\"chunk_size\":512,\"chunk_overlap\":150},\"generate_summary\":false};type=application/json")
-               
-               task_id=$(echo "$response" | jq -r '.task_id // empty')
-               
-               if [ -n "$task_id" ]; then
-                   echo "✅ Upload successful for $filename (Task ID: $task_id)"
-               else
-                   echo "❌ Upload failed for $filename"
-               fi
-               
-               rm -f "$local_path"
-           fi
-       fi
-   done
-
-   # Clean up
-   rm -rf /tmp/s3_ingestion
+   # Remove temporary files and virtual environment
+   rm -rf "$LOCAL_DATA_DIR"
+   rm -rf rag_venv
+   rm -f batch_ingestion.py requirements.txt
    ```
 
-6. **Verify Collection Has Documents**
+6. **Verify Ingestion**
 
    ```bash
-   curl -s -X GET "http://$INGESTOR_URL/v1/documents?collection_name=$COLLECTION_NAME" -H "accept: application/json" | jq '.total_documents // 0'
+   # Check the number of documents in the collection
+   curl -s -X GET "http://$INGESTOR_URL:$INGESTOR_PORT/v1/documents?collection_name=$RAG_COLLECTION_NAME" \
+     -H "accept: application/json" | jq '.total_documents // 0'
    ```
+
+For more information about the batch ingestion script, see the [NVIDIA AI Blueprints RAG repository](https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/scripts/batch_ingestion.py).
+
+</details>
 
 ## Monitor Backend Services
 
