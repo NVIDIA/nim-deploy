@@ -13,6 +13,8 @@
 - [Task 4. Install AWS Load Balancer Controller](#task-4-install-aws-load-balancer-controller)
 - [Task 5. Configure NVIDIA NGC API Key](#task-5-configure-nvidia-ngc-api-key)
 - [Task 6. Deploy Enterprise RAG Blueprint](#task-6-deploy-enterprise-rag-blueprint)
+  - [Option 1: Default Deployment with Milvus](#option-1-default-deployment-with-milvus-recommended-for-quick-start)
+  - [Option 2: Deployment with Amazon OpenSearch Serverless](opensearch/README.md)
 - [Task 7. Access the RAG App Services](#task-7-access-the-rag-app-services)
 - [Task 8. Test the RAG Application via UI](#task-8-test-the-rag-application-via-ui)
 - [Task 9. Test the RAG Application via API](#task-9-test-the-rag-application-via-api)
@@ -27,7 +29,13 @@
 
 **Enterprise RAG Blueprint Architecture:**
 
-The NVIDIA Enterprise RAG Blueprint provides a comprehensive solution for Retrieval Augmented Generation, featuring:
+The NVIDIA Enterprise RAG Blueprint provides a comprehensive solution for Retrieval Augmented Generation with support for two vector database options:
+- **Option 1 (Default)**: Milvus with GPU acceleration for high-performance vector search
+- **Option 2**: Amazon OpenSearch Serverless for managed, scalable vector storage
+
+> **Note**: The architecture diagram shows the default Milvus deployment. For OpenSearch architecture, see the [OpenSearch Integration Guide](opensearch/README.md).
+
+The blueprint features:
 
 - **Reasoning Model**: `llama-3.1-nemotron-nano-8b-v1` for intelligent query processing
 - **NeMo Retriever Embedding**: `llama-3.2-nv-embedqa-1b-v2` for semantic search
@@ -87,7 +95,11 @@ The blueprint includes dedicated microservices for:
 
 ### Vector Database Integration
 
-The blueprint integrates with Milvus vector database, providing GPU-accelerated similarity search, advanced indexing capabilities, and horizontal scaling for large-scale document collections.
+The blueprint supports two vector database options:
+- **Milvus** (Default): GPU-accelerated similarity search with advanced indexing capabilities
+- **Amazon OpenSearch Serverless**: Fully managed, auto-scaling vector database with IAM integration
+
+Choose the option that best fits your deployment requirements during Task 6.
 
 ## Setup and Requirements
 
@@ -491,15 +503,33 @@ The Enterprise RAG Blueprint requires access to NVIDIA's container registry and 
 
 ## Task 6. Deploy Enterprise RAG Blueprint
 
-Now you'll deploy the complete Enterprise RAG Blueprint using the optimized configuration.
+The Enterprise RAG Blueprint supports two vector database options. Choose the option that best fits your requirements:
+
+### **Option 1: Default Deployment with Milvus (Recommended for Quick Start)**
+
+This option uses Milvus as the vector database with GPU acceleration for high-performance vector search.
+
+### **Option 2: Deployment with Amazon OpenSearch Serverless**
+
+For production deployments requiring managed vector database services, you can integrate Amazon OpenSearch Serverless. This option provides:
+- Fully managed, serverless vector database
+- Auto-scaling capabilities
+- Enterprise-grade security with IAM integration
+- Separation of compute and storage
+
+> **Note**: If you choose Option 2 (OpenSearch), follow the [OpenSearch Integration Guide](opensearch/README.md) for complete setup instructions, then return to [Task 7: Access the RAG App Services](#task-7-access-the-rag-app-services) to continue with the remaining steps.
+
+---
+
+### **Continuing with Option 1: Milvus Deployment**
 
 1. **Create the Custom Values File**
 
    The `values.yaml` file is already provided in your workshop directory. Verify its contents:
 
    ```bash
-   ls -la values.yaml
-   cat values.yaml | head -20
+   ls -la helm/values.yaml
+   cat helm/values.yaml | head -20
    ```
 
    This file contains optimized configurations for:
@@ -519,7 +549,7 @@ Now you'll deploy the complete Enterprise RAG Blueprint using the optimized conf
      --password "${NGC_API_KEY}" \
      --set imagePullSecret.password=$NGC_API_KEY \
      --set ngcApiSecret.password=$NGC_API_KEY \
-     -f values.yaml \
+     -f helm/values.yaml \
      --create-namespace
    ```
 
@@ -864,6 +894,8 @@ To avoid incurring additional costs, clean up your resources when finished.
 helm uninstall rag -n nv-nvidia-blueprint-rag
 kubectl delete namespace nv-nvidia-blueprint-rag
 ```
+
+> **Note**: If you deployed with OpenSearch Serverless (Option 2), refer to the [OpenSearch Integration Guide cleanup section](opensearch/README.md#cleanup) for additional resource cleanup steps.
 
 ### Complete Cluster Cleanup
 
