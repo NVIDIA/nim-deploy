@@ -40,7 +40,7 @@ nim-llm:
 
 config:
   instruct_model_name: "meta/llama-3.1-8b-instruct" # Change to # Change to meta/llama-3.3-70b-instruct for a larger model
-  instruct_base_url: ""  
+  instruct_base_url: "http://nim-llm.nv-aira.svc.cluster.local:8000/v1"  
   nemotron_model_name: "nvidia/llama-3.3-nemotron-super-49b-v1.5"
   nemotron_base_url: "http://nim-llm.nv-nvidia-blueprint-rag.svc.cluster.local:8000/v1"
   # RAG server integration for chat functionality  
