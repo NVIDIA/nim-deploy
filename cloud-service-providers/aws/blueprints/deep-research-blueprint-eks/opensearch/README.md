@@ -410,8 +410,15 @@ export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # Delete the OpenSearch Serverless collection
 echo "🗑️  Deleting OpenSearch Serverless collection..."
+# Get the collection ID first (delete requires ID, not name)
+COLLECTION_ID=$(aws opensearchserverless batch-get-collection \
+  --names "$COLLECTION_NAME" \
+  --region "$REGION" \
+  --query 'collectionDetails[0].id' \
+  --output text)
+
 aws opensearchserverless delete-collection \
-  --id "$COLLECTION_NAME" \
+  --id "$COLLECTION_ID" \
   --region "$REGION"
 
 echo "✅ Collection deletion initiated (may take a few minutes)"
