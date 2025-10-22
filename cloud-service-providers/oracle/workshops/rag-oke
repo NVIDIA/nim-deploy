@@ -1,0 +1,410 @@
+# Deploy RAG application using NVIDIA RAG Blueprint v2.3.0 on Oracle Cloud Infrastructure (OCI) Workshop
+
+## Introduction
+
+This workshop will guide you through deploying the [NVIDIA RAG Blueprint v2.3.0](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/aiworkflows/helm-charts/nvidia-blueprint-rag) on Oracle Cloud Infrastructure (OCI) Container Engine for Kubernetes (OKE) using an optimized configuration that uses 4 GPUs for a text-ingestion only service.
+
+## Setup and Requirements
+
+### What you need
+To complete this lab, you need:
+- Access to a standard internet browser (Chrome browser recommended)
+- Access to an OCI account with GPU instances (minimum 4 A100-80GB GPUs)
+- OCI CLI configured or access to OCI Cloud Shell
+- Sufficient OCI IAM permissions
+- Time to complete the lab
+
+### GPU Requirements
+**Optimized Configuration (4 GPUs Total):**
+- **LLM (Llama3-8B-Instruct)**: 1 GPU
+- **Embedding Model**: 1 GPU  
+- **Reranking Model**: 1 GPU
+- **Page Elements**: 1 GPU (required for PDF text extraction)
+- **Milvus**: CPU-only
+
+**Note**: The default blueprint configuration uses 5 GPUs (Nemotron 49B requires 2 GPUs for LLM). This optimized configuration reduces GPU usage by 20%.
+
+### How to start your lab and sign in to the OCI Console
+
+### Activate Cloud Shell
+Cloud Shell is a virtual machine that is loaded with development tools. It offers a persistent home directory and runs on the OCI Cloud. Cloud Shell provides command-line access to your OCI resources.
+
+In the OCI Console, in the top right toolbar, click the **Activate Cloud Shell** button.
+
+It takes a few moments to provision and connect to the environment.
+
+The OCI CLI is the command-line tool for OCI. It comes pre-installed on Cloud Shell and supports tab-completion.
+
+## Task 1. Infrastructure Deployment
+
+1. **Open Cloud Shell** and verify prerequisites:
+
+   The Cloud Shell environment comes preinstalled with kubectl and other necessary tools.
+
+2. **Access your OKE cluster**:
+
+   If you don't have an existing OKE cluster with GPU nodes, you'll need to create one. For this workshop, you need:
+   - Minimum 4 A100-80GB GPUs
+   - Kubernetes version 1.24+
+- NVIDIA GPU Operator installed
+
+   ```bash
+   # Configure kubectl to access your cluster
+   oci ce cluster create-kubeconfig --cluster-id <your-cluster-ocid> --file $HOME/.kube/config --region <your-region> --token-version 2.0.0 --kube-endpoint PUBLIC_ENDPOINT
+   ```
+
+3. **Verify cluster access**:
+   ```bash
+   kubectl get nodes
+   kubectl get nodes --show-labels | grep nvidia.com/gpu
+   ```
+
+   You should see nodes with GPU labels indicating available GPUs.
+
+## Task 2. Configure NVIDIA NGC API Key
+
+The RAG Blueprint requires access to NVIDIA's container registry and model artifacts. You'll need an NGC API key from https://build.nvidia.com.
+
+```bash
+export NGC_API_KEY="nvapi-YOUR_API_KEY_HERE"
+```
+
+Replace `YOUR_API_KEY_HERE` with your actual NGC API key.
+
+## Task 3. Install NVIDIA GPU Operator
+
+If the GPU Operator is not already installed on your cluster:
+
+1. **Add the NVIDIA Helm repository**:
+   ```bash
+   helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+   helm repo update
+   ```
+
+2. **Install the GPU Operator**:
+   ```bash
+   helm install --wait --generate-name \
+     -n gpu-operator --create-namespace \
+     nvidia/gpu-operator
+   ```
+
+3. **Verify installation**:
+   ```bash
+   kubectl get pods -n gpu-operator
+   ```
+
+## Task 4. Deploy NVIDIA RAG Blueprint
+
+1. **Create namespace**:
+```bash
+kubectl create namespace rag
+```
+
+2. **Create the optimized values file**:
+
+   This deployment uses an optimized configuration that reduces GPU usage from 5 to 4 GPUs by using Llama3-8B-Instruct instead of the default Nemotron 49B model.
+
+   ```bash
+   cat <<EOF > rag-optimized-values.yaml
+   # Optimized values.yaml for NVIDIA RAG Blueprint v2.3.0-rc2
+   # Text-only processing with Llama3-8B-Instruct
+   # GPU allocation: 4 GPUs total (LLM=1, Embedding=1, Reranking=1, Page-Elements=1)
+
+   # Global chart configuration
+   nameOverride: ""
+   fullnameOverride: "rag-server"
+
+   # RAG server environment variables
+   envVars:
+     # LLM Model configurations (Llama3-8B-Instruct)
+     APP_LLM_MODELNAME: "meta/llama3-8b-instruct"
+     APP_LLM_SERVERURL: "nim-llm:8000"
+     LLM_MAX_TOKENS: "2048"  # Optimized for stability
+     LLM_TEMPERATURE: "0"
+     LLM_TOP_P: "1.0"
+
+     # Production configurations
+     ENABLE_CITATIONS: "True"  # Enabled for source references
+     ENABLE_MULTITURN: "True"  # Enabled for conversation history
+     LOGLEVEL: "INFO"
+
+     # Vector DB configurations
+     APP_VECTORSTORE_URL: "http://milvus:19530"
+     APP_VECTORSTORE_NAME: "milvus"
+     COLLECTION_NAME: "multimodal_data"
+
+   # LLM configurations (Llama3-8B-Instruct)
+   nim-llm:
+     enabled: true
+     image:
+       repository: nvcr.io/nim/meta/llama3-8b-instruct
+       tag: "1.0.3"
+     resources:
+       limits:
+         nvidia.com/gpu: 1  # Single GPU for Llama3-8B
+       requests:
+         nvidia.com/gpu: 1
+     model:
+       name: "meta/llama3-8b-instruct"
+
+   # Text Embedding configurations
+   nvidia-nim-llama-32-nv-embedqa-1b-v2:
+     enabled: true
+     resources:
+       limits:
+         nvidia.com/gpu: 1
+       requests:
+         nvidia.com/gpu: 1
+
+   # Text Reranking configurations
+   text-reranking-nim:
+     enabled: true
+     resources:
+       limits:
+         nvidia.com/gpu: 1
+       requests:
+         nvidia.com/gpu: 1
+
+   # NV-Ingest configurations
+   nv-ingest:
+     enabled: true
+     # Multimodal component configurations (text-only setup)
+     nemoretriever-page-elements-v2:
+       deployed: true  # Enabled - needed for PDF text extraction
+       resources:
+         limits:
+           nvidia.com/gpu: 1
+         requests:
+           nvidia.com/gpu: 1
+     
+     nemoretriever-graphic-elements-v1:
+       deployed: false  # Disabled for text-only
+     
+     nemoretriever-table-structure-v1:
+       deployed: false  # Disabled for text-only
+     
+     nemoretriever-ocr:
+       deployed: false  # Disabled for text-only
+     
+     paddleocr-nim:
+       deployed: false  # Disabled for text-only
+
+     # Milvus configurations (CPU-only)
+     milvus:
+       standalone:
+         resources:
+           limits:
+             nvidia.com/gpu: 0  # CPU-only Milvus
+           requests:
+             nvidia.com/gpu: 0
+
+   # Frontend configurations
+   frontend:
+     enabled: true
+     service:
+       type: NodePort
+       port: 3000
+   EOF
+   ```
+
+3. **Deploy the RAG Blueprint**:
+```bash
+   helm upgrade --install rag -n rag \
+     https://helm.ngc.nvidia.com/nvstaging/blueprint/charts/nvidia-blueprint-rag-v2.3.0-rc2.tgz \
+  --username '$oauthtoken' \
+  --password "${NGC_API_KEY}" \
+  --set imagePullSecret.password=$NGC_API_KEY \
+  --set ngcApiSecret.password=$NGC_API_KEY \
+  -f rag-optimized-values.yaml
+```
+
+4. **Monitor deployment progress**:
+   ```bash
+   kubectl get pods -n rag -w
+   ```
+
+   Wait for all pods to reach the `Running` status. This may take 5-10 minutes as models are downloaded and initialized.
+
+5. **Verify deployment**:
+   ```bash
+   kubectl get pods -n rag
+   ```
+
+   Expected pods (text-only configuration):
+   ```
+   NAME                                                         READY   STATUS
+   ingestor-server-*                                            1/1     Running
+   milvus-standalone-*                                          1/1     Running
+   rag-etcd-0                                                   1/1     Running
+   rag-frontend-*                                               1/1     Running
+   rag-minio-*                                                  1/1     Running
+   rag-nemoretriever-page-elements-v2-*                        1/1     Running
+   rag-nim-llm-0                                                1/1     Running
+   rag-nv-ingest-*                                              1/1     Running
+   rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-*                  1/1     Running
+   rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2-*                 1/1     Running
+   rag-redis-master-0                                           1/1     Running
+   rag-server-*                                                 1/1     Running
+   ```
+
+   **Note**: Only page-elements should appear - other multimodal components (graphic-elements, table-structure, ocr) should be absent.
+
+## Task 5. Access the RAG Frontend Service
+
+1. **Understanding Service Types**:
+   
+   The RAG frontend is configured as a NodePort service. This exposes the application on a specific port on each worker node for demo purposes.
+
+   **Note**: NodePort is used for demonstration only. For production workloads, consider using LoadBalancer or Ingress for security reasons.
+
+2. **Get the service details**:
+   ```bash
+   kubectl get service rag-frontend -n rag -o yaml
+   ```
+
+   Look for the `nodePort` value in the output.
+
+3. **Get node external IP**:
+   ```bash
+   kubectl get nodes -o wide
+   ```
+
+   Note the `EXTERNAL-IP` of one of your worker nodes.
+
+4. **Access the frontend**:
+   
+   Open your browser and navigate to:
+   ```
+   http://NODE_EXTERNAL_IP:NODEPORT
+   ```
+
+   Example: `http://129.213.103.140:30825`
+
+## Task 6. Test the RAG System
+
+1. **Upload documents and create collections through the frontend**:
+
+   The RAG Blueprint frontend provides an easy-to-use interface for both creating collections and uploading documents:
+
+   - **Navigate to the frontend** in your browser (from Task 5)
+   - **Create a new collection** using the collection management interface
+   - **Upload test documents** through the document upload interface
+   - **Verify documents are processed** and available for querying
+
+   **For testing purposes**, you can use the [NVIDIA CUDA C Programming Guide](https://docs.nvidia.com/cuda/pdf/CUDA_C_Programming_Guide.pdf) as a sample document to upload and test the RAG functionality.
+
+2. **Test chat functionality**:
+
+   - **Ask questions about your uploaded documents** using the chat interface
+   - **Test different types of queries** to verify the RAG system is working
+   - **Verify stability** - chat should work consistently without hanging
+
+3. **Verify GPU allocation**:
+   ```bash
+   kubectl describe nodes | grep -A 10 -B 5 "nvidia.com/gpu.*[0-9]"
+   ```
+
+   Expected allocation:
+   - **Used GPUs**: 4 (LLM=1, Embedding=1, Reranking=1, Page-Elements=1)
+
+## Congratulations!
+
+Congratulations! You've successfully deployed the NVIDIA RAG Blueprint v2.3.0 on Oracle Cloud Infrastructure using an optimized configuration that:
+
+- **Reduces GPU usage** from 5 to 4 GPUs (20% reduction)
+- **Uses Llama3-8B-Instruct** for efficient text processing
+- **Optimizes for text-only processing** with multimodal components properly disabled
+
+You have successfully deployed a production-ready RAG pipeline with optimized GPU usage and enterprise features enabled.
+
+## Cleanup
+
+To remove the entire deployment and free up resources:
+
+```bash
+helm uninstall rag -n rag
+kubectl delete namespace rag
+```
+
+## Learn More
+
+Be sure to check out the following articles for more information:
+
+- [Oracle Cloud Infrastructure (OCI)](https://www.oracle.com/cloud/)
+- [Container Engine for Kubernetes (OKE)](https://www.oracle.com/cloud/cloud-native/container-engine-kubernetes/)
+- [NVIDIA RAG Blueprint](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/aiworkflows/helm-charts/nvidia-blueprint-rag)
+- [NVIDIA AI Enterprise](https://www.nvidia.com/en-us/data-center/products/ai-enterprise/)
+- [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/inference-microservices/)
+
+## Appendix: Alternative Deployment Methods
+
+### Method: Individual Helm Parameters
+
+For reference, you can also deploy using individual `--set` parameters instead of a values file:
+
+```bash
+helm upgrade --install rag -n rag \
+  https://helm.ngc.nvidia.com/nvstaging/blueprint/charts/nvidia-blueprint-rag-v2.3.0-rc2.tgz \
+  --username '$oauthtoken' \
+  --password "${NGC_API_KEY}" \
+  --set imagePullSecret.password=$NGC_API_KEY \
+  --set ngcApiSecret.password=$NGC_API_KEY \
+  --set nim-llm.enabled=true \
+  --set nim-llm.image.repository=nvcr.io/nim/meta/llama3-8b-instruct \
+  --set nim-llm.image.tag=1.0.3 \
+  --set nim-llm.model.name=meta/llama3-8b-instruct \
+  --set nim-llm.resources.limits.'nvidia\.com/gpu'=1 \
+  --set nim-llm.resources.requests.'nvidia\.com/gpu'=1 \
+  --set envVars.APP_LLM_MODELNAME=meta/llama3-8b-instruct \
+  --set envVars.LLM_MAX_TOKENS=2048 \
+  --set envVars.ENABLE_MULTITURN=True \
+  --set envVars.ENABLE_CITATIONS=True \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.resources.limits.'nvidia\.com/gpu'=1 \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.resources.requests.'nvidia\.com/gpu'=1 \
+  --set text-reranking-nim.enabled=true \
+  --set text-reranking-nim.resources.limits.'nvidia\.com/gpu'=1 \
+  --set text-reranking-nim.resources.requests.'nvidia\.com/gpu'=1 \
+  --set nv-ingest.nemoretriever-page-elements-v2.deployed=true \
+  --set nv-ingest.nemoretriever-page-elements-v2.resources.limits.'nvidia\.com/gpu'=1 \
+  --set nv-ingest.nemoretriever-page-elements-v2.resources.requests.'nvidia\.com/gpu'=1 \
+  --set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
+  --set nv-ingest.nemoretriever-table-structure-v1.deployed=false \
+  --set nv-ingest.nemoretriever-ocr.deployed=false \
+  --set nv-ingest.paddleocr-nim.deployed=false \
+  --set nv-ingest.milvus.standalone.resources.limits.'nvidia\.com/gpu'=0 \
+  --set nv-ingest.milvus.standalone.resources.requests.'nvidia\.com/gpu'=0
+```
+
+**Note**: The values file method is recommended for easier configuration management and better maintainability.
+
+### Troubleshooting
+
+If you encounter issues during deployment:
+
+1. **Check pod status**:
+   ```bash
+   kubectl get pods -n rag
+   kubectl describe pod <pod-name> -n rag
+   ```
+
+2. **View pod logs**:
+   ```bash
+   kubectl logs <pod-name> -n rag
+   ```
+
+3. **Verify GPU resources**:
+   ```bash
+   kubectl describe nodes | grep -A 5 -B 5 nvidia.com/gpu
+   ```
+
+4. **Check service endpoints**:
+   ```bash
+   kubectl get services -n rag
+   ```
+
+Common issues:
+- **Model loading time**: LLM pods may take 5-10 minutes to become ready
+- **GPU allocation**: Ensure sufficient GPU resources are available on nodes
+- **Network policies**: Verify inter-pod communication is allowed
+- **Storage**: Check that persistent volumes are properly provisioned
