@@ -85,7 +85,7 @@ At the end of the tutorial, you will have a running Amazon EKS cluster that you 
 
     1.   Open the AWS CloudShell:
 
-    ![Open_Terminal](/./imgs/open_terminal.png)
+    ![Open_Terminal](imgs/open_terminal.png)
 
     2. Specify the following parameters:
     
@@ -106,25 +106,25 @@ At the end of the tutorial, you will have a running Amazon EKS cluster that you 
 2. **Verify the creation of the Cluster**
   
     1. In the search bar at the top, type in "Cloudformation" and select the first result
-    ![CloudFormation_Search](/./imgs/CloudFormation_Search.png)
+    ![CloudFormation_Search](imgs/CloudFormation_Search.png)
     
     2. In the "Stacks" tab, verify that all Stacks have been created successfully and the status is "CREATE_COMPLETE"
 
-    ![Stacks_Complete](/./imgs/Stack_Complete.png)
+    ![Stacks_Complete](imgs/Stack_Complete.png)
     
     3. In the search bar at the top, type in "EKS" and select "Elastic Kubernetes Service"
 
-    ![EKS_Search](/./imgs/eks_search_result.png)
+    ![EKS_Search](imgs/eks_search_result.png)
 
     
     4. In the "Clusters" tab, wait until the value in column "Status" changes to "Active" with a green check mark
 
     
-    ![Cluster_Runnning](/./imgs/cluster_running.png)
+    ![Cluster_Runnning](imgs/cluster_running.png)
 
     5. Click on the "nim-eks-workshop" link, then click on the "Compute" tab. Verify that there is a Node group running, with status "Active", under the "Node Groups" section
 
-    ![Cluster_Runnning](/./imgs/Node_group_active.png)
+    ![Cluster_Runnning](imgs/Node_group_active.png)
     
     
     6. In the CloudShell terminal, execute the below command to verify the nodes are visible
@@ -135,7 +135,7 @@ At the end of the tutorial, you will have a running Amazon EKS cluster that you 
 
     The result should be something similar to:
 
-    ![Get_nodes_result](/./imgs/Get_nodes_result.png)
+    ![Get_nodes_result](imgs/Get_nodes_result.png)
 
 ---
 
@@ -203,7 +203,7 @@ At the end of the tutorial, you will have a running Amazon EKS cluster that you 
 
 1. **Open your Terminal**
 
-![Open_Terminal](/./imgs/open_terminal.png)
+![Open_Terminal](imgs/open_terminal.png)
 
 2. **Configure NVIDIA API Key**
 
@@ -325,7 +325,7 @@ kubectl -n nim port-forward service/my-nim-nim-llm 8000:8000
 
 Next, we can open **another terminal tab**
 
-![New_shell_terminal](/./imgs/Get_nodes_result.png)
+![New_shell_terminal](imgs/Get_nodes_result.png)
 
 
 and try the following request:
