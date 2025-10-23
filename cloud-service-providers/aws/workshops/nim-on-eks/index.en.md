@@ -8,7 +8,7 @@ In this workshop, you will learn how to deploy and manage containerized AI model
 * Optimize performance on NVIDIA GPUs: Gain hands-on experience with deploying NIM that leverage NVIDIA TensorRT for optimized inference on GPUs within your EKS cluster
 * Scale AI inference workloads: Explore how to leverage Kubernetes for autoscaling and managing compute resources for your deployed NIM based on demand
 
-![Project Preview](/imgs/AWS_NVIDIA_Diagram_NIM_EKS_Light.png)
+![Project Preview](imgs/AWS_NVIDIA_Diagram_NIM_EKS_Light.png)
 
 ---
 
