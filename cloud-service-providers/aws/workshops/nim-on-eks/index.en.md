@@ -371,4 +371,3 @@ eksctl delete cluster --name=$CLUSTER_NAME --disable-nodegroup-eviction --wait
 ---
 
 
-
