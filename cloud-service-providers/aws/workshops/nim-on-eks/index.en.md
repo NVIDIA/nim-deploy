@@ -1,7 +1,6 @@
----
-title: "Deploy NVIDIA NIM Microservices on Amazon Elastic Kubernetes Service: Beginner Workshop"
-weight: 0
----
+# Deploy NVIDIA NIM Microservices on Amazon Elastic Kubernetes Service: Beginner Workshop
+
+
 
 In this workshop, you will learn how to deploy and manage containerized AI models using <a href="https://www.nvidia.com/en-us/ai/" target="_blank">NVIDIA NIM</a> on Amazon <a href="https://aws.amazon.com/eks/" target="_blank">Elastic Kubernetes Service (EKS)</a>. This workshop is designed for developers and data scientists who are looking to:
 
