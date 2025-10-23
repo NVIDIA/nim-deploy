@@ -114,13 +114,13 @@ At the end of the tutorial, you will have a running Amazon EKS cluster that you 
     
     3. In the search bar at the top, type in "EKS" and select "Elastic Kubernetes Service"
 
-    ![EKS_Search](imgs/eks_search_result.png)
+    ![EKS_Search](imgs/EKS_Search_Result.png)
 
     
     4. In the "Clusters" tab, wait until the value in column "Status" changes to "Active" with a green check mark
 
     
-    ![Cluster_Runnning](imgs/cluster_running.png)
+    ![Cluster_Runnning](imgs/Cluster_Running.png)
 
     5. Click on the "nim-eks-workshop" link, then click on the "Compute" tab. Verify that there is a Node group running, with status "Active", under the "Node Groups" section
 
