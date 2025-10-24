@@ -79,6 +79,7 @@ This configuration maintains the full **49B Nemotron model** (`llama-3.3-nemotro
 3. **Nemo Retriever Reranking Model** (`llama-3.2-nv-rerankqa-1b-v2`) → 1 A10G GPU
 4. **AIRA 8B Instruct Model** (`meta/llama-3.1-8b-instruct`) → 1 A10G GPU
    - Deployed by AIRA Helm chart for report generation
+   - *Note: The official AI-Q blueprint uses Llama 3.3 70B Instruct. This deployment uses the smaller 8B model to reduce compute requirements. You can configure a different model in `helm/helm-values/aira-values.eks.yaml.template`.*
 
 **Data Ingestion Node Group (DATA_INGEST_NG)** - 4 A10G GPUs (1 x g5.12xlarge instance):
 1. **Graphic Elements Model** (`nemoretriever-graphic-elements-v1`) → 1 A10G GPU
@@ -592,6 +593,13 @@ helm dependency update helm/aiq-aira
 
 Deploy AIRA: 
 **Note**: The AIRA Helm chart is bundled locally in `helm/aiq-aira/` and incorporates some fixes. The Helm charts for AIRA is WIP on the AIRA [repo](https://github.com/NVIDIA-AI-Blueprints/aiq-research-assistant/tree/feat-helm2)
+
+> **Important - Model Configuration**: The official AI-Q blueprint uses **Llama 3.3 70B Instruct** for report generation, which requires approximately 4 GPUs. This deployment has been modified to use **Llama 3.1 8B Instruct** (`meta/llama-3.1-8b-instruct`) with only 1 GPU to significantly reduce compute requirements and costs. While this provides faster deployment, report quality and reasoning capabilities may differ from the official blueprint.
+> 
+> To use the original 70B model or another larger model, you will need to:
+> 1. Modify the model configuration in `helm/helm-values/aira-values.eks.yaml.template` (update `image.repository`, `model.name`, and `config.instruct_model_name`)
+> 2. Adjust GPU resource requests/limits in the same file (increase to 8 GPUs for 70B model if using g5.48xlarge)
+> 3. Ensure your EKS node group has sufficient GPU capacity (It require larger instance types like g5.48xlarge)
 
 ```bash
 # Set your Tavily API key (replace with your actual key)
