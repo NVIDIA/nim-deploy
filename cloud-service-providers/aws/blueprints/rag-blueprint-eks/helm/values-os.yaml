@@ -1,0 +1,687 @@
+# -- Global chart configuration
+nameOverride: ""
+fullnameOverride: "rag-server"
+# RAG Orchestrator Service
+# -- Kubernetes scheduling
+nodeSelector: {}
+affinity: {}
+tolerations: []
+
+# -- Common service account for rag-server
+# NOTE: For OpenSearch Serverless, set create: false and provide IRSA service account name
+serviceAccount:
+  create: false
+  name: "opensearch-access-sa"
+  automount: true
+  annotations: {}
+
+# -- Replicas for rag-server
+replicaCount: 1
+
+# -- Namespace for documentation/reference; not actively used in templates
+namespace: "nv-nvidia-blueprint-rag"
+
+# -- Image pull secret for all images used by this chart
+imagePullSecret:
+  name: "ngc-secret"
+  registry: "nvcr.io"
+  username: "$oauthtoken"
+  password: ""
+  create: true
+
+# -- Secret containing API keys for NVIDIA NGC model registry
+ngcApiSecret:
+  name: "ngc-api"
+  password: ""
+  create: true
+
+# -- RAG server container image
+# NOTE: For OpenSearch integration, use custom-built images with OpenSearch support
+image:
+  repository: nvcr.io/nvidia/blueprint/rag-server
+  tag: "2.3.0"
+  pullPolicy: Always
+
+# -- RAG server service configuration
+service:
+  type: ClusterIP
+  port: 8081
+
+# -- RAG server container resources
+resources:
+  limits:
+    memory: "64Gi"
+  requests:
+    memory: "8Gi"
+
+# -- Probes for rag-server (optional)
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8081
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8081
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# -- RAG server runtime configuration
+server:
+  workers: 8
+
+# -- Enable/disable creation of prompt ConfigMap
+promptConfig:
+  enabled: true
+
+# -- Environment variables for rag-server
+envVars:
+  EXAMPLE_PATH: "./nvidia_rag/rag_server"
+  PROMPT_CONFIG_FILE: "/prompt.yaml"
+  PROMETHEUS_MULTIPROC_DIR: "/tmp-data/prom_data"
+
+  ##===MINIO specific configurations used to store multimodal base64 content===
+  MINIO_ENDPOINT: "rag-minio:9000"
+  MINIO_ACCESSKEY: "minioadmin"
+  MINIO_SECRETKEY: "minioadmin"
+
+  ##===Vector DB specific configurations - OpenSearch Serverless===
+  # URL on which vectorstore is hosted (set via --set during deployment)
+  APP_VECTORSTORE_URL: ""  # Will be set to OpenSearch endpoint via --set
+  # Type of vectordb used to store embeddings
+  APP_VECTORSTORE_NAME: "opensearch"
+  # Type of vectordb search to be used
+  APP_VECTORSTORE_SEARCHTYPE: "dense"
+  # AWS Region for OpenSearch Serverless (set via --set during deployment)
+  APP_VECTORSTORE_AWS_REGION: ""  # Will be set to AWS region via --set
+  # ef: Parameter controlling query time/accuracy trade-off
+  APP_VECTORSTORE_EF: "100"
+
+  # vectorstore collection name to store embeddings
+  COLLECTION_NAME: "multimodal_data"
+  APP_RETRIEVER_SCORETHRESHOLD: "0.25"
+  # Top K from vector DB, which goes as input to reranker model
+  VECTOR_DB_TOPK: "100"
+  # Number of document chunks to insert in LLM prompt
+  APP_RETRIEVER_TOPK: "10"
+
+  ##===LLM Model specific configurations===
+  APP_LLM_MODELNAME: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+  # URL on which LLM model is hosted. If "", Nvidia hosted API is used
+  APP_LLM_SERVERURL: "nim-llm:8000"
+  # LLM model parameters
+  LLM_MAX_TOKENS: "32768"
+  LLM_TEMPERATURE: "0"
+  LLM_TOP_P: "1.0"
+
+  ##===Query Rewriter Model specific configurations===
+  APP_QUERYREWRITER_MODELNAME: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+  APP_QUERYREWRITER_SERVERURL: "nim-llm:8000"
+
+  ##===Filter Expression Generator Model specific configurations===
+  APP_FILTEREXPRESSIONGENERATOR_MODELNAME: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+  APP_FILTEREXPRESSIONGENERATOR_SERVERURL: "nim-llm:8000"
+  ENABLE_FILTER_GENERATOR: "False"
+
+  ##===Embedding Model specific configurations===
+  APP_EMBEDDINGS_SERVERURL: "nemoretriever-embedding-ms:8000"
+  APP_EMBEDDINGS_MODELNAME: "nvidia/llama-3.2-nv-embedqa-1b-v2"
+
+  ##===Reranking Model specific configurations===
+  APP_RANKING_SERVERURL: "nemoretriever-ranking-ms:8000"
+  APP_RANKING_MODELNAME: "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+  ENABLE_RERANKER: "True"
+  RERANKER_CONFIDENCE_THRESHOLD: "0.0"
+
+  ##===VLM Model specific configurations===
+  ENABLE_VLM_INFERENCE: "false"
+  ENABLE_VLM_RESPONSE_REASONING: "false"
+  APP_VLM_MAX_TOTAL_IMAGES: "4"
+  APP_VLM_RESPONSE_AS_FINAL_ANSWER: "false"
+  APP_VLM_MAX_QUERY_IMAGES: "1"
+  APP_VLM_MAX_CONTEXT_IMAGES: "1"
+  APP_VLM_SERVERURL: "http://nim-vlm:8000/v1"
+  APP_VLM_MODELNAME: "nvidia/llama-3.1-nemotron-nano-vl-8b-v1"
+
+  # === Text Splitter ===
+  APP_TEXTSPLITTER_CHUNKSIZE: "2000"
+  APP_TEXTSPLITTER_CHUNKOVERLAP: "200"
+
+  # === General ===
+  ENABLE_CITATIONS: "True"
+  ENABLE_GUARDRAILS: "False"
+  LOGLEVEL: "INFO"
+  ENABLE_MULTITURN: "True"
+  ENABLE_QUERYREWRITER: "False"
+  CONVERSATION_HISTORY: "5"
+
+  # === Tracing ===
+  APP_TRACING_ENABLED: "False"
+  APP_TRACING_OTLPHTTPENDPOINT: "http://rag-opentelemetry-collector:4318/v1/traces"
+  APP_TRACING_OTLPGRPCENDPOINT: "grpc://rag-opentelemetry-collector:4317"
+
+  # === Reflection ===
+  ENABLE_REFLECTION: "false"
+  MAX_REFLECTION_LOOP: "3"
+  CONTEXT_RELEVANCE_THRESHOLD: "1"
+  RESPONSE_GROUNDEDNESS_THRESHOLD: "1"
+  REFLECTION_LLM: "mistralai/mixtral-8x22b-instruct-v0.1"
+  REFLECTION_LLM_SERVERURL: ""
+
+  ENABLE_SOURCE_METADATA: "true"
+  FILTER_THINK_TOKENS: "true"
+  NEMO_GUARDRAILS_URL: "nemo-guardrails:7331"
+  ENABLE_QUERY_DECOMPOSITION: "false"
+  MAX_RECURSION_DEPTH: "3"
+
+# -- Ingestor Server
+ingestor-server:
+  enabled: true
+  appName: ingestor-server
+
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+
+  replicaCount: 1
+
+  imagePullSecret:
+    create: false
+    name: "ngc-secret"
+    registry: "nvcr.io"
+    username: "$oauthtoken"
+    password: ""
+
+  image:
+    repository: nvcr.io/nvidia/blueprint/ingestor-server
+    tag: "2.3.0"
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8082
+
+  server:
+    workers: 1
+
+  livenessProbe: {}
+  readinessProbe: {}
+
+  resources:
+    limits:
+      memory: "25Gi"
+    requests:
+      memory: "25Gi"
+
+  envVars:
+    EXAMPLE_PATH: "src/nvidia_rag/ingestor_server"
+    PROMPT_CONFIG_FILE: "/prompt.yaml"
+    
+    # === Vector Store Configurations - OpenSearch Serverless ===
+    APP_VECTORSTORE_URL: ""  # Will be set to OpenSearch endpoint via --set
+    APP_VECTORSTORE_NAME: "opensearch"
+    APP_VECTORSTORE_SEARCHTYPE: "dense"
+    APP_VECTORSTORE_AWS_REGION: ""  # Will be set to AWS region via --set
+    COLLECTION_NAME: "multimodal_data"
+
+    # === MinIO Configurations ===
+    MINIO_ENDPOINT: "rag-minio:9000"
+    MINIO_ACCESSKEY: "minioadmin"
+    MINIO_SECRETKEY: "minioadmin"
+
+    # === Embeddings Configurations ===
+    APP_EMBEDDINGS_SERVERURL: "nemoretriever-embedding-ms:8000"
+    APP_EMBEDDINGS_MODELNAME: "nvidia/llama-3.2-nv-embedqa-1b-v2"
+    APP_EMBEDDINGS_DIMENSIONS: "2048"
+
+    # === NV-Ingest Configurations ===
+    APP_NVINGEST_MESSAGECLIENTHOSTNAME: "rag-nv-ingest"
+    APP_NVINGEST_MESSAGECLIENTPORT: "7670"
+
+    # === NV-Ingest extraction configurations ===
+    APP_NVINGEST_PDFEXTRACTMETHOD: "None"
+    APP_NVINGEST_EXTRACTTEXT: "True"
+    APP_NVINGEST_EXTRACTINFOGRAPHICS: "False"
+    APP_NVINGEST_EXTRACTTABLES: "True"
+    APP_NVINGEST_EXTRACTCHARTS: "True"
+    APP_NVINGEST_EXTRACTIMAGES: "False"
+    APP_NVINGEST_EXTRACTPAGEASIMAGE: "False"
+    APP_NVINGEST_STRUCTURED_ELEMENTS_MODALITY: ""
+    APP_NVINGEST_IMAGE_ELEMENTS_MODALITY: ""
+    APP_NVINGEST_TEXTDEPTH: "page"
+
+    # === NV-Ingest caption configurations ===
+    APP_NVINGEST_CAPTIONMODELNAME: "nvidia/llama-3.1-nemotron-nano-vl-8b-v1"
+    APP_NVINGEST_CAPTIONENDPOINTURL: ""
+
+    # === NV-Ingest save to disk configurations ===
+    APP_NVINGEST_SAVETODISK: "False"
+    NVINGEST_MINIO_BUCKET: "nv-ingest"
+
+    # === Summary Model Configurations ===
+    SUMMARY_LLM: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+    SUMMARY_LLM_SERVERURL: "nim-llm:8000"
+    SUMMARY_LLM_MAX_CHUNK_LENGTH: "50000"
+    SUMMARY_CHUNK_OVERLAP: "200"
+
+    # === General ===
+    ENABLE_CITATIONS: "True"
+    LOGLEVEL: "INFO"
+
+    # === NV-Ingest splitting configurations ===
+    APP_NVINGEST_CHUNKSIZE: "512"
+    APP_NVINGEST_CHUNKOVERLAP: "150"
+    APP_NVINGEST_ENABLEPDFSPLITTER: "True"
+    APP_NVINGEST_SEGMENTAUDIO: "False"
+
+    # === Redis configurations ===
+    REDIS_HOST: "rag-redis-master"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+
+    # === Bulk upload to MinIO ===
+    ENABLE_MINIO_BULK_UPLOAD: "True"
+    TEMP_DIR: "/tmp-data"
+    INGESTOR_SERVER_DATA_DIR: "/data/"
+
+    # === NV-Ingest Batch Mode Configurations ===
+    NV_INGEST_FILES_PER_BATCH: "16"
+    NV_INGEST_CONCURRENT_BATCHES: "4"
+
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi
+    mountPath: "/data/"
+    subPath: ""
+
+# -- Frontend
+frontend:
+  enabled: true
+  appName: "rag-frontend"
+
+  replicaCount: 1
+
+  image:
+    repository: nvcr.io/nvidia/blueprint/rag-frontend
+    pullPolicy: IfNotPresent
+    tag: "2.3.0"
+
+  imagePullSecret:
+    name: "ngc-secret"
+    registry: "nvcr.io"
+    username: "$oauthtoken"
+    password: ""
+
+  service:
+    type: NodePort
+    port: 3000
+
+  livenessProbe: {}
+  readinessProbe: {}
+
+  envVars:
+    - name: VITE_API_CHAT_URL
+      value: "http://rag-server:8081/v1"
+    - name: VITE_API_VDB_URL
+      value: "http://ingestor-server:8082/v1"
+    - name: VITE_MILVUS_URL
+      value: ""  # Not applicable for OpenSearch
+
+# -- Elasticsearch dependency toggle
+elasticsearch:
+  enabled: false
+
+# -- Observability
+serviceMonitor:
+  enabled: false
+
+opentelemetry-collector:
+  enabled: false
+
+zipkin:
+  enabled: false
+
+kube-prometheus-stack:
+  enabled: false
+
+# -- NIMs (dependencies) configuration
+# NIM LLM
+nim-llm:
+  enabled: true
+  service:
+    name: "nim-llm"
+  image:
+    repository: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-8b-v1
+    pullPolicy: IfNotPresent
+    tag: "1.8.4"
+  resources:
+    limits:
+      nvidia.com/gpu: 2
+    requests:
+      nvidia.com/gpu: 2
+
+  env:
+    - name: NIM_MODEL_PROFILE
+      value: ""
+  model:
+    ngcAPIKey: ""
+    name: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+    hfTokenSecret: ""
+
+# NIM Text Embedding
+nvidia-nim-llama-32-nv-embedqa-1b-v2:
+  enabled: true
+  service:
+    name: "nemoretriever-embedding-ms"
+  image:
+    repository: nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2
+    tag: "1.10.0"
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+    requests:
+      nvidia.com/gpu: 1
+  nim:
+    ngcAPIKey: ""
+
+# NIM VLM Embedding
+nvidia-nim-llama-32-nemoretriever-1b-vlm-embed-v1:
+  enabled: false
+
+# NIM Text Reranking
+nvidia-nim-llama-32-nv-rerankqa-1b-v2:
+  enabled: true
+  service:
+    name: "nemoretriever-ranking-ms"
+  image:
+    repository: nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2
+    tag: "1.8.0"
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+    requests:
+      nvidia.com/gpu: 1
+  nim:
+    ngcAPIKey: ""
+
+# NIM Vision-Language (VLM)
+nim-vlm:
+  enabled: false
+  service:
+    name: "nim-vlm"
+  image:
+    repository: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1
+    tag: "1.3.1"
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+    requests:
+      nvidia.com/gpu: 1
+  nim:
+    ngcAPIKey: ""
+
+# -- NV-Ingest dependency configuration
+nv-ingest:
+  enabled: true
+  imagePullSecrets:
+    - name: "ngc-secret"
+  ngcApiSecret:
+    create: false
+  ngcImagePullSecret:
+    create: false
+  image:
+    repository: "nvcr.io/nvidia/nemo-microservices/nv-ingest"
+    tag: "25.9.0"
+  resources:
+    limits:
+      nvidia.com/gpu: 0
+  envVars:
+    ARROW_DEFAULT_MEMORY_POOL: "system"
+    INGEST_LOG_LEVEL: WARNING
+    INGEST_RAY_LOG_LEVEL: "PRODUCTION"
+    NV_INGEST_MAX_UTIL: 48
+    INGEST_EDGE_BUFFER_SIZE: 64
+    INGEST_DYNAMIC_MEMORY_THRESHOLD: "0.8"
+    INGEST_DISABLE_DYNAMIC_SCALING: "false"
+    MRC_IGNORE_NUMA_CHECK: 1
+    READY_CHECK_ALL_COMPONENTS: "False"
+    COMPONENTS_TO_READY_CHECK: "ALL"
+    REDIS_MORPHEUS_TASK_QUEUE: morpheus_task_queue
+    REDIS_INGEST_TASK_QUEUE: "ingest_task_queue"
+    NV_INGEST_DEFAULT_TIMEOUT_MS: "1234"
+    MAX_INGEST_PROCESS_WORKERS: 16
+    EMBEDDING_NIM_ENDPOINT: "http://nemoretriever-embedding-ms:8000/v1"
+    EMBEDDING_NIM_MODEL_NAME: "nvidia/llama-3.2-nv-embedqa-1b-v2"
+    MESSAGE_CLIENT_HOST: "rag-redis-master"
+    MESSAGE_CLIENT_PORT: 6379
+    MESSAGE_CLIENT_TYPE: "redis"
+    MINIO_INTERNAL_ADDRESS: "rag-minio:9000"
+    MINIO_PUBLIC_ADDRESS: "http://localhost:9000"
+    MINIO_BUCKET: "nv-ingest"
+    MILVUS_ENDPOINT: ""  # Not used with OpenSearch
+    OTEL_EXPORTER_OTLP_ENDPOINT: "otel-collector:4317"
+    MODEL_PREDOWNLOAD_PATH: "/workspace/models/"
+    INSTALL_AUDIO_EXTRACTION_DEPS: "true"
+
+    # Paddle OCR endpoints
+    PADDLE_GRPC_ENDPOINT: nv-ingest-ocr:8001
+    PADDLE_HTTP_ENDPOINT: http://nv-ingest-ocr:8000/v1/infer
+    PADDLE_INFER_PROTOCOL: grpc
+
+    # OCR routing
+    OCR_GRPC_ENDPOINT: nv-ingest-ocr:8001
+    OCR_HTTP_ENDPOINT: http://nv-ingest-ocr:8000/v1/infer
+    OCR_INFER_PROTOCOL: grpc
+    OCR_MODEL_NAME: paddle
+
+    # NeMo Retriever Parse
+    NEMORETRIEVER_PARSE_HTTP_ENDPOINT: http://nim-vlm-text-extraction-nemoretriever-parse:8000/v1/chat/completions
+    NEMORETRIEVER_PARSE_INFER_PROTOCOL: http
+    NEMORETRIEVER_PARSE_MODEL_NAME: nvidia/nemoretriever-parse
+
+    # YOLOX endpoints
+    YOLOX_GRPC_ENDPOINT: nemoretriever-page-elements-v2:8001
+    YOLOX_HTTP_ENDPOINT: http://nemoretriever-page-elements-v2:8000/v1/infer
+    YOLOX_INFER_PROTOCOL: grpc
+    YOLOX_GRAPHIC_ELEMENTS_GRPC_ENDPOINT: nemoretriever-graphic-elements-v1:8001
+    YOLOX_GRAPHIC_ELEMENTS_HTTP_ENDPOINT: http://nemoretriever-graphic-elements-v1:8000/v1/infer
+    YOLOX_GRAPHIC_ELEMENTS_INFER_PROTOCOL: grpc
+    YOLOX_TABLE_STRUCTURE_GRPC_ENDPOINT: nemoretriever-table-structure-v1:8001
+    YOLOX_TABLE_STRUCTURE_HTTP_ENDPOINT: http://nemoretriever-table-structure-v1:8000/v1/infer
+    YOLOX_TABLE_STRUCTURE_INFER_PROTOCOL: grpc
+
+    # Captioning
+    VLM_CAPTION_MODEL_NAME: nvidia/llama-3.1-nemotron-nano-vl-8b-v1
+    VLM_CAPTION_ENDPOINT: http://nim-vlm:8000/v1/chat/completions
+
+    # Audio service
+    AUDIO_GRPC_ENDPOINT: nv-ingest-riva-nim:50051
+    AUDIO_INFER_PROTOCOL: grpc
+
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+    size: 50Gi
+    mountPath: "/data/"
+    subPath: ""
+
+# -- Milvus deployment (DISABLED for OpenSearch)
+# NOTE: Milvus is not deployed when using OpenSearch Serverless
+nv-ingest:
+  # Milvus deployment disabled - using OpenSearch Serverless instead
+  milvusDeployed: false
+  
+  # MinIO still needed for storing multimodal content
+  milvus:
+    minio:
+      image:
+        repository: minio/minio
+        tag: "RELEASE.2025-09-07T16-13-09Z"
+      accessKey: minioadmin
+      secretKey: minioadmin
+      bucketName: nv-ingest
+    fullnameOverride: milvus
+
+  # Redis Master (still needed for task management)
+  redis:
+    image:
+      repository: redis
+      tag: 8.2.1
+
+  # Ensure nv-ingest does not deploy its own embedding NIM
+  nvidia-nim-llama-32-nv-embedqa-1b-v2:
+    deployed: false
+
+  # Observability disabled
+  otelDeployed: false
+  zipkinDeployed: false
+
+  # Sub-NIMs deployed by NV-Ingest
+  paddleocr-nim:
+    deployed: true
+    replicaCount: 1
+    image:
+      repository: nvcr.io/nim/baidu/paddleocr
+      tag: "1.5.0"
+    imagePullSecrets:
+      - name: ngc-secret
+    env:
+      - name: NIM_HTTP_API_PORT
+        value: "8000"
+      - name: NIM_TRITON_LOG_VERBOSE
+        value: "1"
+      - name: CUDA_VISIBLE_DEVICES
+        value: "0"
+      - name: NIM_TRITON_RATE_LIMIT
+        value: "3"
+      - name: NIM_TRITON_CUDA_MEMORY_POOL_MB
+        value: "3072"
+      - name: OMP_NUM_THREADS
+        value: "8"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+      requests:
+        nvidia.com/gpu: 1
+
+  nemoretriever-ocr:
+    deployed: false
+
+  nemoretriever-graphic-elements-v1:
+    deployed: true
+    replicaCount: 1
+    image:
+      repository: nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1
+      tag: "1.5.0"
+    env:
+      - name: NIM_HTTP_API_PORT
+        value: "8000"
+      - name: NIM_TRITON_LOG_VERBOSE
+        value: "1"
+      - name: NIM_TRITON_RATE_LIMIT
+        value: "3"
+      - name: CUDA_VISIBLE_DEVICES
+        value: "0"
+      - name: NIM_TRITON_MAX_BATCH_SIZE
+        value: "32"
+      - name: NIM_TRITON_CUDA_MEMORY_POOL_MB
+        value: "2048"
+      - name: OMP_NUM_THREADS
+        value: "1"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+      requests:
+        nvidia.com/gpu: 1
+
+  nemoretriever-page-elements-v2:
+    deployed: true
+    replicaCount: 1
+    image:
+      repository: nvcr.io/nim/nvidia/nemoretriever-page-elements-v2
+      tag: "1.5.0"
+    env:
+      - name: NIM_HTTP_API_PORT
+        value: "8000"
+      - name: NIM_TRITON_LOG_VERBOSE
+        value: "1"
+      - name: NIM_TRITON_RATE_LIMIT
+        value: "3"
+      - name: CUDA_VISIBLE_DEVICES
+        value: "0"
+      - name: NIM_TRITON_MAX_BATCH_SIZE
+        value: "32"
+      - name: NIM_TRITON_CUDA_MEMORY_POOL_MB
+        value: "2048"
+      - name: NIM_TRITON_CPU_THREADS_PRE_PROCESSOR
+        value: "2"
+      - name: NIM_TRITON_CPU_THREADS_POST_PROCESSOR
+        value: "1"
+      - name: OMP_NUM_THREADS
+        value: "2"
+      - name: NIM_ENABLE_OTEL
+        value: "true"
+      - name: NIM_OTEL_SERVICE_NAME
+        value: "page-elements"
+      - name: NIM_OTEL_TRACES_EXPORTER
+        value: "otlp"
+      - name: NIM_OTEL_METRICS_EXPORTER
+        value: "console"
+      - name: NIM_OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector:4318"
+      - name: TRITON_OTEL_URL
+        value: "http://otel-collector:4318/v1/traces"
+      - name: TRITON_OTEL_RATE
+        value: "1"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+      requests:
+        nvidia.com/gpu: 1
+
+  nemoretriever-table-structure-v1:
+    deployed: true
+    replicaCount: 1
+    image:
+      repository: nvcr.io/nim/nvidia/nemoretriever-table-structure-v1
+      tag: "1.5.0"
+    env:
+      - name: NIM_HTTP_API_PORT
+        value: "8000"
+      - name: NIM_TRITON_LOG_VERBOSE
+        value: "1"
+      - name: NIM_TRITON_RATE_LIMIT
+        value: "3"
+      - name: CUDA_VISIBLE_DEVICES
+        value: "0"
+      - name: NIM_TRITON_MAX_BATCH_SIZE
+        value: "32"
+      - name: NIM_TRITON_CUDA_MEMORY_POOL_MB
+        value: "2048"
+      - name: OMP_NUM_THREADS
+        value: "1"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+      requests:
+        nvidia.com/gpu: 1
+
+  nim-vlm-text-extraction:
+    deployed: false
+    image:
+      repository: nvcr.io/nim/nvidia/nemoretriever-parse
+      tag: "1.2"
+

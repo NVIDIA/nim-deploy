@@ -1,0 +1,9 @@
+dependencies:
+- name: nginx
+  repository: file://charts/nginx
+  version: 0.1.0
+- name: nim-llm
+  repository: https://helm.ngc.nvidia.com/nim
+  version: 1.7.0
+digest: sha256:256f10a37ced16871881e55e0d9aedffdee411c7b5024ff6e56b2652943f316a
+generated: "2025-08-20T13:03:50.942267-07:00"
