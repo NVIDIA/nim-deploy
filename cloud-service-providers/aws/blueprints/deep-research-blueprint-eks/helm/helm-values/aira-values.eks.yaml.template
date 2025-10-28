@@ -22,6 +22,21 @@ frontend:
     port: 3001
     targetPort: 3001
 
+# Enables the Phoenix tracing service
+phoenix:
+  enabled: true
+  image:
+    repository: arizephoenix/phoenix
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
 nim-llm:
   enabled: true  # Deploy model for AIRA report generation
   image:

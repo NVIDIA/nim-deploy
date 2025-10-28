@@ -20,6 +20,7 @@
 - [Task 9. Test the RAG Application via API](#task-9-test-the-rag-application-via-api)
 - [S3 Data Ingestion (Optional)](#s3-data-ingestion-optional)
 - [Monitor Backend Services](#monitor-backend-services)
+- [Observability](#observability)
 - [Congratulations!](#congratulations)
 - [Cleanup and Uninstallation](#cleanup-and-uninstallation)
 
@@ -867,6 +868,58 @@ kubectl logs -f deployment/rag-server -n nv-nvidia-blueprint-rag
 # Monitor resource usage
 kubectl top pods -n nv-nvidia-blueprint-rag
 ```
+
+## Observability
+
+The Enterprise RAG Blueprint includes built-in observability tools for monitoring and debugging your RAG applications. Expose these services via AWS Network Load Balancers for external access.
+
+### Expose Monitoring Services
+
+**RAG Observability (Zipkin & Grafana):**
+
+```bash
+# Expose Zipkin for distributed tracing
+kubectl patch svc rag-zipkin -n nv-nvidia-blueprint-rag -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+
+# Expose Grafana for metrics and dashboards
+kubectl patch svc rag-grafana -n nv-nvidia-blueprint-rag -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+```
+
+**Access Monitoring UIs:**
+
+```bash
+# Get Zipkin URL for RAG tracing
+echo "Zipkin UI: http://$(kubectl get svc rag-zipkin -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):9411"
+
+# Get Grafana URL for RAG metrics
+echo "Grafana UI: http://$(kubectl get svc rag-grafana -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):80"
+```
+
+> **Note**: For detailed information on using these observability tools, refer to:
+> - [Viewing Traces in Zipkin](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-traces-in-zipkin)
+> - [Viewing Metrics in Grafana Dashboard](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-metrics-in-grafana)
 
 ## Congratulations!
 

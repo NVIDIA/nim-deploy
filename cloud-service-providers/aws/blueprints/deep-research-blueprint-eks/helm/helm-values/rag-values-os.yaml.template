@@ -184,7 +184,7 @@ envVars:
   CONVERSATION_HISTORY: "5"
 
   # === Tracing ===
-  APP_TRACING_ENABLED: "False"
+  APP_TRACING_ENABLED: "True"
   # HTTP endpoint
   APP_TRACING_OTLPHTTPENDPOINT: "http://rag-opentelemetry-collector:4318/v1/traces"
   # GRPC endpoint
@@ -429,11 +429,11 @@ elasticsearch:
 # -- Observability
 # subsection: serviceMonitor
 serviceMonitor:
-  enabled: false
+  enabled: true
 
 # subsection: opentelemetry-collector
 opentelemetry-collector:
-  enabled: false
+  enabled: true
   mode: deployment
   image:
     repository: otel/opentelemetry-collector-contrib
@@ -520,11 +520,11 @@ opentelemetry-collector:
 
 # subsection: zipkin
 zipkin:
-  enabled: false
+  enabled: true
 
 # subsection: kube-prometheus-stack
 kube-prometheus-stack:
-  enabled: false
+  enabled: true
   prometheus:
     serviceMonitor:
       interval: "1s"

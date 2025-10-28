@@ -33,6 +33,8 @@ This guide shows how to deploy the [NVIDIA AI-Q Research Assistant Blueprint](ht
   - [Step 17: Configure AIRA Load Balancer](#step-17-configure-aira-load-balancer)
   - [Step 18: Verify AIRA Deployment](#step-18-verify-aira-deployment)
   - [Step 19: Access AI-Q Blueprint Frontend](#step-19-access-ai-q-blueprint-frontend)
+- [Observability](#observability)
+  - [Expose Monitoring Services](#expose-monitoring-services)
 - [Optional: Access RAG Frontend](#optional-access-rag-frontend)
 - [Cleanup and Uninstallation](#cleanup-and-uninstallation)
 
@@ -669,6 +671,78 @@ echo "AIRA Frontend: http://$(kubectl get svc aira-aira-frontend -n nv-aira -o j
 Access the application:
 - **AIRA Research Assistant**: Generate comprehensive research reports
 
+## Observability
+
+### Expose Monitoring Services
+
+Expose observability services via AWS Network Load Balancers for external access:
+
+**RAG Observability (Zipkin & Grafana):**
+
+```bash
+# Expose Zipkin for distributed tracing
+kubectl patch svc rag-zipkin -n nv-nvidia-blueprint-rag -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+
+# Expose Grafana for metrics and dashboards
+kubectl patch svc rag-grafana -n nv-nvidia-blueprint-rag -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+```
+
+**AI-Q Observability (Phoenix):**
+
+```bash
+# Expose Phoenix for AI-Q tracing
+kubectl patch svc aira-phoenix -n nv-aira -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+```
+
+**Access Monitoring UIs:**
+
+```bash
+# Get Zipkin URL for RAG tracing
+echo "Zipkin UI: http://$(kubectl get svc rag-zipkin -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):9411"
+
+# Get Grafana URL for RAG metrics
+echo "Grafana UI: http://$(kubectl get svc rag-grafana -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):80"
+
+# Get Phoenix URL for AI-Q tracing
+echo "Phoenix UI: http://$(kubectl get svc aira-phoenix -n nv-aira -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):6006"
+```
+
+> **Note**: For detailed information on using these observability tools, refer to:
+> - [Viewing Traces in Zipkin](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-traces-in-zipkin)
+> - [Viewing Metrics in Grafana Dashboard](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-metrics-in-grafana)
 
 ## Cleanup and Uninstallation
 
