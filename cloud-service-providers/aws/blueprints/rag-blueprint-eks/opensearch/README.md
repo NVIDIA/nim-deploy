@@ -5,9 +5,9 @@ This guide covers the integration of Amazon OpenSearch Serverless with the NVIDI
 ## Prerequisites
 
 Before starting this guide, you must complete the infrastructure setup steps from the [main README](../README.md):
-- ✅ **Tasks 1-5**: EKS cluster creation, GPU node group, GPU operator, storage, and load balancer setup
+- ✅ **Tasks 1-4**: EKS cluster creation, GPU node group, GPU operator, storage, and NGC API key setup
 
-> **Important**: Complete Tasks 1-5 from the [main README](../README.md) before proceeding with this OpenSearch integration guide.
+> **Important**: Complete Tasks 1-4 from the [main README](../README.md) before proceeding with this OpenSearch integration guide.
 
 ## Architecture Overview
 
@@ -26,7 +26,7 @@ This deployment replaces the default Milvus vector database with Amazon OpenSear
 - [Task 8-OS: Integrate OpenSearch Files](#task-8-os-integrate-opensearch-files)
 - [Task 9-OS: Build OpenSearch-Enabled Docker Images](#task-9-os-build-opensearch-enabled-docker-images)
 - [Task 10-OS: Deploy RAG Blueprint with OpenSearch](#task-10-os-deploy-rag-blueprint-with-opensearch)
-- [Task 11-OS: Configure Load Balancers](#task-11-os-configure-load-balancers)
+- [Task 11-OS: Setup Port Forwarding for RAG Services](#task-11-os-setup-port-forwarding-for-rag-services)
 - [Task 12-OS: Verify RAG Deployment](#task-12-os-verify-rag-deployment)
 - [Returning to Main Deployment Flow](#returning-to-main-deployment-flow)
 - [Cleanup](#cleanup)
@@ -42,7 +42,7 @@ First, set the required environment variables for OpenSearch configuration:
 ```bash
 # OpenSearch Configuration
 export OPENSEARCH_SERVICE_ACCOUNT="opensearch-access-sa"
-export OPENSEARCH_NAMESPACE="nv-nvidia-blueprint-rag"
+export OPENSEARCH_NAMESPACE="rag"
 export OPENSEARCH_IAM_ROLE_NAME="EKSOpenSearchServerlessRole"
 export COLLECTION_NAME="rag-vector-collection"
 export POLICY_NAME="${COLLECTION_NAME}-policy"
@@ -226,13 +226,9 @@ Clone the RAG source code and integrate OpenSearch support:
 # Clone RAG source code (this will create a 'rag' directory)
 git clone -b v2.3.0 https://github.com/NVIDIA-AI-Blueprints/rag.git rag
 
-# Copy OpenSearch VDB implementation into RAG source
+# Copy OpenSearch implementation into RAG source
 cp -r opensearch/vdb/opensearch rag/src/nvidia_rag/utils/vdb/
-
-# Update Ingestion Server
 cp opensearch/main.py rag/src/nvidia_rag/ingestor_server/main.py 
-
-# Update VDB factory and dependencies
 cp opensearch/vdb/__init__.py rag/src/nvidia_rag/utils/vdb/__init__.py
 cp opensearch/pyproject.toml rag/pyproject.toml
 ```
@@ -273,7 +269,7 @@ export IMAGE_TAG="2.3.0-opensearch"
 
 # Deploy RAG with OpenSearch configuration
 cd ..
-helm upgrade --install rag -n nv-nvidia-blueprint-rag \
+helm upgrade --install rag -n rag \
   https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
   --username '$oauthtoken' \
   --password "${NGC_API_KEY}" \
@@ -293,7 +289,7 @@ helm upgrade --install rag -n nv-nvidia-blueprint-rag \
   -f helm/values-os.yaml
 
 # Patch ingestor-server deployment to use IRSA service account
-kubectl patch deployment ingestor-server -n nv-nvidia-blueprint-rag \
+kubectl patch deployment ingestor-server -n rag \
   -p "{\"spec\":{\"template\":{\"spec\":{\"serviceAccountName\":\"$OPENSEARCH_SERVICE_ACCOUNT\"}}}}"
 ```
 
@@ -306,53 +302,29 @@ This deploys:
 
 ---
 
-## Task 11-OS: Configure Load Balancers
+## Task 11-OS: Setup Port Forwarding for RAG Services
 
-Expose RAG services via AWS Network Load Balancers:
+To securely access RAG services, use kubectl port-forward:
 
 ```bash
-# Patch frontend service to LoadBalancer
-kubectl patch svc rag-frontend -n nv-nvidia-blueprint-rag -p '{
-  "spec": {
-    "type": "LoadBalancer"
-  },
-  "metadata": {
-    "annotations": {
-      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
-      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
-      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
-    }
-  }
-}'
+# Port-forward RAG frontend (run in a separate terminal)
+kubectl port-forward -n rag svc/rag-frontend 3000:3000
 
-# Patch rag-server service to LoadBalancer
-kubectl patch svc rag-server -n nv-nvidia-blueprint-rag -p '{
-  "spec": {
-    "type": "LoadBalancer"
-  },
-  "metadata": {
-    "annotations": {
-      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
-      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
-      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
-    }
-  }
-}'
+# Port-forward RAG server (run in another separate terminal)
+kubectl port-forward -n rag svc/rag-server 8081:8081
 
-# Patch ingestor-server service to LoadBalancer
-kubectl patch svc ingestor-server -n nv-nvidia-blueprint-rag -p '{
-  "spec": {
-    "type": "LoadBalancer"
-  },
-  "metadata": {
-    "annotations": {
-      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
-      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
-      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
-    }
-  }
-}'
+# Port-forward ingestor server (run in another separate terminal)
+kubectl port-forward -n rag svc/ingestor-server 8082:8082
 ```
+
+> **Note**: These commands will run in the foreground. Open separate terminal windows for each port-forward command, or run them in the background.
+
+**Access the Services:**
+
+Once port-forwarding is active, you can access the services at:
+- **RAG Frontend**: http://localhost:3000
+- **RAG Server**: http://localhost:8081
+- **Ingestor Server**: http://localhost:8082
 
 ---
 
@@ -362,17 +334,17 @@ Check that all RAG components are running:
 
 ```bash
 # Check all pods in RAG namespace
-kubectl get all -n nv-nvidia-blueprint-rag
+kubectl get all -n rag
 
 # Wait for all pods to be ready
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=rag -n nv-nvidia-blueprint-rag --timeout=600s
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=rag -n rag --timeout=600s
 
 # Check specific components
-kubectl get pods -n nv-nvidia-blueprint-rag -o wide | grep -E "NAME|nim-llm|rag-server|ingestor|embedding|reranking"
+kubectl get pods -n rag -o wide | grep -E "NAME|nim-llm|rag-server|ingestor|embedding|reranking"
 
 # Verify service accounts are using IRSA
-kubectl get pod -n nv-nvidia-blueprint-rag -l app.kubernetes.io/component=rag-server -o jsonpath='{.items[0].spec.serviceAccountName}' | xargs -I {} echo "RAG Server service account: {}"
-kubectl get pod -n nv-nvidia-blueprint-rag -l app=ingestor-server -o jsonpath='{.items[0].spec.serviceAccountName}' | xargs -I {} echo "Ingestor Server service account: {}"
+kubectl get pod -n rag -l app.kubernetes.io/component=rag-server -o jsonpath='{.items[0].spec.serviceAccountName}' | xargs -I {} echo "RAG Server service account: {}"
+kubectl get pod -n rag -l app=ingestor-server -o jsonpath='{.items[0].spec.serviceAccountName}' | xargs -I {} echo "Ingestor Server service account: {}"
 ```
 
 ---
@@ -385,10 +357,10 @@ You have successfully deployed the Enterprise RAG Blueprint with Amazon OpenSear
 
 ### Next Steps
 
-Return to the [main README](../README.md#task-7-access-the-rag-app-services) to continue with:
-- **Task 7: Access the RAG App Services**
-- **Task 8: Test the RAG Application via UI**
-- **Task 9: Test the RAG Application via API**
+Return to the [main README](../README.md#task-6-access-the-rag-app-services) to continue with:
+- **Task 6: Access the RAG App Services**
+- **Task 7: Test the RAG Application via UI**
+- **Task 8: Test the RAG Application via API**
 - **S3 Data Ingestion (Optional)**
 - **Cleanup and Uninstallation**
 
@@ -454,7 +426,7 @@ echo "✅ OpenSearch Serverless policies deleted"
 echo "🗑️  Deleting IAM service account and role..."
 eksctl delete iamserviceaccount \
   --cluster=$CLUSTER_NAME \
-  --namespace=nv-nvidia-blueprint-rag \
+  --namespace=rag \
   --name=opensearch-access-sa \
   --region=$REGION
 

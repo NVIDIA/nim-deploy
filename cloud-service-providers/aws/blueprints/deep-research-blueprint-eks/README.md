@@ -15,27 +15,25 @@ This guide shows how to deploy the [NVIDIA AI-Q Research Assistant Blueprint](ht
   - [Step 6: Install NVIDIA GPU Operator](#step-6-install-nvidia-gpu-operator)
   - [Step 7: Verify GPU Allocation](#step-7-verify-gpu-allocation)
   - [Step 8: Deploy Storage Class](#step-8-deploy-storage-class)
-  - [Step 9: Install AWS Load Balancer Controller](#step-9-install-aws-load-balancer-controller)
 - [NVIDIA Enterprise RAG Blueprint Deployment](#nvidia-enterprise-rag-blueprint-deployment)
   - [Option 1: Default Deployment with Milvus](#option-1-default-deployment-with-milvus-recommended-for-quick-start)
-    - [Step 10: Generate RAG Values File](#step-10-generate-rag-values-file)
-    - [Step 11: Deploy RAG Blueprint](#step-11-deploy-rag-blueprint)
-    - [Step 12: Configure Load Balancers for Internet Access](#step-12-configure-load-balancers-for-internet-access)
-    - [Step 13: Verify RAG Deployment](#step-13-verify-rag-deployment)
+    - [Step 9: Generate RAG Values File](#step-9-generate-rag-values-file)
+    - [Step 10: Deploy RAG Blueprint](#step-10-deploy-rag-blueprint)
+    - [Step 11: Setup Port Forwarding for RAG Services](#step-11-setup-port-forwarding-for-rag-services)
+    - [Step 12: Verify RAG Deployment](#step-12-verify-rag-deployment)
   - [Option 2: Deployment with Amazon OpenSearch Serverless](opensearch/README.md)
 - [Data Ingestion](#data-ingestion)
   - [Method 1: Direct Upload via RAG Frontend and Ingestor API](#method-1-direct-upload-via-rag-frontend-and-ingestor-api)
   - [Method 2: Batch Ingestion from S3 Bucket](#method-2-batch-ingestion-from-s3-bucket)
 - [AI-Q Components Deployment](#ai-q-components-deployment)
-  - [Step 14: Generate AIRA Values File](#step-14-generate-aira-values-file)
-  - [Step 15: Setup Helm Repositories for AIRA](#step-15-setup-helm-repositories-for-aira-optional-skip-if-below-repos-are-already-added)
-  - [Step 16: Deploy AIRA Components](#step-16-deploy-aira-components)
-  - [Step 17: Configure AIRA Load Balancer](#step-17-configure-aira-load-balancer)
-  - [Step 18: Verify AIRA Deployment](#step-18-verify-aira-deployment)
-  - [Step 19: Access AI-Q Blueprint Frontend](#step-19-access-ai-q-blueprint-frontend)
+  - [Step 13: Generate AIRA Values File](#step-13-generate-aira-values-file)
+  - [Step 14: Deploy AIRA Components](#step-14-deploy-aira-components)
+  - [Step 15: Setup Port Forwarding for AIRA](#step-15-setup-port-forwarding-for-aira)
+  - [Step 16: Verify AIRA Deployment](#step-16-verify-aira-deployment)
+  - [Step 17: Access AI-Q Blueprint Frontend](#step-17-access-ai-q-blueprint-frontend)
 - [Observability](#observability)
-  - [Expose Monitoring Services](#expose-monitoring-services)
-- [Optional: Access RAG Frontend](#optional-access-rag-frontend)
+  - [Access Monitoring Services](#access-monitoring-services)
+- [Optional: Expose Services Publicly](#optional-expose-services-publicly)
 - [Cleanup and Uninstallation](#cleanup-and-uninstallation)
 
 ## Architecture
@@ -81,7 +79,7 @@ This configuration maintains the full **49B Nemotron model** (`llama-3.3-nemotro
 3. **Nemo Retriever Reranking Model** (`llama-3.2-nv-rerankqa-1b-v2`) → 1 A10G GPU
 4. **AIRA 8B Instruct Model** (`meta/llama-3.1-8b-instruct`) → 1 A10G GPU
    - Deployed by AIRA Helm chart for report generation
-   - *Note: The official AI-Q blueprint uses Llama 3.3 70B Instruct. This deployment uses the smaller 8B model to reduce compute requirements. You can configure a different model in `helm/helm-values/aira-values.eks.yaml.template`.*
+   - *Note: The official AI-Q blueprint uses Llama 3.3 70B Instruct. This deployment uses the smaller 8B model to reduce compute requirements. You can configure a different model in `helm/aira-values.eks.yaml.template`.*
 
 **Data Ingestion Node Group (DATA_INGEST_NG)** - 4 A10G GPUs (1 x g5.12xlarge instance):
 1. **Graphic Elements Model** (`nemoretriever-graphic-elements-v1`) → 1 A10G GPU
@@ -307,81 +305,6 @@ Deploy the AWS EBS CSI driver for persistent, high-performance storage suitable 
 
    You should see the `ebs-gp3` storage class marked as default.
 
-### Step 9: Install AWS Load Balancer Controller
-
-The AWS Load Balancer Controller is required for LoadBalancer services to provision AWS Network Load Balancers (NLB) and Application Load Balancers (ALB).
-
-#### Install AWS Load Balancer Controller with Helm (AWS Recommended Method)
-
-Following the [official AWS documentation](https://docs.aws.amazon.com/eks/latest/userguide/lbc-helm.html), use Helm to install the AWS Load Balancer Controller:
-
-1. **Download and Create IAM Policy**
-
-   ```bash
-   # Download the IAM policy for AWS Load Balancer Controller
-   curl -O https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.13.3/docs/install/iam_policy.json
-   
-   # Create IAM policy
-   aws iam create-policy \
-     --policy-name AWSLoadBalancerControllerIAMPolicy \
-     --policy-document file://iam_policy.json
-   ```
-
-2. **Create IAM Service Account**
-
-   ```bash
-   # Get your AWS Account ID
-   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-   
-   # Create IAM service account with the specific policy
-   eksctl create iamserviceaccount \
-     --cluster=$CLUSTER_NAME \
-     --namespace=kube-system \
-     --name=aws-load-balancer-controller \
-     --attach-policy-arn=arn:aws:iam::${ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy \
-     --override-existing-serviceaccounts \
-     --region $REGION \
-     --approve
-   ```
-
-3. **Install via Helm**
-
-   ```bash
-   # Add the EKS chart repository
-   helm repo add eks https://aws.github.io/eks-charts
-   helm repo update eks
-   
-   # Install AWS Load Balancer Controller
-   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-     -n kube-system \
-     --set clusterName=$CLUSTER_NAME \
-     --set serviceAccount.create=false \
-     --set serviceAccount.name=aws-load-balancer-controller \
-     --set region=$REGION \
-     --set vpcId=$(aws eks describe-cluster --name $CLUSTER_NAME --region $REGION --query "cluster.resourcesVpcConfig.vpcId" --output text) \
-     --version 1.13.0
-   ```
-
-#### Verify Installation
-
-```bash
-# Check if the controller deployment is ready
-kubectl get deployment -n kube-system aws-load-balancer-controller
-
-# Check if the controller pods are running
-kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
-
-# Check controller logs (optional)
-kubectl logs -n kube-system deployment/aws-load-balancer-controller
-```
-
-Expected output should show:
-```
-NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
-aws-load-balancer-controller   2/2     2            2           84s
-```
-
-
 ## NVIDIA Enterprise RAG Blueprint Deployment
 
 The RAG Blueprint supports two vector database options. Choose the option that best fits your requirements:
@@ -404,11 +327,11 @@ For production deployments requiring managed vector database services, you can i
 
 ### **Continuing with Option 1: Milvus Deployment**
 
-### Step 10: Generate RAG Values File
+### Step 9: Generate RAG Values File
 
 Generate the actual rag-values.yaml file from the template with your node hostnames:
 
-> **Note**: The repository contains `helm/helm-values/rag-values.yaml.template` with placeholder variables like `$MAIN_GPU_NODE_1`. This step generates the actual `rag-values.yaml` file with your specific node hostnames.
+> **Note**: The repository contains `helm/rag-values.yaml.template` with placeholder variables like `$MAIN_GPU_NODE_1`. This step generates the actual `rag-values.yaml` file with your specific node hostnames.
 
 ```bash
 # Get node hostnames and export as environment variables for envsubst
@@ -422,21 +345,21 @@ echo "Secondary GPU Node (g5.12xlarge): ${SECONDARY_GPU_NODE}"
 echo "Data Ingestion GPU Node (g5.12xlarge): ${DATA_INGEST_GPU_NODE}"
 
 # Generate rag-values.yaml from template (only replace specific variables)
-envsubst '$MAIN_GPU_NODE_1 $SECONDARY_GPU_NODE $DATA_INGEST_GPU_NODE' < helm/helm-values/rag-values.yaml.template > helm/helm-values/rag-values.yaml
+envsubst '$MAIN_GPU_NODE_1 $SECONDARY_GPU_NODE $DATA_INGEST_GPU_NODE' < helm/rag-values.yaml.template > helm/rag-values.yaml
 ```
 
-### Step 11: Deploy RAG Blueprint
+### Step 10: Deploy RAG Blueprint
 
 Deploy the RAG blueprint with the 49B Nemotron model:
 
 ```bash
-helm upgrade --install rag -n nv-nvidia-blueprint-rag \
+helm upgrade --install rag -n rag \
   https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
   --username '$oauthtoken' \
   --password "${NGC_API_KEY}" \
   --set imagePullSecret.password=$NGC_API_KEY \
   --set ngcApiSecret.password=$NGC_API_KEY \
-  -f helm/helm-values/rag-values.yaml \
+  -f helm/rag-values.yaml \
   --create-namespace
 ```
 
@@ -444,46 +367,28 @@ This deploys:
 - **49B Nemotron** (8 GPUs) for main reasoning and query rewriting
 - **Supporting Models** (Milvus, Embedding, Reranking) on remaining GPUs
 
-### Step 12: Configure Load Balancers for Internet Access
+### Step 11: Setup Port Forwarding for RAG Services
 
-Patch both services to expose them properly via AWS Load Balancers:
+To securely access RAG services, use kubectl port-forward:
 
 ```bash
-# Patch the frontend service to LoadBalancer with internet-facing access
-kubectl patch svc rag-frontend -n nv-nvidia-blueprint-rag -p '{
-  "spec": {
-    "type": "LoadBalancer"
-  },
-  "metadata": {
-    "annotations": {
-      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
-      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
-      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
-    }
-  }
-}'
+# Port-forward RAG frontend (run in a separate terminal)
+kubectl port-forward -n rag svc/rag-frontend 3001:3000
 
-# Patch the ingestor-server service to LoadBalancer with internet-facing access
-kubectl patch svc ingestor-server -n nv-nvidia-blueprint-rag -p '{
-  "spec": {
-    "type": "LoadBalancer"
-  },
-  "metadata": {
-    "annotations": {
-      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
-      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing", 
-      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
-    }
-  }
-}'
+# Port-forward ingestor server (run in another separate terminal)
+kubectl port-forward -n rag svc/ingestor-server 8082:8082
 ```
 
-### Step 13: Verify RAG Deployment
+> **Note**: These commands will run in the foreground. Open separate terminal windows for each port-forward command, or run them in the background.
+
+> **Alternative**: If you need to expose services publicly, see the [Optional: Expose Services Publicly](#optional-expose-services-publicly) section after completing the deployment.
+
+### Step 12: Verify RAG Deployment
 
 Ensure all components are successfully running before proceeding
 
 ```bash
-kubectl get all -n nv-nvidia-blueprint-rag
+kubectl get all -n rag
 ```
 
 
@@ -496,13 +401,14 @@ Now that the RAG system is deployed, you can ingest documents into the vector da
 Use the RAG frontend interface or directly call the ingestor server API to upload documents:
 
 #### Option A: RAG Frontend Interface
-```bash
-# Get the RAG frontend URL
-export RAG_FRONTEND_URL=$(kubectl get svc rag-frontend -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-echo "RAG Frontend: http://$RAG_FRONTEND_URL:3000"
+
+Ensure the RAG frontend port-forward is running from Step 12, then navigate to:
+
+```
+http://localhost:3001
 ```
 
-Navigate to the RAG frontend in your browser and use the upload interface to:
+Use the upload interface to:
 - Upload PDF, DOCX, and other supported document formats
 - Monitor ingestion progress in real-time
 - Verify documents are successfully processed
@@ -513,20 +419,22 @@ For programmatic document ingestion using the ingestor API, refer to the officia
 
 **📖 [Ingestion API Usage Examples](https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/notebooks/ingestion_api_usage.ipynb)**
 
-First, get your ingestor URL:
+Ensure the ingestor server port-forward is running from Step 12, then use:
 ```bash
-export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export INGESTOR_URL="localhost"
 echo "Ingestor API: http://$INGESTOR_URL:8082"
 ```
 
 ### Method 2: Batch Ingestion from S3 Bucket
 
-For large-scale document ingestion from an S3 bucket, use the provided batch ingestion script:
+For large-scale document ingestion from an S3 bucket, use the provided batch ingestion script.
+
+First, ensure the ingestor server port-forward is running from Step 12, then:
 
 ```bash
 # Set required environment variables
 export S3_BUCKET_NAME="your-pdf-bucket-name" # Replace with your S3 bucket name
-export INGESTOR_URL=$(kubectl get svc ingestor-server -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export INGESTOR_URL="localhost:8082"  # Using port-forward from Step 12
 
 # Optional: Configure additional settings
 export S3_PREFIX=""  # Optional: folder path (e.g., "documents/")
@@ -548,72 +456,42 @@ This method is ideal for:
 
 Now that the RAG Blueprint is deployed and verified, we can deploy the AI-Q Research Assistant (AIRA) components that will use the RAG services for enhanced research capabilities.
 
-### Step 14: Generate AIRA Values File
+### Step 13: Generate AIRA Values File
 
 Generate the actual aira-values.eks.yaml file from the template with your node hostname:
 
 ```bash
-# Export environment variable for envsubst (SECONDARY_GPU_NODE is already set from Step 10)
+# Export environment variable for envsubst (SECONDARY_GPU_NODE is already set from Step 9)
 echo "Using Secondary GPU Node for AIRA NIM-LLM: ${SECONDARY_GPU_NODE}"
 
 # Generate aira-values.eks.yaml from template
-envsubst '$SECONDARY_GPU_NODE' < helm/helm-values/aira-values.eks.yaml.template > helm/helm-values/aira-values.eks.yaml
+envsubst '$SECONDARY_GPU_NODE' < helm/aira-values.eks.yaml.template > helm/aira-values.eks.yaml
 ```
 
-### Step 15: Setup Helm Repositories for AIRA (Optional, skip if below repos are already added)
+### Step 14: Deploy AIRA Components
 
-<details>
-<summary>Click to expand Helm repository setup</summary>
+Deploy AIRA using the NGC Helm chart:
 
-Add the required Helm repositories and update chart dependencies:
-
-```bash
-# Add NGC NIM repository for NVIDIA Inference Microservices (required for nim-llm dependency)
-helm repo add ngc-nim https://helm.ngc.nvidia.com/nim --username '$oauthtoken' --password "$NGC_API_KEY"
-
-# Add additional repositories for observability and monitoring (optional)
-helm repo add zipkin https://zipkin.io/zipkin-helm
-helm repo add opentelemetry https://open-telemetry.github.io/opentelemetry-helm-charts
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo add bitnami https://charts.bitnami.com/bitnami
-
-# Add NGC Nemo microservices repository (optional, for future extensions)
-helm repo add ngc-nemo https://helm.ngc.nvidia.com/nvidia/nemo-microservices --username '$oauthtoken' --password "$NGC_API_KEY"
-
-# Update all repositories
-helm repo update
-
-# Update dependencies for the local AIRA chart
-helm dependency update helm/aiq-aira
-```
-
-> **Note**: The AIRA Helm chart is bundled locally in `helm/aiq-aira/` with some fixes. The NGC NIM repository is required for the nim-llm dependency, while other repositories are optional for observability and future extensions.
-
-</details>
-
-### Step 16: Deploy AIRA Components
-
-Deploy AIRA: 
-**Note**: The AIRA Helm chart is bundled locally in `helm/aiq-aira/` and incorporates some fixes. The Helm charts for AIRA is WIP on the AIRA [repo](https://github.com/NVIDIA-AI-Blueprints/aiq-research-assistant/tree/feat-helm2)
-
-> **Important - Model Configuration**: The official AI-Q blueprint uses **Llama 3.3 70B Instruct** for report generation, which requires approximately 4 GPUs. This deployment has been modified to use **Llama 3.1 8B Instruct** (`meta/llama-3.1-8b-instruct`) with only 1 GPU to significantly reduce compute requirements and costs. While this provides faster deployment, report quality and reasoning capabilities may differ from the official blueprint.
+> **Important - Model Configuration**: The official AI-Q blueprint uses **Llama 3.3 70B Instruct** for report generation. This deployment has been modified to use **Llama 3.1 8B Instruct** (`meta/llama-3.1-8b-instruct`) to significantly reduce compute requirements and costs. While this provides faster deployment, report quality and reasoning capabilities may differ from the official blueprint.
 > 
 > To use the original 70B model or another larger model, you will need to:
-> 1. Modify the model configuration in `helm/helm-values/aira-values.eks.yaml.template` (update `image.repository`, `model.name`, and `config.instruct_model_name`)
+> 1. Modify the model configuration in `helm/aira-values.eks.yaml.template` (update `image.repository`, `model.name`, and `backendEnvVars.INSTRUCT_MODEL_NAME`)
 > 2. Adjust GPU resource requests/limits in the same file (increase to 8 GPUs for 70B model if using g5.48xlarge)
-> 3. Ensure your EKS node group has sufficient GPU capacity (It require larger instance types like g5.48xlarge)
+> 3. Ensure your EKS node group has sufficient GPU capacity (It requires larger instance types like g5.48xlarge)
 
 ```bash
-# Set your Tavily API key (replace with your actual key)
-export TAVILY_API_KEY=<YOUR_TAVILY_API_KEY>
+# Verify Tavily API key is set
+echo "Tavily API Key: ${TAVILY_API_KEY:0:10}..."
 
-# Deploy AIRA using local Helm chart
-helm upgrade --install aira helm/aiq-aira \
+# Deploy AIRA using NGC Helm chart
+helm upgrade --install aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
+  --username='$oauthtoken' \
+  --password="${NGC_API_KEY}" \
   -n nv-aira --create-namespace \
-  -f helm/helm-values/aira-values.eks.yaml \
+  -f helm/aira-values.eks.yaml \
   --set imagePullSecret.password="$NGC_API_KEY" \
   --set ngcApiSecret.password="$NGC_API_KEY" \
-  --set config.tavily_api_key="$TAVILY_API_KEY"
+  --set tavilyApiSecret.password="$TAVILY_API_KEY"
 ```
 
 This deploys:
@@ -622,9 +500,128 @@ This deploys:
 - **NGINX Proxy**: Routes requests to appropriate services
 - **Frontend**: User interface
 
-### Step 17: Configure AIRA Load Balancer
+### Step 15: Setup Port Forwarding for AIRA
 
-Patch the AIRA frontend service to be internet-facing:
+To securely access the AIRA frontend, use kubectl port-forward:
+
+```bash
+# Port-forward AIRA frontend (run in a separate terminal)
+kubectl port-forward -n nv-aira svc/aira-aira-frontend 3000:3000
+```
+
+> **Note**: This command will run in the foreground. Open a separate terminal window or run it in the background.
+
+> **Alternative**: If you need to expose the service publicly, see the [Optional: Expose Services Publicly](#optional-expose-services-publicly) section.
+
+### Step 16: Verify AIRA Deployment
+
+Check that all AIRA components are running:
+
+```bash
+# Check all AIRA components
+kubectl get all -n nv-aira
+
+# Check specifically for the NIM-LLM pod (should be on SECONDARY_GPU_NODE)
+kubectl get pods -n nv-aira -o wide
+
+# Wait for all components to be ready
+kubectl wait --for=condition=ready pod -l app=aira -n nv-aira --timeout=300s
+```
+
+### Step 17: Access AI-Q Blueprint Frontend
+
+With port-forwarding enabled from Step 15, access the AIRA Research Assistant:
+
+**AIRA Research Assistant:**
+- URL: http://localhost:3000
+- Use this to generate comprehensive research reports
+
+**RAG Frontend** (optional):
+- URL: http://localhost:3001
+- Use this to test the RAG application directly (requires port-forward from Step 12)
+
+## Observability
+
+### Access Monitoring Services
+
+To access observability dashboards, use kubectl port-forward:
+
+**RAG Observability (Zipkin & Grafana):**
+
+```bash
+# Port-forward Zipkin for distributed tracing (run in a separate terminal)
+kubectl port-forward -n rag svc/rag-zipkin 9411:9411
+
+# Port-forward Grafana for metrics and dashboards (run in another separate terminal)
+kubectl port-forward -n rag svc/rag-grafana 8080:80
+```
+
+**AI-Q Observability (Phoenix):**
+
+```bash
+# Port-forward Phoenix for AI-Q tracing (run in a separate terminal)
+kubectl port-forward -n nv-aira svc/aira-phoenix 6006:6006
+```
+
+**Access Monitoring UIs:**
+
+- **Zipkin UI** (RAG tracing): http://localhost:9411
+- **Grafana UI** (RAG metrics): http://localhost:8080
+- **Phoenix UI** (AI-Q tracing): http://localhost:6006
+
+> **Note**: For detailed information on using these observability tools, refer to:
+> - [Viewing Traces in Zipkin](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-traces-in-zipkin)
+> - [Viewing Metrics in Grafana Dashboard](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-metrics-in-grafana)
+
+> **Alternative**: If you need to expose monitoring services publicly, you can create an Ingress resource with appropriate authentication and security controls.
+
+## Optional: Expose Services Publicly
+
+<details>
+<summary>Click to expand instructions for exposing services via AWS Network Load Balancers</summary>
+
+By default, this deployment uses port-forwarding for secure local access. If you need to expose services publicly (e.g., for team collaboration or production use), you can configure AWS Network Load Balancers.
+
+> **⚠️ Security Warning**: Exposing services publicly without additional security controls creates potential security risks. Consider implementing:
+> - Network ACLs or Security Groups to restrict access to specific IP ranges
+> - AWS WAF for application-level protection
+> - Authentication/authorization mechanisms
+> - TLS/SSL encryption
+> - VPN or AWS PrivateLink for internal-only access
+
+### Expose RAG Services
+
+```bash
+# Patch the frontend service to LoadBalancer with internet-facing access
+kubectl patch svc rag-frontend -n rag -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+
+# Patch the ingestor-server service to LoadBalancer with internet-facing access
+kubectl patch svc ingestor-server -n rag -p '{
+  "spec": {
+    "type": "LoadBalancer"
+  },
+  "metadata": {
+    "annotations": {
+      "service.beta.kubernetes.io/aws-load-balancer-type": "nlb",
+      "service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing",
+      "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "tcp"
+    }
+  }
+}'
+```
+
+### Expose AIRA Frontend
 
 ```bash
 # Patch the AIRA frontend service to LoadBalancer with internet-facing access
@@ -642,46 +639,11 @@ kubectl patch svc aira-aira-frontend -n nv-aira -p '{
 }'
 ```
 
-### Step 18: Verify AIRA Deployment
-
-Check that all AIRA components are running:
-
-```bash
-# Check all AIRA components
-kubectl get all -n nv-aira
-
-# Check specifically for the NIM-LLM pod (should be on SECONDARY_GPU_NODE)
-kubectl get pods -n nv-aira -o wide
-
-# Wait for all components to be ready
-kubectl wait --for=condition=ready pod -l app=aira -n nv-aira --timeout=300s
-```
-
-
-### Step 19: Access AI-Q Blueprint Frontend
-
-Get the AIRA Frontend URL:
-
-```bash
-echo "AIRA Frontend: http://$(kubectl get svc aira-aira-frontend -n nv-aira -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):3001"
-```
-
-> **Note**: The load balancer endpoint may take up to 5 minutes to be provisioned and become accessible after deployment.
-
-Access the application:
-- **AIRA Research Assistant**: Generate comprehensive research reports
-
-## Observability
-
-### Expose Monitoring Services
-
-Expose observability services via AWS Network Load Balancers for external access:
-
-**RAG Observability (Zipkin & Grafana):**
+### Expose Observability Services (Optional)
 
 ```bash
 # Expose Zipkin for distributed tracing
-kubectl patch svc rag-zipkin -n nv-nvidia-blueprint-rag -p '{
+kubectl patch svc rag-zipkin -n rag -p '{
   "spec": {
     "type": "LoadBalancer"
   },
@@ -695,7 +657,7 @@ kubectl patch svc rag-zipkin -n nv-nvidia-blueprint-rag -p '{
 }'
 
 # Expose Grafana for metrics and dashboards
-kubectl patch svc rag-grafana -n nv-nvidia-blueprint-rag -p '{
+kubectl patch svc rag-grafana -n rag -p '{
   "spec": {
     "type": "LoadBalancer"
   },
@@ -707,11 +669,7 @@ kubectl patch svc rag-grafana -n nv-nvidia-blueprint-rag -p '{
     }
   }
 }'
-```
 
-**AI-Q Observability (Phoenix):**
-
-```bash
 # Expose Phoenix for AI-Q tracing
 kubectl patch svc aira-phoenix -n nv-aira -p '{
   "spec": {
@@ -727,29 +685,34 @@ kubectl patch svc aira-phoenix -n nv-aira -p '{
 }'
 ```
 
-**Access Monitoring UIs:**
+### Get Load Balancer URLs
+
+After patching the services, retrieve the Load Balancer URLs:
 
 ```bash
-# Get Zipkin URL for RAG tracing
-echo "Zipkin UI: http://$(kubectl get svc rag-zipkin -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):9411"
+# RAG Services
+echo "RAG Frontend: http://$(kubectl get svc rag-frontend -n rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):3000"
+echo "Ingestor Server: http://$(kubectl get svc ingestor-server -n rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):8082"
 
-# Get Grafana URL for RAG metrics
-echo "Grafana UI: http://$(kubectl get svc rag-grafana -n nv-nvidia-blueprint-rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):80"
+# AIRA Frontend
+echo "AIRA Frontend: http://$(kubectl get svc aira-aira-frontend -n nv-aira -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):3000"
 
-# Get Phoenix URL for AI-Q tracing
+# Observability (if exposed)
+echo "Zipkin UI: http://$(kubectl get svc rag-zipkin -n rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):9411"
+echo "Grafana UI: http://$(kubectl get svc rag-grafana -n rag -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):80"
 echo "Phoenix UI: http://$(kubectl get svc aira-phoenix -n nv-aira -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):6006"
 ```
 
-> **Note**: For detailed information on using these observability tools, refer to:
-> - [Viewing Traces in Zipkin](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-traces-in-zipkin)
-> - [Viewing Metrics in Grafana Dashboard](https://github.com/NVIDIA-AI-Blueprints/rag/blob/main/docs/observability.md#view-metrics-in-grafana)
+> **Note**: It takes a few minutes for the AWS Load Balancers to be provisioned and become available.
+
+</details>
 
 ## Cleanup and Uninstallation
 
 ### Uninstall RAG Blueprint
 
 ```bash
-helm uninstall rag -n nv-nvidia-blueprint-rag
+helm uninstall rag -n rag
 ```
 
 ### Uninstall AI-Q Components
