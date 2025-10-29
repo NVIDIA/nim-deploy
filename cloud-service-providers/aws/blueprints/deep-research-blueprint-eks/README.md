@@ -419,7 +419,7 @@ For programmatic document ingestion using the ingestor API, refer to the officia
 
 **📖 [Ingestion API Usage Examples](https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/notebooks/ingestion_api_usage.ipynb)**
 
-Ensure the ingestor server port-forward is running from Step 12, then use:
+Ensure the ingestor server port-forward is running from Step 11, then use:
 ```bash
 export INGESTOR_URL="localhost"
 echo "Ingestor API: http://$INGESTOR_URL:8082"
@@ -429,12 +429,12 @@ echo "Ingestor API: http://$INGESTOR_URL:8082"
 
 For large-scale document ingestion from an S3 bucket, use the provided batch ingestion script.
 
-First, ensure the ingestor server port-forward is running from Step 12, then:
+First, ensure the ingestor server port-forward is running from Step 11, then:
 
 ```bash
 # Set required environment variables
 export S3_BUCKET_NAME="your-pdf-bucket-name" # Replace with your S3 bucket name
-export INGESTOR_URL="localhost:8082"  # Using port-forward from Step 12
+export INGESTOR_URL="localhost:8082"  # Using port-forward from Step 11
 
 # Optional: Configure additional settings
 export S3_PREFIX=""  # Optional: folder path (e.g., "documents/")

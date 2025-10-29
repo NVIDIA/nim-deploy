@@ -660,12 +660,11 @@ For large-scale document processing, you can ingest documents directly from an S
    export LOCAL_DATA_DIR="/tmp/s3_ingestion"             # Local temporary directory
    export UPLOAD_BATCH_SIZE="100"                        # Number of files to upload per batch
 
-   # Set the ingestor server endpoint (using port-forward from Task 7)
-   export INGESTOR_URL="localhost"
-   export INGESTOR_PORT="8082"
+   # Set the ingestor server endpoint (using port-forward from Task 6)
+   export INGESTOR_URL="localhost:8082"
 
    echo "S3 Bucket: s3://$S3_BUCKET_NAME/$S3_PREFIX"
-   echo "Ingestor URL: http://$INGESTOR_URL:$INGESTOR_PORT"
+   echo "Ingestor URL: http://$INGESTOR_URL"
    echo "Collection: $RAG_COLLECTION_NAME"
    ```
 
@@ -698,12 +697,16 @@ For large-scale document processing, you can ingest documents directly from an S
    # Install required dependencies in virtual environment
    pip install -q -r requirements.txt
 
+   # Parse INGESTOR_URL to extract host and port
+   INGESTOR_HOST="${INGESTOR_URL%%:*}"
+   INGESTOR_PORT="${INGESTOR_URL##*:}"
+
    # Run batch ingestion
    python3 batch_ingestion.py \
      --folder "$LOCAL_DATA_DIR" \
      --collection-name "$RAG_COLLECTION_NAME" \
      --create_collection \
-     --ingestor-host "$INGESTOR_URL" \
+     --ingestor-host "$INGESTOR_HOST" \
      --ingestor-port "$INGESTOR_PORT" \
      --upload-batch-size "$UPLOAD_BATCH_SIZE" \
      -v
@@ -725,7 +728,7 @@ For large-scale document processing, you can ingest documents directly from an S
 
    ```bash
    # Check the number of documents in the collection
-   curl -s -X GET "http://$INGESTOR_URL:$INGESTOR_PORT/v1/documents?collection_name=$RAG_COLLECTION_NAME" \
+   curl -s -X GET "http://$INGESTOR_URL/v1/documents?collection_name=$RAG_COLLECTION_NAME" \
      -H "accept: application/json" | jq '.total_documents // 0'
    ```
 
