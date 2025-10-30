@@ -4,7 +4,7 @@ This guide provides comprehensive step-by-step instructions for deploying the NV
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before starting the deployment process, ensure you have the following:
 
@@ -18,7 +18,7 @@ Before starting the deployment process, ensure you have the following:
 
 ---
 
-## 🛡️ IAM Policy Requirements
+## IAM Policy Requirements
 
 The deployment requires specific OCI Identity and Access Management (IAM) permissions. Ensure your user/group has the following permissions:
 
@@ -41,7 +41,7 @@ Allow service OKE to manage all-resources in compartment <COMPARTMENT_NAME>
 
 ---
 
-## 🧱 Infrastructure Setup
+## Infrastructure Setup
 
 This section covers creating your OKE cluster with GPU nodes. OKE Quick Create will automatically set up all required networking.
 
@@ -75,15 +75,15 @@ This section covers creating your OKE cluster with GPU nodes. OKE Quick Create w
    - **Kubernetes worker nodes**: **Private workers** (default)
 
 4. **Quick Create will automatically configure**:
-   - ✅ New VCN with appropriate CIDR ranges
-   - ✅ Public subnet for LoadBalancers and API endpoint
-   - ✅ Private subnet for worker nodes
-   - ✅ Internet Gateway for public subnet
-   - ✅ NAT Gateway for private subnet
-   - ✅ Service Gateway for OCI services
-   - ✅ Route tables and security lists
+   - New VCN with appropriate CIDR ranges
+   - Public subnet for LoadBalancers and API endpoint
+   - Private subnet for worker nodes
+   - Internet Gateway for public subnet
+   - NAT Gateway for private subnet
+   - Service Gateway for OCI services
+   - Route tables and security lists
 
-> **⚠️ Security Note:** Quick Create will configure security lists with `0.0.0.0/0` for some rules. **This is NOT recommended for production.** After cluster creation, review and restrict security rules to your specific IP ranges or corporate network CIDR blocks.
+> **Security Note:** Quick Create will configure security lists with `0.0.0.0/0` for some rules. **This is NOT recommended for production.** After cluster creation, review and restrict security rules to your specific IP ranges or corporate network CIDR blocks.
 
 5. **Node Pool Shape and Configuration** - Scroll down to configure GPU nodes
 
@@ -119,10 +119,10 @@ Click **Show advanced options** to expand additional settings:
    - Scroll to find this setting
    - Change from default (31) to: **`50`** or higher
    
-   > **⚠️ CRITICAL:** The full RAG Blueprint deployment requires at least 50 pods per node to avoid scheduling issues. The default value of 31 is insufficient and will cause pod placement failures.
+   > **CRITICAL:** The full RAG Blueprint deployment requires at least 50 pods per node to avoid scheduling issues. The default value of 31 is insufficient and will cause pod placement failures.
 
 3. **SSH Keys**:
-   - ☑ **Paste SSH keys** or **Upload public key file(s)**
+   - **Paste SSH keys** or **Upload public key file(s)**
    - Add your SSH public key for node access (optional but recommended)
 
 ### 2.3 Review and Create
@@ -312,7 +312,7 @@ export NGC_API_KEY="<YOUR_NGC_API_KEY>"
 
 ---
 
-## 7. 🎯 RAG Deployment Configurations
+## 7. RAG Deployment Configurations
 
 The RAG Blueprint supports multiple deployment configurations optimized for different use cases and resource requirements. Choose the configuration that best fits your needs:
 
@@ -334,7 +334,7 @@ The RAG Blueprint supports multiple deployment configurations optimized for diff
 - **Vector Database**: Milvus (CPU mode)
 - **Pods**: ~40-45 pods total (requires **max pods per node ≥ 50**)
 
-> **⚠️ Important:** Ensure your node pool is configured with **"Maximum number of pods per node"** set to at least **50**. The default value of 31 will cause deployment failures.
+> **Important:** Ensure your node pool is configured with **"Maximum number of pods per node"** set to at least **50**. The default value of 31 will cause deployment failures.
 
 ### Deploy:
 
@@ -440,7 +440,7 @@ REVISION: 1
   - NeMo Retriever Services: 5 GPUs
 - **Vector Database**: Milvus (GPU-accelerated mode)
 
-> **✅ A10 Compatible:** This configuration can use the smaller Nemotron Nano 9B model which fits on A10 GPUs (24GB). This is the most cost-effective configuration that works with A10.
+> **A10 Compatible:** This configuration can use the smaller Nemotron Nano 9B model which fits on A10 GPUs (24GB). This is the most cost-effective configuration that works with A10.
 
 ### Deploy:
 
@@ -491,7 +491,7 @@ REVISION: 1
 - **Vector Database**: Milvus (CPU mode)
 - **Special Features**: Vision-Language Model for image understanding
 
-> **✅ A10 Compatible:** This configuration uses Nano models (9B LLM + 8B VLM) which fit on A10 GPUs (24GB). Provides multi-modal capabilities at lower cost.
+> **A10 Compatible:** This configuration uses Nano models (9B LLM + 8B VLM) which fit on A10 GPUs (24GB). Provides multi-modal capabilities at lower cost.
 
 ### Deploy:
 
@@ -537,19 +537,19 @@ REVISION: 1
 
 ---
 
-## 📊 Configuration Comparison
+## Configuration Comparison
 
 | Feature | Config 1: Full | Config 2: Text-Only | Config 3: Nano + GPU Milvus | Config 4: VLM |
 |---------|----------------|---------------------|------------------------------|---------------|
 | **GPU Count** | 8 | 4 | 8 | 8 |
 | **LLM Model** | Llama 3.1 70B | Llama 3.1 70B | Nemotron Nano 9B | Nemotron Nano 9B |
-| **Vision Model** | ❌ | ❌ | ❌ | ✅ Nano VL 8B |
-| **Image Processing** | ✅ Full | ❌ | ✅ Full | ✅ Enhanced |
-| **Table Extraction** | ✅ | ❌ | ✅ | ✅ |
-| **OCR** | ✅ | ❌ | ✅ | ✅ |
-| **Reranker** | ✅ | ❌ | ✅ | ✅ |
+| **Vision Model** | No | No | No | Yes - Nano VL 8B |
+| **Image Processing** | Full | No | Full | Enhanced |
+| **Table Extraction** | Yes | No | Yes | Yes |
+| **OCR** | Yes | No | Yes | Yes |
+| **Reranker** | Yes | No | Yes | Yes |
 | **Milvus Mode** | CPU | CPU | GPU | CPU |
-| **A10 Compatible** | ❌ No | ❌ No | ✅ Yes | ✅ Yes |
+| **A10 Compatible** | No | No | Yes | Yes |
 | **Min GPU Memory** | 80GB | 80GB | 24GB | 24GB |
 | **Best For** | Enterprise | Dev/Test | Low Latency | Multi-Modal |
 | **Cost** | Highest | Lowest | Medium | Medium |
@@ -558,41 +558,6 @@ REVISION: 1
 
 ## 8. Monitor Deployment
 **Watching the deployment progress**
-
-```bash
-# Watch all pods
-kubectl get pods --watch
-```
-
-**Expected Output (Initial - first 5 minutes):**
-```
-NAME                                                     READY   STATUS              RESTARTS   AGE
-rag-etcd-0                                               0/1     ContainerCreating   0          30s
-rag-frontend-xxxxx                                       0/1     ContainerCreating   0          30s
-rag-minio-xxxxx                                          0/1     ContainerCreating   0          30s
-rag-nim-llm-0                                            0/1     Init:0/1            0          30s
-rag-nv-ingest-xxxxx                                      0/1     Init:0/1            0          30s
-rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-xxxxx          0/1     Init:0/1            0          30s
-```
-
-**Expected Output (After 10 minutes):**
-```
-NAME                                                     READY   STATUS    RESTARTS   AGE
-ingestor-server-xxxxx                                    1/1     Running   0          10m
-milvus-standalone-xxxxx                                  1/1     Running   0          10m
-rag-etcd-0                                               1/1     Running   0          10m
-rag-frontend-xxxxx                                       1/1     Running   0          10m
-rag-minio-xxxxx                                          1/1     Running   0          10m
-rag-nim-llm-0                                            0/1     Running   0          10m  # Model downloading
-rag-nv-ingest-xxxxx                                      1/1     Running   0          10m
-rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-xxxxx          1/1     Running   0          10m
-rag-redis-master-0                                       1/1     Running   0          10m
-rag-server-xxxxx                                         1/1     Running   0          10m
-```
-
-Press `Ctrl+C` to stop watching.
-
-**Check final status (wait 15-20 minutes for model download):**
 
 ```bash
 kubectl get pods
@@ -606,12 +571,17 @@ milvus-standalone-xxxxx                                  1/1     Running   0    
 rag-etcd-0                                               1/1     Running   0          20m
 rag-frontend-xxxxx                                       1/1     Running   0          20m
 rag-minio-xxxxx                                          1/1     Running   0          20m
+rag-nemoretriever-graphic-elements-xxxxx                 1/1     Running   0          20m
+rag-nemoretriever-page-elements-xxxxx                    1/1     Running   0          20m
+rag-nemoretriever-table-structure-xxxxx                  1/1     Running   0          20m
 rag-nim-llm-0                                            1/1     Running   0          20m
 rag-nv-ingest-xxxxx                                      1/1     Running   0          20m
-rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-xxxxx          1/1     Running   0          20m
+rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-xxxxx           1/1     Running   0          20m
+rag-paddleocr-nim-xxxxx                                  1/1     Running   0          20m
 rag-redis-master-0                                       1/1     Running   0          20m
 rag-redis-replicas-0                                     1/1     Running   0          20m
 rag-server-xxxxx                                         1/1     Running   0          20m
+rag-text-reranking-nim-xxxxx                             1/1     Running   0          20m
 ```
 
 ---
@@ -620,29 +590,16 @@ rag-server-xxxxx                                         1/1     Running   0    
 **Getting the frontend URL**
 
 ```bash
-# Get the LoadBalancer service external IP
-kubectl get svc | grep frontend
+# Get the frontend URL
+echo "Frontend: http://$(kubectl get svc rag-frontend -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):3000"
 ```
 
 **Expected Output:**
 ```
-rag-frontend   LoadBalancer   10.96.45.123   <EXTERNAL-IP>   3000:32456/TCP   20m
+Frontend: http://XXX.XXX.XXX.XXX:3000
 ```
 
-**Access the frontend:**
-
-```bash
-# Get the external IP
-FRONTEND_IP=$(kubectl get svc rag-frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-echo "RAG Playground URL: http://${FRONTEND_IP}:3000"
-```
-
-**Expected Output:**
-```
-RAG Playground URL: http://XXX.XXX.XXX.XXX:3000
-```
-
-> **⚠️ Security Warning:** The LoadBalancer created by default is accessible from the internet (`0.0.0.0/0`). For production deployments, restrict access by updating the security list to allow only specific IP ranges (your corporate network or VPN).
+> **Security Warning:** The LoadBalancer created by default is accessible from the internet (`0.0.0.0/0`). For production deployments, restrict access by updating the security list to allow only specific IP ranges (your corporate network or VPN).
 
 Open this URL in your browser to access the RAG Playground interface.
 
@@ -736,59 +693,34 @@ Sources:
 ## 12. Monitor GPU Utilization (Optional)
 **Tracking GPU usage across the cluster**
 
-### Option 1: Check GPU usage from existing NIM pod (Easiest)
+### Option 1: Check GPU allocation per pod (Recommended)
+
+> **Note:** This command requires `jq` to be installed. Cloud Shell has it pre-installed.
 
 ```bash
-# Check which NIM pods are running
-kubectl get pods | grep nim-llm
-
-# Run nvidia-smi from the NIM LLM pod
-kubectl exec -it rag-nim-llm-0 -- nvidia-smi
+echo "GPU Utilization:" && \
+echo "================" && \
+kubectl get pods -n default -o json | jq -r '.items[] | select(.spec.containers[].resources.limits."nvidia.com/gpu" != null and .status.phase == "Running") | "\(.spec.containers[0].resources.limits."nvidia.com/gpu") GPU - \(.metadata.name)"' | grep -v "^0 GPU" | sort -rn && \
+echo "" && \
+kubectl get pods -n default -o json | jq '[.items[] | select(.spec.containers[].resources.limits."nvidia.com/gpu" != null and .status.phase == "Running") | (.spec.containers[0].resources.limits."nvidia.com/gpu" | tonumber)] | add' | awk '{print "Total GPUs Used: " $1}'
 ```
 
 **Expected Output:**
 ```
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 535.104.05             Driver Version: 535.104.05     CUDA Version: 12.2     |
-|-----------------------------------------+------------------------+----------------------+
-| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
-|                                         |                        |               MIG M. |
-|=========================================+========================+======================|
-|   0  NVIDIA A100-SXM4-80GB          On |   00000000:17:00.0 Off |                    0 |
-| N/A   45C    P0            220W /  400W |   32768MiB /  81920MiB |     75%      Default |
-|                                         |                        |                  N/A |
-+-----------------------------------------+------------------------+----------------------+
-|   1  NVIDIA A100-SXM4-80GB          On |   00000000:65:00.0 Off |                    0 |
-| N/A   48C    P0            230W /  400W |   28672MiB /  81920MiB |     68%      Default |
-|                                         |                        |                  N/A |
-+-----------------------------------------+------------------------+----------------------+
+GPU Utilization:
+================
+2 GPU - rag-nim-llm-0
+1 GPU - rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-xxxxx
+1 GPU - rag-nemoretriever-graphic-elements-xxxxx
+1 GPU - rag-nemoretriever-page-elements-xxxxx
+1 GPU - rag-nemoretriever-table-structure-xxxxx
+1 GPU - rag-paddleocr-nim-xxxxx
+1 GPU - rag-text-reranking-nim-xxxxx
+
+Total GPUs Used: 8
 ```
 
-### Option 2: Create a test pod with GPU access
-
-```bash
-# Create a pod that requests GPU access
-kubectl run gpu-test \
-  --image=nvidia/cuda:12.2.0-base-ubuntu22.04 \
-  --restart=Never --rm -it \
-  --overrides='{"spec":{"containers":[{"name":"gpu-test","image":"nvidia/cuda:12.2.0-base-ubuntu22.04","command":["nvidia-smi"],"resources":{"limits":{"nvidia.com/gpu":"1"}}}]}}' 
-```
-
-**Expected Output:**
-```
-+-----------------------------------------------------------------------------------------+
-| NVIDIA-SMI 535.104.05             Driver Version: 535.104.05     CUDA Version: 12.2     |
-|-----------------------------------------+------------------------+----------------------+
-| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
-|=========================================+========================+======================|
-|   0  NVIDIA A100-SXM4-80GB          On |   00000000:17:00.0 Off |                    0 |
-| N/A   35C    P0             55W /  400W |       2MiB /  81920MiB |      0%      Default |
-+-----------------------------------------+------------------------+----------------------+
-```
-
-### Option 3: Check all GPU allocations across the cluster
+### Option 2: Check all GPU allocations across the cluster
 
 ```bash
 # See GPU resource allocation per node
@@ -803,19 +735,19 @@ Allocated resources:
   --------           --------      ------
   cpu                12800m (8%)   25600m (16%)
   memory             98304Mi (30%) 131072Mi (40%)
-  nvidia.com/gpu     5             5
+  nvidia.com/gpu     8             8
 ```
 ---
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 Common issues and solutions when deploying RAG on OKE.
 
 ---
 
-### 🔧 Common Problems & Fixes
+### Common Problems & Fixes
 
-#### 🔁 Pods Stuck in Pending
+#### Pods Stuck in Pending
 
 ```bash
 kubectl describe pod <pod-name>
@@ -874,7 +806,7 @@ If the output shows `31` (default) or less, you need to recreate the node pool w
 
 ---
 
-#### 🌐 ImagePullBackOff Errors
+#### ImagePullBackOff Errors
 
 ```bash
 kubectl describe pod <pod-name> | grep -A10 Events
@@ -906,7 +838,7 @@ helm install rag \
 
 ---
 
-#### 🎮 GPU Not Detected
+#### GPU Not Detected
 
 ```bash
 # Check GPU operator installation
@@ -941,7 +873,7 @@ helm install gpu-operator nvidia/gpu-operator \
 
 ---
 
-#### 🔐 LoadBalancer Service Pending
+#### LoadBalancer Service Pending
 
 ```bash
 kubectl get svc rag-frontend
@@ -967,7 +899,7 @@ oci iam policy list --compartment-id <COMPARTMENT_OCID>
 
 ---
 
-#### 💾 Milvus Pod CrashLoopBackOff
+#### Milvus Pod CrashLoopBackOff
 
 ```bash
 kubectl logs milvus-standalone-xxxxx
@@ -993,7 +925,7 @@ helm upgrade rag \
 
 ---
 
-#### 🌍 Document Upload Fails
+#### Document Upload Fails
 
 ```bash
 kubectl logs ingestor-server-xxxxx
@@ -1021,7 +953,7 @@ kubectl rollout restart deployment ingestor-server
 
 ---
 
-## ✅ Deployment Checklist
+## Deployment Checklist
 
 Ensure the following are complete:
 
@@ -1056,7 +988,7 @@ kubectl get pods --all-namespaces
 helm list
 
 # 6. Get frontend URL
-kubectl get svc rag-frontend
+echo "Frontend: http://$(kubectl get svc rag-frontend -n default -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):3000"
 
 ```
 
@@ -1071,7 +1003,7 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 ---
 
-## 🎮 GPU Compatibility
+## GPU Compatibility
 
 ### OCI GPU Shape Comparison - Preference Ranking
 
@@ -1079,9 +1011,9 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 | Preference Rank | GPU Model | Memory | Shape Name | RAG Compatibility | Performance | Use For |
 |-----------------|-----------|--------|------------|-------------------|-------------|---------|
-| 🥇 **BEST** | **H100** | **80 GB** | `BM.GPU.H100.8` | ✅ **Excellent** | **Fastest** | **Production, all configs, largest models** |
-| 🥈 **RECOMMENDED** | **A100** | **80 GB** | `BM.GPU.A100-v2.8` | ✅ **Excellent** | **High** | **All configurations, best price/performance** |
-| 🥉 **LIMITED** | A10 | 24 GB | `BM.GPU.A10.4` | ⚠️ **Restricted** | Standard | Config 3 & 4 only (Nano models) |
+| **1 - BEST** | **H100** | **80 GB** | `BM.GPU.H100.8` | **Excellent** | **Fastest** | **Production, all configs, largest models** |
+| **2 - RECOMMENDED** | **A100** | **80 GB** | `BM.GPU.A100-v2.8` | **Excellent** | **High** | **All configurations, best price/performance** |
+| **3 - LIMITED** | A10 | 24 GB | `BM.GPU.A10.4` | **Restricted** | Standard | Config 3 & 4 only (Nano models) |
 
 ### Configuration Requirements by GPU Type
 
@@ -1106,7 +1038,7 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 ---
 
-### 🚨 Key Takeaways - GPU Selection
+### Key Takeaways - GPU Selection
 
 **H100 / A100 (Recommended):**
 - **H100**: Best performance, fastest inference, supports all models and configurations
@@ -1123,7 +1055,7 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 ---
 
-## 🔒 Security Best Practices
+## Security Best Practices
 
 1. **Network Security**:
    - Use private subnets for worker nodes
@@ -1147,7 +1079,7 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 ---
 
-## 💡 Performance Tips
+## Performance Tips
 
 1. **Model Optimization**:
    - Use Config 2 (Text-Only) for 50% cost savings
@@ -1166,7 +1098,7 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - **NVIDIA RAG Blueprint**: [https://github.com/NVIDIA-AI-Blueprints/rag](https://github.com/NVIDIA-AI-Blueprints/rag)
 - **NVIDIA NIM Documentation**: [https://docs.nvidia.com/nim/](https://docs.nvidia.com/nim/)
@@ -1176,7 +1108,7 @@ If the output shows less than 50 (e.g., `31`), the full RAG Blueprint deployment
 
 ---
 
-## 🎯 Next Steps
+## Next Steps
 
 Now that you have RAG deployed on OKE, explore these advanced topics:
 
@@ -1188,7 +1120,7 @@ Now that you have RAG deployed on OKE, explore these advanced topics:
 
 ---
 
-## 🧹 Cleanup
+## Cleanup
 
 To remove the RAG deployment and free resources:
 
@@ -1212,16 +1144,16 @@ oci network vcn delete --vcn-id <VCN_OCID> --force
 
 ---
 
-## Congratulations! 🎉
+## Congratulations!
 
 You have successfully deployed the NVIDIA RAG Pipeline Blueprint on OKE!
 
 **What you've accomplished:**
-- ✅ Set up GPU-enabled OKE cluster
-- ✅ Deployed production-ready RAG pipeline
-- ✅ Integrated LLM, embeddings, and vector database
-- ✅ Created document Q&A system with citations
-- ✅ Configured LoadBalancer for external access
+- Set up GPU-enabled OKE cluster
+- Deployed production-ready RAG pipeline
+- Integrated LLM, embeddings, and vector database
+- Created document Q&A system with citations
+- Configured LoadBalancer for external access
 
 **Your RAG system can now:**
 - Process and ingest documents (PDFs, text, images)
@@ -1230,5 +1162,5 @@ You have successfully deployed the NVIDIA RAG Pipeline Blueprint on OKE!
 - Handle multi-modal content (depending on configuration)
 - Scale to handle enterprise workloads
 
-**Happy Building with RAG! 🚀**
+**Happy Building with RAG!**
 
