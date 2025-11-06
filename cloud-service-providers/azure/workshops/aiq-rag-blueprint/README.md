@@ -280,9 +280,6 @@ Open your browser and navigate to: http://EXTERNAL-IP-FROM-YOUR-CLI-RESULT-ABOVE
 
 From here, we should be able to interact with the service and get some outputs from the LLM.
 
-It should look like this:
-
-![rag_front_end.png](imgs/rag_front_end.png)
 
 
 ###  Testing the RAG Blueprint
@@ -299,7 +296,7 @@ In order to test the RAG capabilities of this application, we need to upload a d
 
 * Close the prompt window, and click the "Test_Collection" checkbox on the left:
 
-![test_collection.png](imgs/test_collection.png)
+![test_collection.png](imgs/test-rag.png)
 
 
 # Task 5: Deploy AIQ Service
@@ -310,8 +307,9 @@ In order to test the RAG capabilities of this application, we need to upload a d
 export NVIDIA_API_URL="https://ai-azwestus-uma7-hbbtf.westus.inference.ml.azure.com/v1"
 export NVIDIA_API_KEY="xxx"
 ```
+![alt text](imgs/azure-aifoundry.png)
 
-## Option B: Use build.nvidia.ap for nemotron-super-49b
+## Option B: Use build.nvidia.api key created earlier for nemotron-super-49b
 
 ```
 export NVIDIA_API_URL="https://integrate.api.nvidia.com/v1"
@@ -431,6 +429,7 @@ Once Job is complete, you will see the pre-created collections:
 
 1. In the AI-Q interface, select **"Financial Dataset"** from the collection dropdown
   
+  ![alt text](imgs/financial-collection.png)
 2. Enable **"Web Search"** toggle (to include Tavily results)
   
 3. Enter a research topic: **"What are the key trends in commercial lending?"**
