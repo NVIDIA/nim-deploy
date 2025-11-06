@@ -1,4 +1,4 @@
-# Deploy the Complete NVIDIA AI Research Platform( RAG Blueprint + AI-Q Research Assistant) on Azure Kubernetes Engine (AKS)
+# Deploy the Complete NVIDIA AI Research Platform( RAG Blueprint + AI-Q Research Assistant) on Azure Kubernetes Engine (AKS) + Azure AI Studio
 
 
 ![Azure_Cloud_Shell.png](imgs/AIQonAzure.jpeg)
@@ -16,6 +16,7 @@ This workshop is ideal for researchers, analysts, and developers interested in:
 * Deploying RAG pipelines with advanced reasoning capabilities
 * Creating AI-powered research tools with multi-source intelligence
 * Leveraging Kubernetes for scalable AI deployments
+* Option to deploy Nemotron 49B locally on AKS, on Azure AI Foundry or use hosted NIM on build.nvidia.com
 
 ## What you will learn
 By the end of this workshop, you will have hands-on experience with:
@@ -44,8 +45,11 @@ Optimized containers for deploying AI models with TensorRT acceleration. This wo
 ### **Tavily API**
 A research-grade web search API optimized for AI consumption, enabling real-time web research beyond your document collections.
 
-### **Phoenix Tracing**
+### **Phoenix Tracing** (optional)
 An open-source observability platform providing distributed tracing and performance monitoring for AI workflows.
+
+### **NVIDIA NIM on Azure AI Foundry** (optional)
+NIM microservices are natively supported on Azure AI Foundry, enabling developers to quickly create a streamlined path for deployment. The microservices are running on Azure’s managed compute, removing the complexity of setting up and maintaining GPU infrastructure while ensuring high availability and scalability, even for highly demanding workloads. This enables teams to move quickly from model selection to production use. 
 
 ## Prerequisites 
 - Azure Account with access to 1-A100 GPUs (standard_nc96ads_a100_v4)
