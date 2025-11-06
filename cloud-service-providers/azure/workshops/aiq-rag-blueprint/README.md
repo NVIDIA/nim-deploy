@@ -303,11 +303,28 @@ In order to test the RAG capabilities of this application, we need to upload a d
 
 
 ## Option A: Use Azure AI Foudry for nemotron-super-49b
+
+Deploy nemotron-super-49b on Azure AI Foundry , follow this guide:
+
+https://developer.nvidia.com/blog/accelerated-ai-inference-with-nvidia-nim-on-azure-ai-foundry/
+
+Go to nemotron-super-49b on Azure AI Foundry: 
+https://ai.azure.com/explore/models/Llama-3.3-Nemotron-Super-49B-v1.5-NIM-microservice/version/1/registry/azureml-nvidia
+
+![alt text](imgs/azure-aifoundry.png)
+
+Click Deploy:
+
+![alt text](imgs/nemo-deploy-aifoundry.png)
+
+Oncle complete you will get an endpoint url and key:
+
+![alt text](imgs/azure-aifoundry.png)
+
 ```
 export NVIDIA_API_URL="https://ai-azwestus-uma7-hbbtf.westus.inference.ml.azure.com/v1"
 export NVIDIA_API_KEY="xxx"
 ```
-![alt text](imgs/azure-aifoundry.png)
 
 ## Option B: Use build.nvidia.api key created earlier for nemotron-super-49b
 
