@@ -292,10 +292,10 @@ In order to test the RAG capabilities of this application, we need to upload a d
 * Click new collection at the bottom left corner and give it a name
 * Upload a Document by clicking in the square under "Source Files", selecting a PDF or text file and clicking "Create Collection"
 
-![upload_popup.png](imgs/upload_popup.png)
+![upload_popup.png](imgs/upload-rag23.png)
+
 * Wait for "Collection Created successfully" notification
 
-![upload_popup_successful.png](imgs/upload_popup_successful.png)
 
 * Close the prompt window, and click the "Test_Collection" checkbox on the left:
 
