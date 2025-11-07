@@ -308,12 +308,10 @@ In order to test the RAG capabilities of this application, we need to upload a d
 
 ## Option A: Use Azure AI Foudry for nemotron-super-49b
 
-Deploy nemotron-super-49b on Azure AI Foundry , follow this guide:
+To Deploy nemotron-super-49b on Azure AI Foundry , follow this workshop guide: [Deploy NVIDIA NIM on  Azure AI Foundry](../nim-aifoundry/README.md)
 
-https://developer.nvidia.com/blog/accelerated-ai-inference-with-nvidia-nim-on-azure-ai-foundry/
 
 Go to nemotron-super-49b on Azure AI Foundry: 
-https://ai.azure.com/explore/models/Llama-3.3-Nemotron-Super-49B-v1.5-NIM-microservice/version/1/registry/azureml-nvidia
 
 ![alt text](imgs/azure-aifoundry.png)
 

@@ -1,14 +1,7 @@
+# Deploy NVIDIA NIM on  Azure AI Foundry
 
-### Accessing the Azure Portal
-
-1. Please open Edge Browser
-
-1. Please naviage to **https://portal.azure.com**
-
-1. Login to Azure using the following credentials:
-
-
-
+To learn more about NVIDIA NIM on  Azure AI Foundry: 
+https://developer.nvidia.com/blog/accelerated-ai-inference-with-nvidia-nim-on-azure-ai-foundry/
 
 
 # Task 1: Create an Azure AI Foundry Hub
