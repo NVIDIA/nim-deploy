@@ -200,11 +200,13 @@ Note: in order to save GPU resources, we will be deploying the text-only ingesti
 
 ```bash
 
+wget -O values.yaml https://gist.githubusercontent.com/azeltov/3eabad448e98b5fc34a7f391eef3bad8/raw/372b9f14bc7c4f8157793a38ffa12de6ad433ce4/rag2.3-nogpu-values.yml
+
 helm upgrade --install rag  --create-namespace -n rag \
 https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
 --username '$oauthtoken' \
 --password "${NGC_API_KEY}" \
---values igntitevalues.yaml \
+--values values.yaml \
 --set nim-llm.enabled=false \
 --set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
 --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
@@ -213,6 +215,24 @@ https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.
 --set nv-ingest.nemoretriever-page-elements-v2.deployed=false \
 --set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
 --set nv-ingest.nemoretriever-table-structure-v1.deployed=false \
+--set nv-ingest.paddleocr-nim.deployed=false \
+--set imagePullSecret.password="${NGC_API_KEY}" \
+--set ngcApiSecret.password="${NGC_API_KEY}"
+
+
+helm upgrade --install rag  --create-namespace -n rag \
+https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
+--username '$oauthtoken' \
+--password "${NGC_API_KEY}" \
+--values values.yaml \
+--set nim-llm.enabled=false \
+--set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
+--set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
+--set ingestor-server.enabled=true \
+--set nv-ingest.enabled=true \
+--set nv-ingest.nemoretriever-page-elements-v2.deployed=true \
+--set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
+--set nv-ingest.nemoretriever-table-structure-v1.deployed=true \
 --set nv-ingest.paddleocr-nim.deployed=false \
 --set imagePullSecret.password="${NGC_API_KEY}" \
 --set ngcApiSecret.password="${NGC_API_KEY}" 
@@ -337,7 +357,7 @@ export NVIDIA_API_KEY="nvapi-cxxxxx"
 -------
 Set  **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
 ```
-export MODEL_NAME="nvidia/llama-3.3-nemotron-super-49b-v1"
+export MODEL_NAME=nvidia/llama-3.3-nemotron-super-49b-v1.5
 export TAVILY_API_KEY="tvly-xxxxx"
 ```
 
