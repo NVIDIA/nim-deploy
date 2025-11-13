@@ -217,13 +217,14 @@ Output should like this:
 and this prompt: **"Can you identify the toppings on the pizza?"**
 
 2. example_request_2 JSON file contains this image:
+
 ![Amsterdam.jpg](imgs/Amsterdam.jpg)
 
 and this prompt: **"Can you describe the scene in detail?"**
 
 3. example_request_3 JSON file contains this video:
 
-<video src="imgs/warehouse_trimmed.mp4" width="320" height="240" controls></video>
+[![Watch the video](imgs/warehouse.png)](imgs/warehouse_trimmed.mp4)
 
 
 this prompt for the system role:
