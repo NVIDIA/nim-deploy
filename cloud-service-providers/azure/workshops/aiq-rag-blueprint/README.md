@@ -197,29 +197,14 @@ kubectl create namespace $NAMESPACE
 ### 2. Install the RAG 2.3 blueprint Helm chart
 
 Note: in order to save GPU resources, we will be deploying the text-only ingestion blueprint.
+Execute the below, to download the values.yaml file:
+```bash
+wget -O values.yaml https://tinyurl.com/rag23values
+```
+
+Install RAG2.3 Blueprint,  with NIMS llama-32-nv-embedqa-1b,llama-32-nv-rerankqa-1b,nemoretriever-page-elements-v2, nemoretriever-table-structure-v1 deployed on our A100 GPU Node. For Nemotron Super 49B we point to build.nvidia.com API :
 
 ```bash
-
-wget -O values.yaml https://gist.githubusercontent.com/azeltov/3eabad448e98b5fc34a7f391eef3bad8/raw/372b9f14bc7c4f8157793a38ffa12de6ad433ce4/rag2.3-nogpu-values.yml
-
-helm upgrade --install rag  --create-namespace -n rag \
-https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
---username '$oauthtoken' \
---password "${NGC_API_KEY}" \
---values values.yaml \
---set nim-llm.enabled=false \
---set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
---set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
---set ingestor-server.enabled=true \
---set nv-ingest.enabled=true \
---set nv-ingest.nemoretriever-page-elements-v2.deployed=false \
---set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
---set nv-ingest.nemoretriever-table-structure-v1.deployed=false \
---set nv-ingest.paddleocr-nim.deployed=false \
---set imagePullSecret.password="${NGC_API_KEY}" \
---set ngcApiSecret.password="${NGC_API_KEY}"
-
-
 helm upgrade --install rag  --create-namespace -n rag \
 https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
 --username '$oauthtoken' \
@@ -237,6 +222,8 @@ https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.
 --set imagePullSecret.password="${NGC_API_KEY}" \
 --set ngcApiSecret.password="${NGC_API_KEY}" 
 ```
+
+For more details on how to customize the [RAG Blueprint] (https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/README.md)
 
 ### 3. Verify that the PODs are running
 
@@ -438,7 +425,7 @@ AI-Q includes pre-curated Biomedical and Financial document collections. Load th
 
 
 ```bash
-wget -O load-files.yaml https://gist.githubusercontent.com/azeltov/32c4f7383e4fd5d01ef673ca0a0bd4a6/raw/2de34255a123f01225f31cfb9178dbc23a5dd21e/load-files.yaml
+wget -O load-files.yaml https://tinyurl.com/aiq-load-data
 ```
 
 Then apply the load-files job:
