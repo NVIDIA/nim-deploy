@@ -140,7 +140,7 @@ Click "Next", tick the terms of use checkbox and click "Deploy"
 
 ![Screenshot 2025-11-03 at 18.02.24.png](imgs/Screenshot%202025-11-03%20at%2018.02.24.png)
 
-# Task 4: Test the NVIDIA Nemotron NIM
+# Task 4: Test the NVIDIA Cosmos Reason NIM
 
 Wait until the model has been fully deployed on the Azure AI Foundry endpoint:
 
