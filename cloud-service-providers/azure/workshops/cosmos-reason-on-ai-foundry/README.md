@@ -159,7 +159,7 @@ cd [YOUR_PATH_HERE]/sample_files
 
 **You will need to replace** these 2 values :
 
-1. `<YOUR_URL>` with the value of the field "Target URI":
+1. `<YOUR_URI>` with the value of the field "Target URI":
 ![Copy_Target_URI.png](imgs/Copy_Target_URI.png)
 
 
@@ -168,7 +168,7 @@ cd [YOUR_PATH_HERE]/sample_files
 
 ```json
 curl -X 'POST' \
-'<YOUR_URI>' \
+'<YOUR_URI>/v1/chat/completions' \
     -H 'Accept: application/json' \
     -H "Authorization: Bearer <YOUR_PRIMARY_KEY>" \
     -H 'Content-Type: application/json' \
