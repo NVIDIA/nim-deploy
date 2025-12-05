@@ -72,10 +72,10 @@ export NGC_API_KEY=<add your key here>
 export PROJECT_ID=$GOOGLE_CLOUD_PROJECT 
 export ZONE=us-central1-b
 export CLUSTER_NAME=rag-demo 
-export NODE_POOL_MACHINE_TYPE=a2-highgpu-4g
+export NODE_POOL_MACHINE_TYPE=g2-standard-96
 export CLUSTER_MACHINE_TYPE=e2-standard-32
-export GPU_TYPE=nvidia-tesla-a100
-export GPU_COUNT=4
+export GPU_TYPE=nvidia-l4
+export GPU_COUNT=8
 export WORKLOAD_POOL=$PROJECT_ID.svc.id.goog
 export CHART_NAME=rag-chart
 export NAMESPACE=rag
@@ -115,13 +115,13 @@ kubectl create ns rag
 2. install helm chart
 
 ```bash
-helm upgrade --install rag -n rag https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.2.0.tgz \
+helm upgrade --install rag -n rag https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
   --username '$oauthtoken' \
   --password "${NGC_API_KEY}" \
   --set imagePullSecret.password=$NGC_API_KEY \
   --set ngcApiSecret.password=$NGC_API_KEY \
   -f values.yaml
-  ```
+```
 
 3. Verify PODs are running 
 
