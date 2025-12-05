@@ -1,0 +1,54 @@
+envVars:
+  ##===LLM Model specific configurations===
+  APP_LLM_MODELNAME: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+
+# -- Ingestor Server
+# subsection: ingestor-server
+# Ingestor API Service
+ingestor-server:
+  envVars:
+    APP_NVINGEST_EXTRACTTABLES: "False"  # Enable table extraction
+    APP_NVINGEST_EXTRACTCHARTS: "False"  # Enable chart extraction
+    SUMMARY_LLM: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+
+# -- NIM LLM
+nim-llm:
+  enabled: true
+  service:
+    name: "nim-llm"
+  image:
+    repository: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-8b-v1
+    pullPolicy: IfNotPresent
+    tag: "1.8.4"
+  resources:
+    limits:
+      nvidia.com/gpu: 4
+    requests:
+      nvidia.com/gpu: 4
+
+  env:
+    - name: NIM_MODEL_PROFILE
+      value: "" # Provide correct profile name here
+  model:
+    ngcAPIKey: ""
+    name: "nvidia/llama-3.1-nemotron-nano-8b-v1"
+    hfTokenSecret: ""
+
+# -- NV-Ingest
+nv-ingest:
+  # NIM OCR (PaddleOCR)
+  paddleocr-nim:
+    deployed: false
+  # NIM Graphic Elements
+  nemoretriever-graphic-elements-v1:
+    deployed: false
+  # NIM Page Elements
+  nemoretriever-page-elements-v2:
+    deployed: false
+  # NIM Table Structure
+  nemoretriever-table-structure-v1:
+    deployed: false
+  milvus:
+    etcd:
+      extraVolumes: []
+      extraVolumeMounts: []
