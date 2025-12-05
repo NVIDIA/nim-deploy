@@ -53,8 +53,8 @@ The infrastructure provisioning script will automatically create a GKE cluster w
     * **Machine Type**: `e2-standard-32`
 * **GPU Worker Node Pool**:
     * **Quantity**: 1 Node
-    * **Machine Type**: `a2-highgpu-4g`
-    * **GPUs**: 4 x **NVIDIA A100** (40GB)
+    * **Machine Type**: `g2-standard-96`
+    * **GPUs**: 4 x **NVIDIA L4**
 
 
 ### Infrastructure Provisioning
