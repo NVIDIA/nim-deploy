@@ -3,7 +3,7 @@
 
 ![Azure_Cloud_Shell.png](imgs/AIQonAzureFoundry.png)
 ## Introduction
-This workshop guides you through deploying a complete AI research platform on Azure Kubernetes Engine (AKS). You'll deploy both the NVIDIA [RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) and the [AI-Q Research Assistant](https://build.nvidia.com/nvidia/ai-research-assistant) to create a powerful system for document Q&A and automated research report generation.
+This workshop guides you through deploying a complete AI research platform on Azure Kubernetes Engine (AKS). You'll deploy both the NVIDIA [RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) and the [AI-Q Research Assistant](https://build.nvidia.com/nvidia/aiq) to create a powerful system for document Q&A and automated research report generation.
 
 The platform combines document understanding (RAG) with intelligent research capabilities (AI-Q) to enable:
 * **Document Q&A**: Chat with your documents using state-of-the-art RAG technology
