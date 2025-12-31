@@ -147,6 +147,8 @@ Wait until the model has been fully deployed on the Azure AI Foundry endpoint:
 ![Screenshot 2025-11-03 at 18.29.33.png](imgs/Screenshot%202025-11-03%20at%2018.29.33.png)
 
 
+### **Note:** Make sure you've cloned this repository or downloaded the files in the "sample_files" folder before moving on to the next steps
+
 1. Open a terminal on your computer
 
 2. Execute the below command to navigate to the sample files folder
@@ -239,7 +241,8 @@ and this prompt for the user role:
 
 
 
-#Congratulations!
+# Congratulations!
+
 You've successfully deployed an NVIDIA Cosmos Reason NIM on Azure AI Foundry! Explore further by implementing robotics and physical AI applications with NIMs, experimenting with different GPU types, and scaling your deployments today. Happy modeling!
 
 NVIDIA offers NIMs with enterprise support through our Azure Marketplace listing, [NVIDIA AI Enterprise](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/nvidia.nvidia-ai-enterprise?tab=Overview).
