@@ -4,6 +4,8 @@ The NVIDIA RAG blueprint serves as a reference solution for a foundational Retri
 One of the key use cases in Generative AI is enabling users to ask questions and receive answers based on their enterprise data corpus.
 This blueprint demonstrates how to set up a RAG solution that uses NVIDIA NIM and GPU-accelerated components.
 
+![Project Preview](imgs/RAG_diagram.jpg)
+
 # Key Features
 
 - Multimodal PDF data extraction support with text, tables, charts, and infographics
