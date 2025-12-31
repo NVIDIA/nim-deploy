@@ -4,7 +4,9 @@ The NVIDIA RAG blueprint serves as a reference solution for a foundational Retri
 One of the key use cases in Generative AI is enabling users to ask questions and receive answers based on their enterprise data corpus.
 This blueprint demonstrates how to set up a RAG solution that uses NVIDIA NIM and GPU-accelerated components.
 
-# Key Features
+![Project Preview](imgs/RAG_diagram.jpg)
+
+## Key Features
 
 - Multimodal PDF data extraction support with text, tables, charts, and infographics
 - Support for audio file ingestion
@@ -25,6 +27,22 @@ This blueprint demonstrates how to set up a RAG solution that uses NVIDIA NIM an
 - Sample user interface
 - OpenAI-compatible APIs
 - Decomposable and customizable
+
+## What you will learn
+
+By the end of this workshop, you will have hands-on experience with:
+1. Deploying a RAG pipeline on AKS: Learn to deploy a complete RAG pipeline, including LLM, embedding, and retriever microservices, onto your AKS cluster using NVIDIA NIM microservices
+2. Integrating with Milvus vector database: Understand how to connect your RAG pipeline to a Milvus vector store for efficient storage and retrieval of embeddings.
+3. Utilizing the NVIDIA Langchain wrapper: Gain familiarity with the NVIDIA Langchain wrapper for seamless interaction with deployed NIM.
+4. Managing and scaling your RAG deployment: Explore techniques for managing, monitoring, and scaling your RAG pipeline using Kubernetes features to ensure optimal performance and resource utilization.
+
+## Learn the Components
+### **NVIDIA RAG Blueprint**
+A production-ready Retrieval Augmented Generation pipeline that enables Q&A over your documents. Includes document ingestion, embedding, vector search, reranking, and LLM-powered response generation with citations.
+
+### **NVIDIA NIM Microservices**
+[NVIDIA NIM](https://developer.nvidia.com/nim) are a set of easy-to-use
+inference microservices for accelerating the deployment of foundation models on any cloud or data center and helping to keep your data secure.
 
 # Prerequisites 
 
@@ -77,7 +95,7 @@ az extension update --name aks-preview
 
 ### 2. Configure NVIDIA API Key
 
-As part of the RAG blueprint several NVIDIA NIMs will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://org.ngc.nvidia.com/setup/api-key). We can export this key to be used as an environment variable:
+As part of the RAG blueprint several NVIDIA NIM will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://build.nvidia.com/settings/api-keys). We can export this key to be used as an environment variable:
 
 ```bash
 export NGC_API_KEY="<YOUR NGC API KEY>"
@@ -158,60 +176,36 @@ We need to wait until all pods are in "Running" status and their "Ready" column 
 
 # Task 3: NVIDIA Blueprint Deployment
 
-### 1. Create a Kubernetes namespace
+### 1. Install the RAG blueprint Helm chart
 
-```bash
-kubectl create namespace $NAMESPACE
-```
+Ensure that all pods from the previous command, are in "Running" status and their "Ready" column shows all pods ready (e.g. 1/1, 2/2 etc.)
 
-### 2. Install the RAG blueprint Helm chart
 
 Note: in order to save GPU resources, we will be deploying the text-only ingestion blueprint.
 
 ```bash
-helm install rag -n rag https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.2.0.tgz \
-  --create-namespace \
-  --username '$oauthtoken' \
-  --password "${NGC_API_KEY}" \
-  --set imagePullSecret.password=$NGC_API_KEY \
-  --set ngcApiSecret.password=$NGC_API_KEY \
-  --set nim-llm.enabled=true \
-  --set nim-llm.image.repository="nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1" \
-  --set nim-llm.image.tag="latest" \
-  --set nim-llm.resources.limits."nvidia\.com/gpu"=2 \
-  --set nim-llm.resources.requests."nvidia\.com/gpu"=2 \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.image.tag="1.3.0" \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.resources.limits."nvidia\.com/gpu"=1 \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.resources.requests."nvidia\.com/gpu"=1 \
-  --set text-reranking-nim.enabled=false \
-  --set ingestor-server.enabled=true \
-  --set ingestor-server.envVars.APP_VECTORSTORE_ENABLEGPUINDEX="False" \
-  --set ingestor-server.envVars.APP_VECTORSTORE_ENABLEGPUSEARCH="False" \
-  --set ingestor-server.envVars.APP_NVINGEST_EXTRACTTABLES="False" \
-  --set ingestor-server.envVars.APP_NVINGEST_EXTRACTCHARTS="False" \
-  --set ingestor-server.envVars.APP_NVINGEST_EXTRACTIMAGES="False" \
-  --set ingestor-server.envVars.APP_NVINGEST_EXTRACTINFOGRAPHICS="False" \
-  --set ingestor-server.envVars.APP_NVINGEST_ENABLEPDFSPLITTER="False" \
-  --set ingestor-server.envVars.APP_NVINGEST_CHUNKSIZE="1024" \
-  --set ingestor-server.envVars.NV_INGEST_FILES_PER_BATCH="32" \
-  --set ingestor-server.envVars.NV_INGEST_CONCURRENT_BATCHES="8" \
-  --set ingestor-server.envVars.ENABLE_MINIO_BULK_UPLOAD="True" \
-  --set ingestor-server.envVars.NV_INGEST_DEFAULT_TIMEOUT_MS="5000" \
-  --set ingestor-server.nv-ingest.redis.image.repository="bitnamisecure/redis" \
-  --set ingestor-server.nv-ingest.redis.image.tag="latest" \
-  --set ingestor-server.nv-ingest.envVars.INGEST_DISABLE_DYNAMIC_SCALING="True" \
-  --set ingestor-server.nv-ingest.envVars.MAX_INGEST_PROCESS_WORKERS="32" \
-  --set ingestor-server.nv-ingest.envVars.NV_INGEST_MAX_UTIL="80" \
-  --set ingestor-server.nv-ingest.envVars.INGEST_EDGE_BUFFER_SIZE="128" \
-  --set ingestor-server.nv-ingest.milvus.image.all.repository="milvusdb/milvus" \
-  --set ingestor-server.nv-ingest.milvus.image.all.tag="v2.5.3" \
-  --set ingestor-server.nv-ingest.milvus.standalone.resources.limits."nvidia\.com/gpu"=0 \
-  --set ingestor-server.nv-ingest.nemoretriever-page-elements-v2.deployed=true \
-  --set ingestor-server.nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
-  --set ingestor-server.nv-ingest.nemoretriever-table-structure-v1.deployed=false \
-  --set ingestor-server.nv-ingest.paddleocr-nim.deployed=false \
-  --set envVars.ENABLE_RERANKER="False"
+helm upgrade --install rag --create-namespace --namespace $NAMESPACE https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
+--set imagePullSecret.password=$NGC_API_KEY \
+--set ngcApiSecret.password=$NGC_API_KEY \
+--set nim-llm.resources.limits."nvidia\.com/gpu"=2 \
+--set nim-llm.resources.requests."nvidia\.com/gpu"=2 \
+--set nv-ingest.milvus.image.all.repository=docker.io/milvusdb/milvus \
+--set nv-ingest.milvus.image.tools.repository=docker.io/milvusdb/milvus-config-tool \
+--set nv-ingest.milvus.standalone.resources.limits."nvidia\.com/gpu"=0 \
+--set nv-ingest.milvus.standalone.resources.requests."nvidia\.com/gpu"=0 \
+--set nv-ingest.milvus.minio.image.repository=docker.io/minio/minio \
+--set ingestor-server.envVars.APP_VECTORSTORE_ENABLEGPUINDEX=False \
+--set ingestor-server.envVars.APP_VECTORSTORE_ENABLEGPUSEARCH=False \
+--set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
+--set nv-ingest.nemoretriever-table-structure-v1.deployed=false \
+--set nv-ingest.paddleocr-nim.deployed=false \
+--set nv-ingest.nemoretriever-ocr.deployed=false \
+--set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=false \
+--set frontend.service.type=LoadBalancer \
+--set ingestor-server.envVars.APP_NVINGEST_EXTRACTTEXT=True \
+--set ingestor-server.envVars.APP_NVINGEST_EXTRACTINFOGRAPHICS=False \
+--set ingestor-server.envVars.APP_NVINGEST_EXTRACTTABLES=False \
+--set ingestor-server.envVars.APP_NVINGEST_EXTRACTCHARTS=False 
 ```
 
 ### 3. Verify that the PODs are running
@@ -235,7 +229,6 @@ rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-576fdc44bb-hmx6j   1/1     Running   0 
 rag-redis-master-0                                          1/1     Running   0               13m
 rag-redis-replicas-0                                        1/1     Running   4 (115s ago)    13m
 rag-server-64dd5c74c9-zclj9                                 1/1     Running   0               13m
-rag-text-reranking-nim-74d96dc99d-sdghx                     1/1     Running   0               13m
 ```
 
 
@@ -289,6 +282,7 @@ In order to test the RAG capabilities of this application, we need to upload a d
 
 * Click new collection at the bottom left corner and give it a name
 * Upload a Document by clicking in the square under "Source Files", selecting a PDF or text file and clicking "Create Collection"
+    - Here is an [ example document that talks about the NVIDIA Nemotron 3 family of models](https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-White-Paper.pdf)
 
 ![upload_popup.png](imgs/upload_popup.png)
 * Wait for "Collection Created successfully" notification

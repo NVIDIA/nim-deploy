@@ -3,7 +3,7 @@
 
 ![Azure_Cloud_Shell.png](imgs/AIQonAzureFoundry.png)
 ## Introduction
-This workshop guides you through deploying a complete AI research platform on Azure Kubernetes Engine (AKS). You'll deploy both the NVIDIA [RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) and the [AI-Q Research Assistant](https://build.nvidia.com/nvidia/ai-research-assistant) to create a powerful system for document Q&A and automated research report generation.
+This workshop guides you through deploying a complete AI research platform on Azure Kubernetes Engine (AKS). You'll deploy both the NVIDIA [Enterprise RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) and the NVIDIA [Enterprise Research Assistant](https://build.nvidia.com/nvidia/ai-research-assistant) Blueprint (also called AI-Q) to create a powerful system for document Q&A and automated research report generation.
 
 The platform combines document understanding (RAG) with intelligent research capabilities (AI-Q) to enable:
 * **Document Q&A**: Chat with your documents using state-of-the-art RAG technology
@@ -35,8 +35,11 @@ A production-ready Retrieval Augmented Generation pipeline that enables Q&A over
 ### **NVIDIA AI-Q Research Assistant**
 An intelligent research platform that generates comprehensive reports by querying multiple sources, synthesizing findings, and presenting them in editable, human-friendly formats.
 
-### **NIMs (NVIDIA Inference Microservices)**
-Optimized containers for deploying AI models with TensorRT acceleration. This workshop uses:
+### **NVIDIA NIM Microservices**
+[NVIDIA NIM](https://developer.nvidia.com/nim) are a set of easy-to-use
+inference microservices for accelerating the deployment of foundation models on any cloud or data center and helping to keep your data secure.
+
+This workshop uses:
 - **Nemotron Super 49B**: Advanced reasoning, chain-of-thought, Q&A, and report synthesis (shared by both RAG and AI-Q). Deployed on Azure AI Foundry or use build.nvidia.com API
 - **NeMo Retriever Embedding 1B**: High-quality text embeddings
 - **NeMo Retriever Reranking 1B**: Result reranking for improved accuracy
@@ -52,7 +55,7 @@ An open-source observability platform providing distributed tracing and performa
 NIM microservices are natively supported on Azure AI Foundry, enabling developers to quickly create a streamlined path for deployment. The microservices are running on Azure’s managed compute, removing the complexity of setting up and maintaining GPU infrastructure while ensuring high availability and scalability, even for highly demanding workloads. This enables teams to move quickly from model selection to production use. 
 
 ## Prerequisites 
-- Azure Account with access to 1-A100 GPUs (standard_nc96ads_a100_v4)
+- Azure Account with access to 1-A100 GPU (standard_nc96ads_a100_v4)
 - Azure CLI configured and authenticated
 - kubectl installed
 - Helm 3.x installed
@@ -202,7 +205,15 @@ Execute the below, to download the values.yaml file:
 wget -O values.yaml https://tinyurl.com/rag23values
 ```
 
-Install RAG2.3 Blueprint,  with NIMS llama-32-nv-embedqa-1b,llama-32-nv-rerankqa-1b,nemoretriever-page-elements-v2, nemoretriever-table-structure-v1 deployed on our A100 GPU Node. For Nemotron Super 49B we point to build.nvidia.com API :
+Install the RAG Blueprint, version 2.3, with these NIM microservices:
+- llama-32-nv-embedqa-1b
+- llama-32-nv-rerankqa-1b
+- nemoretriever-page-elements-v2
+- nemoretriever-table-structure-v1 
+
+deployed on our A100 GPU Node. 
+
+For Nemotron Super 49B we point to the build.nvidia.com API:
 
 ```bash
 helm upgrade --install rag  --create-namespace -n rag \
@@ -299,6 +310,7 @@ In order to test the RAG capabilities of this application, we need to upload a d
 
 * Click new collection at the bottom left corner and give it a name
 * Upload a Document by clicking in the square under "Source Files", selecting a PDF or text file and clicking "Create Collection"
+  - Here is an [ example document that talks about the NVIDIA Nemotron 3 family of models](https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-White-Paper.pdf)
 
 ![upload_popup.png](imgs/upload-rag23.png)
 
@@ -339,7 +351,7 @@ export NVIDIA_API_KEY="xxx"
 
 ```
 export NVIDIA_API_URL="https://integrate.api.nvidia.com/v1"
-export NVIDIA_API_KEY="nvapi-cxxxxx"
+export NVIDIA_API_KEY="<YOUR NGC API KEY>"
 ```
 -------
 Set  **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
@@ -395,7 +407,7 @@ NAME              TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)        AG
 aiq-aira-frontend-lb   LoadBalancer   10.0.13.61   50.85.148.12   80:30369/TCP   21m
 ```
 
-### Before using the RAG app. Verify that all PODs are running:
+### Before using the AI-Q app, verify that all PODs are running:
 
 ```bash
 kubectl get pods -n aira
