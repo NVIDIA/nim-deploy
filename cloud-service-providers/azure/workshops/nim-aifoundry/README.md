@@ -3,6 +3,42 @@
 To learn more about NVIDIA NIM on  Azure AI Foundry: 
 https://developer.nvidia.com/blog/accelerated-ai-inference-with-nvidia-nim-on-azure-ai-foundry/
 
+## What you will learn
+
+By the end of this workshop, you will have hands-on experience with:
+
+  1. Creating an Azure AI Foundry Hub and Project
+  2. Exploring the NVIDIA Collection of NIM microservices that are intergrated natively in Azure AI Foundry
+  3. Deploying the NVIDIA Nemotron NIM on an Azure AI Foundry endpoint and how to use it
+
+
+## Learn the Components
+
+### **NVIDIA Cosmos Reason**
+
+[NVIDIA Nemotron ](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/)
+ is a family of open models, datasets, and technologies that empower you to build efficient, accurate, and specialized agentic AI systems. Designed for advanced reasoning, coding, visual understanding, agentic tasks, safety, and information retrieval, Nemotron models are openly available and integrated across the AI ecosystem so they can be deployed anywhere—from edge to cloud.
+
+### **NVIDIA NIM microservices**
+
+[NVIDIA NIM](https://developer.nvidia.com/nim) are a set of easy-to-use
+inference microservices for accelerating the deployment of foundation models
+on any cloud or data center and helping to keep your data secure.
+
+### **Azure AI Foundry**
+
+[Azure AI Foundry](https://ai.azure.com/?cid=learnDocs&tid=43083d15-7273-40c1-b7db-39efd9ccc17a) is a unified Azure platform-as-a-service offering for enterprise AI operations, model builders, and application development. This foundation combines production-grade infrastructure with friendly interfaces, enabling developers to focus on building applications rather than managing infrastructure.
+
+
+## What you need
+
+To complete this lab, you need:
+
+  * Access to a standard internet browser
+  * Access to an Azure subscription with access to Azure GPU A100 
+
+
+
 
 # Task 1: Create an Azure AI Foundry Hub
 
@@ -156,11 +192,11 @@ Output should like this:
 ![Screenshot 2025-10-30 at 17.20.05.png](imgs/curl.png)
 
 
-> [!note] If you want to test the API with **reasoning OFF**, replace "/think" with "/no_think" in the request
+> [note] If you want to test the API with **reasoning OFF**, replace "/think" with "/no_think" in the request
 
 
 
-#Congratulations!
+# Congratulations!
 You've successfully deployed an NVIDIA NIM on Azure AI Foundry! Explore further by implementing RAG patterns with NIMs, experimenting with different GPU types, and scaling your deployments today. Happy modeling!
 
 NVIDIA offers NIMs with enterprise support through our Azure Marketplace listing, [NVIDIA AI Enterprise](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/nvidia.nvidia-ai-enterprise?tab=Overview).
