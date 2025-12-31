@@ -6,7 +6,7 @@ This blueprint demonstrates how to set up a RAG solution that uses NVIDIA NIM an
 
 ![Project Preview](imgs/RAG_diagram.jpg)
 
-# Key Features
+## Key Features
 
 - Multimodal PDF data extraction support with text, tables, charts, and infographics
 - Support for audio file ingestion
@@ -27,6 +27,22 @@ This blueprint demonstrates how to set up a RAG solution that uses NVIDIA NIM an
 - Sample user interface
 - OpenAI-compatible APIs
 - Decomposable and customizable
+
+## What you will learn
+
+By the end of this workshop, you will have hands-on experience with:
+1. Deploying a RAG pipeline on AKS: Learn to deploy a complete RAG pipeline, including LLM, embedding, and retriever microservices, onto your AKS cluster using NVIDIA NIM microservices
+2. Integrating with Milvus vector database: Understand how to connect your RAG pipeline to a Milvus vector store for efficient storage and retrieval of embeddings.
+3. Utilizing the NVIDIA Langchain wrapper: Gain familiarity with the NVIDIA Langchain wrapper for seamless interaction with deployed NIM.
+4. Managing and scaling your RAG deployment: Explore techniques for managing, monitoring, and scaling your RAG pipeline using Kubernetes features to ensure optimal performance and resource utilization.
+
+## Learn the Components
+### **NVIDIA RAG Blueprint**
+A production-ready Retrieval Augmented Generation pipeline that enables Q&A over your documents. Includes document ingestion, embedding, vector search, reranking, and LLM-powered response generation with citations.
+
+### **NVIDIA NIM Microservices**
+[NVIDIA NIM](https://developer.nvidia.com/nim) are a set of easy-to-use
+inference microservices for accelerating the deployment of foundation models on any cloud or data center and helping to keep your data secure.
 
 # Prerequisites 
 
@@ -79,7 +95,7 @@ az extension update --name aks-preview
 
 ### 2. Configure NVIDIA API Key
 
-As part of the RAG blueprint several NVIDIA NIMs will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://build.nvidia.com/settings/api-keys). We can export this key to be used as an environment variable:
+As part of the RAG blueprint several NVIDIA NIM will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://build.nvidia.com/settings/api-keys). We can export this key to be used as an environment variable:
 
 ```bash
 export NGC_API_KEY="<YOUR NGC API KEY>"
