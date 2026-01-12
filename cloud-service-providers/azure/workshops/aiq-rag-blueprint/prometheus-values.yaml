@@ -1,0 +1,58 @@
+prometheus:
+  prometheusSpec:
+    # Remote write to Azure Monitor Prometheus
+    remoteWrite:
+    - url: "https://defaultazuremonitorworkspace-eastus2-begserfff4fngves.eastus2.prometheus.monitor.azure.com/api/v1/write"
+      azureAd:
+        managedIdentity:
+          clientId: "d6d8f8ce-5d51-4207-ae1e-bf5e4332678b"
+    
+    # Scrape interval
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    
+    # Retention
+    retention: 2h
+    
+    # Service account for workload identity
+    serviceAccount:
+      annotations:
+        azure.workload.identity/client-id: "d6d8f8ce-5d51-4207-ae1e-bf5e4332678b"
+    
+    # Pod labels for workload identity
+    podMetadata:
+      labels:
+        azure.workload.identity/use: "true"
+    
+    # Storage
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+    
+    # ServiceMonitor selector - match all
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    
+    # PodMonitor selector
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+
+# Disable components we don't need
+alertmanager:
+  enabled: false
+
+grafana:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+prometheusOperator:
+  enabled: true

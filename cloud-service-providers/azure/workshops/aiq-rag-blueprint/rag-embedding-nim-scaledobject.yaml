@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-monitor-prometheus-secret
+  namespace: rag
+type: Opaque
+stringData:
+  # Azure Monitor Prometheus query endpoint
+  serverAddress: "https://defaultazuremonitorworkspace-eastus2-begserfff4fngves.eastus2.prometheus.monitor.azure.com"
+  # Kubelet managed identity client ID
+  identityId: "d42099fb-9808-45f6-a235-9ce2cd742bdb"
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: azure-monitor-prometheus-trigger-auth
+  namespace: rag
+spec:
+  podIdentity:
+    provider: azure-workload
+    identityId: "d42099fb-9808-45f6-a235-9ce2cd742bdb"
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: embedding-nim-scaler
+  namespace: rag
+spec:
+  scaleTargetRef:
+    name: rag-nvidia-nim-llama-32-nv-embedqa-1b-v2
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  cooldownPeriod: 300
+  pollingInterval: 30
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: "http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090"
+      # GPU utilization query - scale when average GPU util > 75%
+      query: |
+        avg(DCGM_FI_DEV_GPU_UTIL{namespace="rag", pod=~"rag-nvidia-nim-llama-32-nv-embedqa-1b-v2.*"})
+      threshold: "75"
+      activationThreshold: "50"

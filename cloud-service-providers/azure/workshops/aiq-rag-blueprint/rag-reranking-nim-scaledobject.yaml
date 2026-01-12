@@ -1,0 +1,22 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: reranking-nim-scaler
+  namespace: rag
+spec:
+  scaleTargetRef:
+    name: rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  cooldownPeriod: 300
+  pollingInterval: 30
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: "http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090"
+      # GPU utilization query - scale when average GPU util > 75%
+      query: |
+        avg(DCGM_FI_DEV_GPU_UTIL{namespace="rag", pod=~"rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2.*"})
+      threshold: "75"
+      activationThreshold: "50"

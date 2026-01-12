@@ -1,0 +1,51 @@
+---
+# ServiceMonitor for Embedding NIM
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: embedding-nim-metrics
+  namespace: rag
+  labels:
+    app: rag-nvidia-nim-llama-32-nv-embedqa-1b-v2
+spec:
+  selector:
+    matchLabels:
+      app: rag-nvidia-nim-llama-32-nv-embedqa-1b-v2
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+---
+# ServiceMonitor for Reranking NIM
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reranking-nim-metrics
+  namespace: rag
+  labels:
+    app: rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2
+spec:
+  selector:
+    matchLabels:
+      app: rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+---
+# ServiceMonitor for DCGM Exporter
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dcgm-exporter-metrics
+  namespace: gpu-operator
+  labels:
+    app: nvidia-dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+  endpoints:
+  - port: gpu-metrics
+    interval: 15s
+    path: /metrics
