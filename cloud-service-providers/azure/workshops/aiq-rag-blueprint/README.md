@@ -2,16 +2,20 @@
 
 
 ![Azure_Cloud_Shell.png](imgs/AIQonAzureFoundry.png)
+
 ## Introduction
+
 This workshop guides you through deploying a complete AI research platform on Azure Kubernetes Engine (AKS). You'll deploy both the NVIDIA [RAG Blueprint](https://build.nvidia.com/nvidia/build-an-enterprise-rag-pipeline) and the [AI-Q Research Assistant](https://build.nvidia.com/nvidia/ai-research-assistant) to create a powerful system for document Q&A and automated research report generation.
 
 The platform combines document understanding (RAG) with intelligent research capabilities (AI-Q) to enable:
+
 * **Document Q&A**: Chat with your documents using state-of-the-art RAG technology
 * **Research Reports**: Generate comprehensive reports from multiple sources with AI-Q
 * **Web Search Integration**: Combine your private documents with real-time web research
 * **Human-in-the-Loop**: Edit and refine AI-generated content collaboratively
 
 This workshop is ideal for researchers, analysts, and developers interested in:
+
 * Building production-grade AI applications with NVIDIA NIM
 * Deploying RAG pipelines with advanced reasoning capabilities
 * Creating AI-powered research tools with multi-source intelligence
@@ -19,7 +23,9 @@ This workshop is ideal for researchers, analysts, and developers interested in:
 * Option to deploy Nemotron 49B locally on AKS, on Azure AI Foundry or use hosted NIM on build.nvidia.com
 
 ## What you will learn
+
 By the end of this workshop, you will have hands-on experience with:
+
 1. **Deploying the RAG Blueprint**: Set up a complete document Q&A system with Nemotron 49B, embedding, reranking, and vector search.
 2. **Deploying AI-Q**: Add advanced research capabilities that reuse Nemotron 49B for multi-source synthesis and report generation.
 3. **Integrating Multiple AI Services**: Connect different NIMs and microservices in a cohesive architecture with shared LLM resources.
@@ -30,28 +36,39 @@ By the end of this workshop, you will have hands-on experience with:
 
 ## Learn the Components
 ### **NVIDIA RAG Blueprint**
+
 A production-ready Retrieval Augmented Generation pipeline that enables Q&A over your documents. Includes document ingestion, embedding, vector search, reranking, and LLM-powered response generation with citations.
 
 ### **NVIDIA AI-Q Research Assistant**
+
 An intelligent research platform that generates comprehensive reports by querying multiple sources, synthesizing findings, and presenting them in editable, human-friendly formats.
 
 ### **NIMs (NVIDIA Inference Microservices)**
+
 Optimized containers for deploying AI models with TensorRT acceleration. This workshop uses:
-- **Nemotron Super 49B**: Advanced reasoning, chain-of-thought, Q&A, and report synthesis (shared by both RAG and AI-Q). Deployed on Azure AI Foundry or use build.nvidia.com API
+
+- **Nemotron Super 49B**: Advanced reasoning, chain-of-thought, Q&A, and report synthesis (shared by both RAG and AI-Q). Deployed on Azure AI 
+
+Foundry or use build.nvidia.com API
+
 - **NeMo Retriever Embedding 1B**: High-quality text embeddings
 - **NeMo Retriever Reranking 1B**: Result reranking for improved accuracy
 - **Page Elements NIM**: PDF text extraction
 
 ### **Tavily API**
+
 A web search API that returns structured, LLM-ready content instead of raw HTML. AI-Q uses Tavily to combine your private document collections with real-time web data when generating research reports. Without it, AI-Q is limited to searching only your uploaded documents. With Tavily enabled, research reports can cite both internal documents and current web sources.
 
 ### **Phoenix Tracing** (optional)
+
 An open-source observability platform providing distributed tracing and performance monitoring for AI workflows.
 
 ### **NVIDIA NIM on Azure AI Foundry** (optional)
+
 NIM microservices are natively supported on Azure AI Foundry, enabling developers to quickly create a streamlined path for deployment. The microservices are running on Azure’s managed compute, removing the complexity of setting up and maintaining GPU infrastructure while ensuring high availability and scalability, even for highly demanding workloads. This enables teams to move quickly from model selection to production use. 
 
 ## Prerequisites 
+
 - Azure Account with access to H100 GPUs (Standard_NC80adis_H100_v5)
 - Azure CLI configured and authenticated
 - kubectl installed
@@ -145,24 +162,38 @@ export NGC_API_KEY="<YOUR NGC API KEY>"
 ### 3. Set up environment variables
 
 ```bash
-export REGION=<PREFERRED_AZURE_REGION>
-export RESOURCE_GROUP=<RG-GROUP-NAME>
+export NGC_API_KEY="nvapi-..."
+export NVIDIA_API_KEY=${NGC_API_KEY}
+export TAVILY_API_KEY="tvly-..."
 
-# Azure Kubernetes Service Cluster
-export CLUSTER_NAME=rag-demo 
+# Note: SDK appends /v1 automatically, so don't include it here
+export NVIDIA_API_URL="https://integrate.api.nvidia.com"
+
+export MODEL_NAME=nvidia/llama-3.3-nemotron-super-49b-v1.5
+
+# AKS Infrastructure Configuration
+export REGION=eastus2
+export RESOURCE_GROUP=rg-aiq-rag
+export CLUSTER_NAME=rag-demo
 export CLUSTER_MACHINE_TYPE=Standard_D32s_v5
-
-# GPU Node Pool
 export NODE_POOL_MACHINE_TYPE=Standard_NC80adis_H100_v5
-export NODE_COUNT=4
+export NODE_COUNT=1
 export CPU_COUNT=2
+
+# Namespace Configuration
+export NAMESPACE=rag
+export RAG_NAMESPACE=rag
+
+# Kubeconfig
+export KUBECONFIG=${PWD}/cluster.config
+
 export CHART_NAME=rag-chart
 
 # Azure Managed Grafana
-export GRAFANA_NAME="aks-labs-${RANDOM}"
+export GRAFANA_NAME="aiq-rag-${RANDOM}"
 
 # Azure Monitor Workspace
-export AZ_MONITOR_WORKSPACE_NAME="azmon-aks-labs"
+export AZ_MONITOR_WORKSPACE_NAME="aiq-rag-aks-labs"
 ```
 
 ### 4. Create a Resource Group
