@@ -188,7 +188,7 @@ AZ_MONITOR_WORKSPACE_ID=$(az monitor account show \
   --name ${AZ_MONITOR_WORKSPACE_NAME} \
   --query id -o tsv)
 ```
-### 7. Create an Azure Managed Grafana instance
+### 6. Create an Azure Managed Grafana instance
 
 The Azure CLI extension for Azure Managed Grafana (amg) allows us to create, edit, delete the Azure Managed Grafana instance from the cli. If you can't add this extension, you can still perform these actions using the Azure Portal.
 
@@ -214,7 +214,7 @@ GRAFANA_RESOURCE_ID=$(az grafana show \
   --query id -o tsv)
 ```
 
-### 5. Create AKS cluster
+### 6. Create AKS cluster
 
 ```bash
 az aks create -g ${RESOURCE_GROUP} \
@@ -228,13 +228,13 @@ az aks create -g ${RESOURCE_GROUP} \
     --tier Standard
 ```
 
-### 6. Get AKS cluster credentials
+### 7. Get AKS cluster credentials
 
 ```bash
 az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME
 ```
 
-### 7. Create node pool
+### 8. Create the GPU node pool
 
 ```bash
 az aks nodepool add --resource-group $RESOURCE_GROUP \
@@ -293,7 +293,7 @@ helm upgrade --install rag  --create-namespace -n rag \
 https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
 --username '$oauthtoken' \
 --password "${NGC_API_KEY}" \
---values values.yaml \
+--values manifests/values.yaml \
 --set nim-llm.enabled=false \
 --set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
 --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
@@ -412,6 +412,8 @@ Click Deploy:
 Once complete you will get an endpoint url and key:
 
 ![alt text](imgs/azure-aifoundry.png)
+
+Adjust these environment variables to reflect the information retrieved from the AI Foundry:
 
 ```bash
 export NVIDIA_API_URL="https://ai-azwestus-uma7-hbbtf.westus.inference.ml.azure.com/v1"
@@ -571,16 +573,16 @@ export MODEL_NAME="meta/llama-3.3-nemotron-super-49b-instruct"
 
 </details>
 
--------
+### Deploy AIQ Blueprint
 
-Set **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
+The last portion missing before we can deploy the AI-Q Bluepring is the **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
 
 ```bash
 export TAVILY_API_KEY="tvly-xxxxx"
 ```
+We are now ready to deploy the AI-Q Blueprint on our AKS cluster!
 
-### Deploy AIQ Blueprint
-```
+```bash
 helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
   --create-namespace \
   --username '$oauthtoken' \
@@ -645,128 +647,6 @@ From here, we should be able to interact with the service and get some outputs f
 It should look like this:
 
 ![alt text](imgs/aiq-home.png)
-
-### Monitoring and Observability
-
-With all services deployed, you now have access to comprehensive telemetry and monitoring capabilities. If you deployed Option C (in-cluster NIM), you have additional GPU and inference metrics available.
-
-#### Available Telemetry Endpoints
-
-| Pod/Service | Telemetry Type | Description | Access Method |
-|-------------|---------------|-------------|---------------|
-| `aiq-nim-llm-0` | GPU metrics, inference stats | Real-time GPU utilization, memory, model performance, token throughput (Option C only) | DCGM exporter, NIM metrics endpoint |
-| `aiq-phoenix-*` | Distributed tracing | Request traces, latency breakdown, LLM call chains, token usage | Port-forward to 6006, web UI |
-| DCGM Exporter (gpu-operator) | GPU hardware metrics | GPU utilization, temperature, memory, power consumption across all nodes | Prometheus metrics, DCGM CLI |
-| `aiq-aira-backend-*` | Application metrics | Backend health, API response times, error rates | Health endpoint `/health` |
-| `rag-server-*` | RAG pipeline metrics | Query performance, embedding latency, cache hit rates, reranking stats | Health endpoint `/health` |
-| `milvus-standalone-*` | Vector DB metrics | Search latency, index performance, storage utilization | Metrics endpoint `9091/metrics` |
-| ServiceMonitors | Prometheus integration | Centralized metrics collection for Azure Monitor or Prometheus | `kubectl get servicemonitors -A` |
-
-#### Access GPU Metrics (Option C)
-
-If you deployed the in-cluster NIM (Option C), check GPU utilization:
-
-```bash
-# View GPU metrics from DCGM exporter
-kubectl get pods -n gpu-operator -l app=nvidia-dcgm-exporter
-
-# Check GPU utilization for nim-llm pod
-kubectl exec -it aiq-nim-llm-0 -n aira -- nvidia-smi
-
-# View detailed GPU metrics
-kubectl exec -it <dcgm-exporter-pod> -n gpu-operator -- dcgmi discovery -l
-```
-
-#### Access Phoenix Tracing
-
-Phoenix provides distributed tracing for all AI workflows:
-
-```bash
-# Access Phoenix UI
-kubectl port-forward -n aira svc/aiq-phoenix 6006:6006
-```
-
-Open http://localhost:6006 in your browser to view:
-- **Request traces**: End-to-end request flow through RAG, LLM, and web search
-- **Latency breakdown**: Time spent in each component (embedding, retrieval, LLM inference)
-- **Token usage**: Input/output tokens per request, cost estimation
-- **Error rates**: Failed requests, retry attempts, error patterns
-
-#### Health Check Endpoints
-
-```bash
-# AI-Q Backend health
-kubectl exec -it <backend-pod> -n aira -- curl localhost:8000/health
-
-# RAG Server health  
-kubectl exec -it <rag-server-pod> -n rag -- curl localhost:8081/health
-
-# Milvus health
-kubectl exec -it milvus-standalone-<pod-id> -n rag -- curl localhost:9091/healthz
-
-# In-cluster NIM health (Option C only)
-kubectl exec -it aiq-nim-llm-0 -n aira -- curl localhost:8000/v1/health/ready
-```
-
-#### ServiceMonitor Integration
-
-ServiceMonitors are deployed for integration with Azure Monitor or Prometheus:
-
-```bash
-# List all ServiceMonitors
-kubectl get servicemonitors -A
-
-# View specific ServiceMonitor configuration
-kubectl describe servicemonitor <name> -n <namespace>
-```
-
-These ServiceMonitors automatically expose metrics for:
-- GPU utilization and health
-- Inference latency and throughput  
-- Vector database performance
-- RAG pipeline statistics
-
-#### Azure Managed Grafana Dashboards
-
-For enhanced visualization of all metrics, you can deploy Grafana to create comprehensive dashboards. Grafana integrates with the ServiceMonitor/Prometheus stack to provide:
-
-**Nemotron 49B LLM Metrics Dashboard** (NIM LLM metrics only available when following Option C above)
-
-- Token throughput and generation speed
-- Request rates and error tracking
-- Inter Token Latency (ITL) Heatmap
-- Time to First Token (TTFT) Heatmap
-- Total NIM requests
-
-![Nemotron Dashboard](imgs/grafana-nemotron-dashboard.png)
-
-**Milvus Performance Dashboard**
-
-- Vector search latency trends
-- Index build/query performance
-- Storage utilization and growth
-- Query Throughput (vectors/sec)
-
-![Milvus Dashboard](imgs/grafana-milvus-dashboard.png)
-
-**GPU Hardware Metrics Dashboard**
-- Real-time GPU utilization across all nodes
-- Temperature, memory, and power consumption trends
-- Per-model GPU allocation and efficiency (Option C)
-
-![GPU Dashboard](imgs/grafana-gpu-dashboard.png)
-
-**DCGM GPU Metrics (Hardware View)**
-
-- DCGM GPU Utilization 
-- DCGM GPU Temperature
-- DCGM GPU Power Usage
-- DCGM GPU Memory (Framebuffer)
-- DCGM PCIe Bandwidth
-- DCGM Tensor Core Activity
-
-![DCGM Dashboard](imgs/grafana-dcgm-dashboard.png)
-
 
 ## Task 6: Loading Default Collections
 
@@ -863,6 +743,350 @@ These collections are stored as vector embeddings in Milvus and are ready for se
 4. Click **"Save"** when satisfied
 
 ![alt text](imgs/result1.png)
+
+---
+
+## Monitoring and Observability
+
+With all services deployed, you now have access to comprehensive telemetry and monitoring capabilities. If you deployed Option C (in-cluster NIM), you have additional GPU and inference metrics available.
+
+### Available Telemetry Endpoints
+
+| Pod/Service | Telemetry Type | Description | Access Method |
+|-------------|---------------|-------------|---------------|
+| `aiq-nim-llm-0` | GPU metrics, inference stats | Real-time GPU utilization, memory, model performance, token throughput (Option C only) | DCGM exporter, NIM metrics endpoint |
+| `aiq-phoenix-*` | Distributed tracing | Request traces, latency breakdown, LLM call chains, token usage | Port-forward to 6006, web UI |
+| DCGM Exporter (gpu-operator) | GPU hardware metrics | GPU utilization, temperature, memory, power consumption across all nodes | Prometheus metrics, DCGM CLI |
+| `aiq-aira-backend-*` | Application metrics | Backend health, API response times, error rates | Health endpoint `/health` |
+| `rag-server-*` | RAG pipeline metrics | Query performance, embedding latency, cache hit rates, reranking stats | Health endpoint `/health` |
+| `milvus-standalone-*` | Vector DB metrics | Search latency, index performance, storage utilization | Metrics endpoint `9091/metrics` |
+| ServiceMonitors | Prometheus integration | Centralized metrics collection for Azure Monitor or Prometheus | `kubectl get servicemonitors -A` |
+
+### Access GPU Metrics (Option C)
+
+If you deployed the in-cluster NIM (Option C), check GPU utilization:
+
+```bash
+# View GPU metrics from DCGM exporter
+kubectl get pods -n gpu-operator -l app=nvidia-dcgm-exporter
+
+# Check GPU utilization for nim-llm pod
+kubectl exec -it aiq-nim-llm-0 -n aira -- nvidia-smi
+
+# View detailed GPU metrics
+kubectl exec -it <dcgm-exporter-pod> -n gpu-operator -- dcgmi discovery -l
+```
+
+### Access Phoenix Tracing
+
+Phoenix provides distributed tracing for all AI workflows:
+
+```bash
+# Access Phoenix UI
+kubectl port-forward -n aira svc/aiq-phoenix 6006:6006
+```
+
+Open http://localhost:6006 in your browser to view:
+- **Request traces**: End-to-end request flow through RAG, LLM, and web search
+- **Latency breakdown**: Time spent in each component (embedding, retrieval, LLM inference)
+- **Token usage**: Input/output tokens per request, cost estimation
+- **Error rates**: Failed requests, retry attempts, error patterns
+
+### ServiceMonitor Integration
+
+ServiceMonitors are deployed for integration with Azure Monitor or Prometheus. 
+
+1. Create the service monitors: 
+
+```bash
+cat <<EOF > servicemonitors.yaml
+# Consolidated ServiceMonitors for AIQ RAG Blueprint
+# This file contains all ServiceMonitor resources for monitoring NIMs and services
+# Used with Azure Monitor managed Prometheus
+
+---
+# ServiceMonitor for AIQ NIM LLM (Nemotron)
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aiq-nim-llm
+  namespace: aira
+  labels:
+    app: aiq-nim-llm
+spec:
+  namespaceSelector:
+    matchNames:
+    - aira
+  selector:
+    matchLabels:
+      app: aiq-nim-llm
+  endpoints:
+  - port: http
+    path: /v1/metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+# ServiceMonitor for Milvus Vector Database
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: milvus-standalone
+  namespace: rag
+spec:
+  namespaceSelector:
+    matchNames:
+    - rag
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: milvus
+      app.kubernetes.io/instance: rag
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+# ServiceMonitor for Embedding NIM
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rag-embedding-nim
+  namespace: rag
+spec:
+  namespaceSelector:
+    matchNames:
+    - rag
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nvidia-nim-llama-32-nv-embedqa-1b-v2
+  endpoints:
+  - interval: 30s
+    path: /v1/metrics
+    port: http
+
+---
+# ServiceMonitor for Reranking NIM
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rag-reranking-nim
+  namespace: rag
+spec:
+  namespaceSelector:
+    matchNames:
+    - rag
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nvidia-nim-llama-32-nv-rerankqa-1b-v2
+  endpoints:
+  - interval: 30s
+    path: /v1/metrics
+    port: http
+
+---
+# ServiceMonitor for DCGM Exporter (GPU Metrics)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dcgm-exporter-metrics
+  namespace: gpu-operator
+  labels:
+    app: nvidia-dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+  endpoints:
+  - port: gpu-metrics
+    interval: 15s
+    path: /metrics
+EOF
+```
+
+2. Apply the ServiceMonitor to the cluster
+
+```bash
+kubectl apply -f servicemonitors.yaml
+```
+
+3. List all ServiceMonitors
+
+```bash
+kubectl get servicemonitors -A
+```
+
+4. View specific ServiceMonitor configuration
+
+```bash
+kubectl describe servicemonitor <name> -n <namespace>
+```
+
+These ServiceMonitors automatically expose metrics for:
+
+- GPU utilization and health
+- Inference latency and throughput  
+- Vector database performance
+- RAG pipeline statistics
+
+### Load test the cluster
+
+We can use the `rag-sweep-hpa.sh` script described in the blog post (Enabling Horizontal Autoscaling of Enterprise RAG Components on Kubernetes)[https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/] to gather some statistic on the NIM-LLM deployed on the cluster:
+
+```bash
+cat <<EOF> rag-sweep-job.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-sweep-script
+  namespace: rag
+data:
+  rag-sweep.sh: |
+    #!/usr/bin/env bash
+    set -e
+    
+    # Script to sweep through different concurrency levels for RAG service with HPA
+    # Requires genai-perf CLI tool installed and configured
+    # Original author(s): Juana Nakfour,  Anita Tragler, Ruchika Kharwar, NVIDIA Corp.
+    # Original source: https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/
+    # Modified by: Diego Casati, Microsoft Corp.
+    
+        export RAG_SERVICE="aiq-nim-llm.aira.svc.cluster.local:8000"
+    export NIM_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5"
+    export NIM_MODEL_NAME="nvidia/llama-3.3-nemotron-super-49b-v1.5"
+    export NIM_MODEL_TOKENIZER="nvidia/Llama-3_3-Nemotron-Super-49B-v1"
+    
+    export CONCURRENCY_RANGE="50 100 150 200 250 300"
+    export request_multiplier=15
+    
+    export ISL="256"
+    export OSL="256"
+    
+    # Skip collection-specific parameters for testing
+    # export COLLECTION="multimodal_data"
+    # export VDB_TOPK=10
+    # export RERANKER_TOPK=4
+    export OUTPUT_DIR="/results"
+    
+    mkdir -p $OUTPUT_DIR
+    
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Starting RAG sweep benchmark"
+    
+    for CR in ${CONCURRENCY_RANGE}; do
+    
+      total_requests=$((request_multiplier * CR))
+      EXPORT_FILE=RAG_CR-${CR}_ISL-${ISL}_OSL-${OSL}-$(date +"%Y-%m-%d-%H_%M_%S").json
+    
+      START_TIME=$(date +%s)
+      echo "[$(date +"%Y-%m-%d %H:%M:%S")] Running with concurrency: $CR, total requests: $total_requests"
+    
+      genai-perf profile \
+        -m $NIM_MODEL_NAME \
+        --service-kind openai \
+        --endpoint-type chat \
+        --streaming \
+        -u $RAG_SERVICE \
+        --request-count $total_requests \
+        --synthetic-input-tokens-mean $ISL \
+        --synthetic-input-tokens-stddev 0 \
+        --concurrency $CR \
+        --output-tokens-mean $OSL \
+        --extra-inputs max_tokens:$OSL \
+        --artifact-dir $OUTPUT_DIR \
+        --tokenizer $NIM_MODEL_TOKENIZER \
+        --profile-export-file $EXPORT_FILE
+    
+      END_TIME=$(date +%s)
+      elapsed_time=$((END_TIME - START_TIME))
+    
+      echo "[$(date +"%Y-%m-%d %H:%M:%S")] Completed: $EXPORT_FILE in $elapsed_time seconds"
+    done
+    
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Benchmark complete. Results in $OUTPUT_DIR"
+    ls -lh $OUTPUT_DIR/
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-sweep-benchmark
+  namespace: rag
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: rag-sweep-benchmark
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: genai-perf
+        image: nvcr.io/nvidia/tritonserver:25.01-py3-sdk
+        command: ["/bin/bash"]
+        args: ["/scripts/rag-sweep.sh"]
+        volumeMounts:
+        - name: script
+          mountPath: /scripts
+        - name: results
+          mountPath: /results
+        resources:
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+      volumes:
+      - name: script
+        configMap:
+          name: rag-sweep-script
+          defaultMode: 0755
+      - name: results
+        emptyDir: {}
+EOF
+```
+
+### Azure Managed Grafana Dashboards
+
+For enhanced visualization of all metrics, you can deploy Grafana to create comprehensive dashboards. Grafana integrates with the ServiceMonitor/Prometheus stack to provide:
+
+**Nemotron 49B LLM Metrics Dashboard** (NIM LLM metrics only available when following Option C above)
+
+- Token throughput and generation speed
+- Request rates and error tracking
+- Inter Token Latency (ITL) Heatmap
+- Time to First Token (TTFT) Heatmap
+- Total NIM requests
+
+![Nemotron Dashboard](imgs/grafana-nemotron-dashboard.png)
+
+**Milvus Performance Dashboard**
+
+- Vector search latency trends
+- Index build/query performance
+- Storage utilization and growth
+- Query Throughput (vectors/sec)
+
+![Milvus Dashboard](imgs/grafana-milvus-dashboard.png)
+
+**GPU Hardware Metrics Dashboard**
+- Real-time GPU utilization across all nodes
+- Temperature, memory, and power consumption trends
+- Per-model GPU allocation and efficiency (Option C)
+
+![GPU Dashboard](imgs/grafana-gpu-dashboard.png)
+
+**DCGM GPU Metrics (Hardware View)**
+
+- DCGM GPU Utilization 
+- DCGM GPU Temperature
+- DCGM GPU Power Usage
+- DCGM GPU Memory (Framebuffer)
+- DCGM PCIe Bandwidth
+- DCGM Tensor Core Activity
+
+![DCGM Dashboard](imgs/grafana-dcgm-dashboard.png)
+
+---
 
 ## Cleanup
 
