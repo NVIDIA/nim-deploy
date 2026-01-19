@@ -119,7 +119,7 @@ Once you log in, click on the Cloud Shell button, located at the top bar:
 
 ![Azure_Cloud_Shell_Expand.png](imgs/Azure_Cloud_Shell_Expand.png)
 
-2. When asked, select "Bash"
+2. When asked, select **Bash**
 
 ![Bash.png](imgs/Bash.png)
 
@@ -147,30 +147,85 @@ export NGC_API_KEY="<YOUR NGC API KEY>"
 ```bash
 export REGION=<PREFERRED_AZURE_REGION>
 export RESOURCE_GROUP=<RG-GROUP-NAME>
+
+# Azure Kubernetes Service Cluster
 export CLUSTER_NAME=rag-demo 
 export CLUSTER_MACHINE_TYPE=Standard_D32s_v5
+
+# GPU Node Pool
 export NODE_POOL_MACHINE_TYPE=Standard_NC80adis_H100_v5
 export NODE_COUNT=4
 export CPU_COUNT=2
 export CHART_NAME=rag-chart
+
+# Azure Managed Grafana
+export GRAFANA_NAME="aks-labs-${RANDOM}"
+
+# Azure Monitor Workspace
+export AZ_MONITOR_WORKSPACE_NAME="azmon-aks-labs"
 ```
 
 ### 4. Create a Resource Group
 
 ```bash
-az group create -l $REGION -n $RESOURCE_GROUP
+az group create -l ${REGION} -n ${RESOURCE_GROUP}
+```
+
+### 5. Create the Azure Monitor Workspace
+
+```bash
+az monitor account create \
+  --resource-group ${RESOURCE_GROUP} \
+  --location ${LOCATION} \
+  --name ${AZ_MONITOR_WORKSPACE_NAME}
+```
+
+Retrieve the Azure Monitor Workspace ID
+
+```bash
+AZ_MONITOR_WORKSPACE_ID=$(az monitor account show \
+  --resource-group ${RESOURCE_GROUP} \
+  --name ${AZ_MONITOR_WORKSPACE_NAME} \
+  --query id -o tsv)
+```
+### 7. Create an Azure Managed Grafana instance
+
+The Azure CLI extension for Azure Managed Grafana (amg) allows us to create, edit, delete the Azure Managed Grafana instance from the cli. If you can't add this extension, you can still perform these actions using the Azure Portal.
+
+Add the Azure Manage Grafana extension to az cli:
+az extension add --name amg
+
+Create an Azure Managed Grafana instance:
+You can now proceed with the creation of the Managed Grafana instance:
+
+```bash
+az grafana create \
+  --name ${GRAFANA_NAME} \
+  --resource-group ${RESOURCE_GROUP} \
+  --location ${LOCATION}
+```
+
+Once created, save the Grafana resource ID
+
+```bash
+GRAFANA_RESOURCE_ID=$(az grafana show \
+  --name ${GRAFANA_NAME} \
+  --resource-group ${RESOURCE_GROUP} \
+  --query id -o tsv)
 ```
 
 ### 5. Create AKS cluster
 
 ```bash
-az aks create -g $RESOURCE_GROUP \
-    -n $CLUSTER_NAME \
-    --location $REGION \
-    --node-count $CPU_COUNT \
-    --node-vm-size $CLUSTER_MACHINE_TYPE \
-    --enable-node-public-ip \
-    --generate-ssh-keys
+az aks create -g ${RESOURCE_GROUP} \
+    -n ${CLUSTER_NAME} \
+    --location ${REGION} \
+    --node-count ${CPU_COUNT} \
+    --node-vm-size ${CLUSTER_MACHINE_TYPE} \
+    --enable-azure-monitor-metrics \
+    --grafana-resource-id ${GRAFANA_RESOURCE_ID} \
+    --azure-monitor-workspace-resource-id ${AZ_MONITOR_WORKSPACE_ID} \
+    --tier Standard
 ```
 
 ### 6. Get AKS cluster credentials
@@ -227,9 +282,9 @@ kubectl create namespace rag
 
 Note: in order to save GPU resources, we will be deploying the text-only ingestion blueprint.
 Execute the below, to download the values.yaml file:
-```bash
+<!-- ```bash
 wget -O values.yaml https://tinyurl.com/rag23values
-```
+``` -->
 
 Install RAG2.3 Blueprint,  with NIMS llama-32-nv-embedqa-1b,llama-32-nv-rerankqa-1b,nemoretriever-page-elements-v2, nemoretriever-table-structure-v1 deployed on our A100 GPU Node. For Nemotron Super 49B we point to build.nvidia.com API :
 
@@ -675,40 +730,43 @@ These ServiceMonitors automatically expose metrics for:
 
 For enhanced visualization of all metrics, you can deploy Grafana to create comprehensive dashboards. Grafana integrates with the ServiceMonitor/Prometheus stack to provide:
 
-**Nemotron 49B LLM Metrics Dashboard** (Option C)
-- Inference latency percentiles (p50, p95, p99)
+**Nemotron 49B LLM Metrics Dashboard** (NIM LLM metrics only available when following Option C above)
+
 - Token throughput and generation speed
 - Request rates and error tracking
 - Inter Token Latency (ITL) Heatmap
 - Time to First Token (TTFT) Heatmap
 - Total NIM requests
 
-![NIM Dashboard](imgs/grafana-nemotron-dashboard.png)
+![Nemotron Dashboard](imgs/grafana-nemotron-dashboard.png)
 
-**GPU Monitoring Dashboard**
+**Milvus Performance Dashboard**
+
+- Vector search latency trends
+- Index build/query performance
+- Storage utilization and growth
+- Query Throughput (vectors/sec)
+
+![Milvus Dashboard](imgs/grafana-milvus-dashboard.png)
+
+**GPU Hardware Metrics Dashboard**
 - Real-time GPU utilization across all nodes
 - Temperature, memory, and power consumption trends
 - Per-model GPU allocation and efficiency (Option C)
 
 ![GPU Dashboard](imgs/grafana-gpu-dashboard.png)
 
+**DCGM GPU Metrics (Hardware View)**
 
-**RAG Pipeline Dashboard**
-- End-to-end query latency breakdown
-- Embedding generation time
-- Vector search performance
-- Reranking latency
-- Cache hit/miss ratios
+- DCGM GPU Utilization 
+- DCGM GPU Temperature
+- DCGM GPU Power Usage
+- DCGM GPU Memory (Framebuffer)
+- DCGM PCIe Bandwidth
+- DCGM Tensor Core Activity
 
-![RAG Pipeline Dashboard](imgs/grafana-rag-dashboard.png)
+![DCGM Dashboard](imgs/grafana-dcgm-dashboard.png)
 
-**Milvus Performance Dashboard**
-- Vector search latency trends
-- Index build/query performance
-- Storage utilization and growth
-- Concurrent query handling
-
-![Milvus Dashboard](imgs/grafana-milvus-dashboard.png)
 
 ## Task 6: Loading Default Collections
 

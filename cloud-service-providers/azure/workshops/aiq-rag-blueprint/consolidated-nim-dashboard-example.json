@@ -1,47 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2",
-      "label": "Managed_Prometheus_defaultazuremonitorworkspace-eastus2",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "11.6.3"
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -61,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 220,
   "links": [],
   "panels": [
     {
@@ -80,167 +37,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 0.5},
-              {"color": "red", "value": 1}
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 7, "w": 6, "x": 0, "y": 1},
-      "id": 201,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.6.3",
-      "targets": [{
-        "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-        "editorMode": "code",
-        "expr": "histogram_quantile(0.5, sum by(le) (rate(time_to_first_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])))",
-        "legendFormat": "__auto",
-        "range": true,
-        "refId": "A"
-      }],
-      "title": "Time to First Token (TTFT) p50",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.05}, {"color": "red", "value": 0.1}]},
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 7, "w": 6, "x": 6, "y": 1},
-      "id": 202,
-      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
-      "pluginVersion": "11.6.3",
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "histogram_quantile(0.5, sum by(le) (rate(time_per_output_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])))", "legendFormat": "__auto", "range": true, "refId": "A"}],
-      "title": "Inter-Token Latency (ITL) p50",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1000}, {"color": "green", "value": 2000}]}}, "overrides": []},
-      "gridPos": {"h": 7, "w": 6, "x": 12, "y": 1},
-      "id": 203,
-      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
-      "pluginVersion": "11.6.3",
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "rate(generation_tokens_total{namespace=\"aira\"}[$__rate_interval])", "legendFormat": "__auto", "range": true, "refId": "A"}],
-      "title": "Throughput (tokens/sec)",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"hideFrom": {"legend": false, "tooltip": false, "viz": false}}, "mappings": []}, "overrides": []},
-      "gridPos": {"h": 7, "w": 6, "x": 18, "y": 1},
-      "id": 204,
-      "options": {"displayLabels": ["percent"], "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true}, "pieType": "donut", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "tooltip": {"mode": "single", "sort": "none"}},
-      "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "prompt_tokens_total{namespace=\"aira\"}", "legendFormat": "Context Tokens", "range": true, "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "generation_tokens_total{namespace=\"aira\"}", "hide": false, "legendFormat": "Generated Tokens", "range": true, "refId": "B"}
-      ],
-      "title": "Context vs Generated Tokens",
-      "type": "piechart"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"custom": {"hideFrom": {"legend": false, "tooltip": false, "viz": false}, "scaleDistribution": {"type": "linear"}}}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-      "id": 205,
-      "options": {"calculate": false, "cellGap": 1, "color": {"exponent": 0.5, "fill": "dark-orange", "mode": "scheme", "reverse": false, "scale": "exponential", "scheme": "Spectral", "steps": 64}, "exemplars": {"color": "rgba(255,0,255,0.7)"}, "filterValues": {"le": 1e-9}, "legend": {"show": true}, "rowsFrame": {"layout": "auto"}, "tooltip": {"mode": "single", "showColorScale": false, "yHistogram": false}, "yAxis": {"axisPlacement": "left", "reverse": false, "unit": "s"}},
-      "pluginVersion": "11.6.3",
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "exemplar": false, "expr": "rate(time_to_first_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])", "format": "heatmap", "legendFormat": "{{le}}", "range": true, "refId": "A"}],
-      "title": "Time to First Token (TTFT) Heatmap",
-      "type": "heatmap"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"custom": {"hideFrom": {"legend": false, "tooltip": false, "viz": false}, "scaleDistribution": {"type": "linear"}}}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-      "id": 206,
-      "options": {"calculate": false, "cellGap": 1, "color": {"exponent": 0.5, "fill": "dark-orange", "mode": "scheme", "reverse": false, "scale": "exponential", "scheme": "Spectral", "steps": 64}, "exemplars": {"color": "rgba(255,0,255,0.7)"}, "filterValues": {"le": 1e-9}, "legend": {"show": true}, "rowsFrame": {"layout": "auto"}, "tooltip": {"mode": "single", "showColorScale": false, "yHistogram": false}, "yAxis": {"axisPlacement": "left", "reverse": false, "unit": "s"}},
-      "pluginVersion": "11.6.3",
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "rate(time_per_output_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])", "format": "heatmap", "legendFormat": "{{le}}", "range": true, "refId": "A"}],
-      "title": "Inter Token Latency (ITL) Heatmap",
-      "type": "heatmap"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisBorderShow": false, "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto", "barAlignment": 0, "barWidthFactor": 0.6, "drawStyle": "line", "fillOpacity": 0, "gradientMode": "none", "hideFrom": {"legend": false, "tooltip": false, "viz": false}, "insertNulls": false, "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 5, "scaleDistribution": {"type": "linear"}, "showPoints": "auto", "spanNulls": false, "stacking": {"group": "A", "mode": "none"}, "thresholdsStyle": {"mode": "off"}}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}, "overrides": []},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
-      "id": 207,
-      "options": {"legend": {"calcs": ["mean", "max"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "single", "sort": "none"}},
-      "targets": [
-        {"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "rate(request_success_total{namespace=\"aira\"}[$__rate_interval])", "legendFormat": "Successful Requests/sec", "range": true, "refId": "A"},
-        {"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "rate(request_failure_total{namespace=\"aira\"}[$__rate_interval])", "hide": false, "legendFormat": "Failed Requests/sec", "range": true, "refId": "B"}
-      ],
-      "title": "Request Rate",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}, "overrides": []},
-      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16},
-      "id": 208,
-      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
-      "pluginVersion": "11.6.3",
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "request_success_total{namespace=\"aira\"}", "legendFormat": "__auto", "range": true, "refId": "A"}],
-      "title": "Total Successful Requests",
-      "type": "stat"
-    },
-    {
-      "datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"},
-      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}, "overrides": []},
-      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 16},
-      "id": 209,
-      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showPercentChange": false, "textMode": "auto", "wideLayout": true},
-      "pluginVersion": "11.6.3",
-      "targets": [{"datasource": {"type": "prometheus", "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"}, "editorMode": "code", "expr": "sum(request_finish_total{namespace=\"aira\"})", "legendFormat": "__auto", "range": true, "refId": "A"}],
-      "title": "Total Finished Requests",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 100,
-      "panels": [],
-      "title": "GPU Metrics - Embedding & Reranking NIMs",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+        "uid": "defaultazuremonitorworkspace-eastus2"
       },
       "fieldConfig": {
         "defaults": {
@@ -256,29 +53,31 @@
               },
               {
                 "color": "yellow",
-                "value": 70
+                "value": 0.5
               },
               {
                 "color": "red",
-                "value": 85
+                "value": 1
               }
             ]
           },
-          "unit": "celsius"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 7,
+        "w": 4,
         "x": 0,
         "y": 1
       },
-      "id": 4,
+      "id": 201,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -286,31 +85,380 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
       },
       "pluginVersion": "11.6.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"gpu-operator\"}",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "expr": "histogram_quantile(0.5, sum by(le) (rate(time_to_first_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])))",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "GPU Temperature",
-      "type": "gauge"
+      "title": "Time to First Token (TTFT) p50",
+      "type": "stat"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red"
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "green",
+                "value": 2000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "id": 203,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(generation_tokens_total{namespace=\"aira\"}[$__rate_interval])",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Throughput (tokens/sec)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 3,
+        "x": 8,
+        "y": 1
+      },
+      "id": 204,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "prompt_tokens_total{namespace=\"aira\"}",
+          "legendFormat": "Context Tokens",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "generation_tokens_total{namespace=\"aira\"}",
+          "hide": false,
+          "legendFormat": "Generated Tokens",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Context vs Generated Tokens",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 11,
+        "y": 1
+      },
+      "id": 208,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "request_success_total{namespace=\"aira\"}",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Successful Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 15,
+        "y": 1
+      },
+      "id": 209,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "sum(request_finish_total{namespace=\"aira\"})",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Finished Requests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 0.05
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 202,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.5, sum by(le) (rate(time_per_output_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])))",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Inter-Token Latency (ITL) p50",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
       },
       "fieldConfig": {
         "defaults": {
@@ -326,7 +474,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -340,7 +488,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -358,31 +506,30 @@
                 "color": "green"
               }
             ]
-          },
-          "unit": "watt"
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 1
+        "x": 0,
+        "y": 8
       },
-      "id": 5,
+      "id": 207,
       "options": {
         "legend": {
           "calcs": [
             "mean",
             "max"
           ],
-          "displayMode": "table",
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
           "hideZeros": false,
-          "mode": "multi",
+          "mode": "single",
           "sort": "none"
         }
       },
@@ -391,17 +538,254 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"gpu-operator\"}",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "expr": "rate(request_success_total{namespace=\"aira\"}[$__rate_interval])",
+          "legendFormat": "Successful Requests/sec",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(request_failure_total{namespace=\"aira\"}[$__rate_interval])",
+          "hide": false,
+          "legendFormat": "Failed Requests/sec",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Request Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 206,
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 64
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "s"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(time_per_output_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "GPU Power Usage",
-      "type": "timeseries"
+      "title": "Inter Token Latency (ITL) Heatmap",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 205,
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 64
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "s"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "rate(time_to_first_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])",
+          "format": "heatmap",
+          "legendFormat": "{{le}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Time to First Token (TTFT) Heatmap",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "request_success_total{namespace=\"aira\"}",
+          "legendFormat": "{{pod}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total NIM Requests",
+      "type": "stat"
     },
     {
       "collapsed": true,
@@ -409,14 +793,14 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 24
       },
-      "id": 102,
+      "id": 103,
       "panels": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "fieldConfig": {
             "defaults": {
@@ -465,17 +849,17 @@
                   }
                 ]
               },
-              "unit": "watt"
+              "unit": "s"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
-            "w": 12,
+            "w": 24,
             "x": 0,
-            "y": 19
+            "y": 416
           },
-          "id": 22,
+          "id": 31,
           "options": {
             "legend": {
               "calcs": [
@@ -497,22 +881,46 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
-              "expr": "gpu_power_usage_watts{namespace=\"rag\"} / 1000",
-              "legendFormat": "{{pod}} - Device {{device_id}}",
+              "expr": "histogram_quantile(0.50, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"rag\"}[5m])))",
+              "legendFormat": "p50 - {{collection_name}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "defaultazuremonitorworkspace-eastus2"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.95, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"rag\"}[5m])))",
+              "hide": false,
+              "legendFormat": "p95 - {{collection_name}}",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "defaultazuremonitorworkspace-eastus2"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"rag\"}[5m])))",
+              "hide": false,
+              "legendFormat": "p99 - {{collection_name}}",
+              "range": true,
+              "refId": "C"
             }
           ],
-          "title": "NIM GPU Power Usage (from Application)",
+          "title": "Milvus Collection Search Performance (p50/p95/p99)",
           "type": "timeseries"
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "fieldConfig": {
             "defaults": {
@@ -520,8 +928,6 @@
                 "mode": "thresholds"
               },
               "mappings": [],
-              "max": 1,
-              "min": 0,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -530,28 +936,39 @@
                   },
                   {
                     "color": "yellow",
-                    "value": 0.6
+                    "value": 50000000000
                   },
                   {
                     "color": "red",
-                    "value": 0.8
+                    "value": 100000000000
                   }
                 ]
               },
-              "unit": "percentunit"
+              "unit": "decbytes"
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 12,
-            "y": 19
+            "x": 0,
+            "y": 520
           },
-          "id": 23,
+          "id": 33,
           "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
+            "displayMode": "gradient",
+            "legend": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
             "orientation": "auto",
             "reduceOptions": {
               "calcs": [
@@ -560,69 +977,36 @@
               "fields": "",
               "values": false
             },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
           },
           "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
-              "expr": "gpu_utilization{namespace=\"rag\"}",
-              "legendFormat": "{{pod}} - Device {{device_id}}",
+              "expr": "milvus_datacoord_stored_index_files_size{namespace=\"rag\"}",
+              "legendFormat": "{{collection_name}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "NIM GPU Utilization (from Application)",
-          "type": "gauge"
+          "title": "Milvus Index Storage Size by Collection",
+          "type": "bargauge"
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "normal"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
+                "mode": "thresholds"
               },
               "mappings": [],
               "thresholds": {
@@ -630,118 +1014,18 @@
                 "steps": [
                   {
                     "color": "green"
-                  }
-                ]
-              },
-              "unit": "decgbytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 27
-          },
-          "id": 24,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "gpu_memory_used_bytes{namespace=\"rag\"}",
-              "legendFormat": "Used - {{pod}} - Device {{device_id}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "gpu_memory_total_bytes{namespace=\"rag\"} - gpu_memory_used_bytes{namespace=\"rag\"}",
-              "hide": false,
-              "legendFormat": "Free - {{pod}} - Device {{device_id}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "NIM GPU Memory Usage (from Application)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
+                  },
                   {
-                    "color": "green"
+                    "color": "yellow",
+                    "value": 10000000
+                  },
+                  {
+                    "color": "red",
+                    "value": 50000000
                   }
                 ]
               },
-              "unit": "joule"
+              "unit": "short"
             },
             "overrides": []
           },
@@ -749,156 +1033,47 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 520
           },
-          "id": 25,
+          "id": 26,
           "options": {
-            "legend": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
               "calcs": [
-                "lastNotNull",
-                "delta"
+                "lastNotNull"
               ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "fields": "",
+              "values": false
             },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
           },
           "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
-              "expr": "gpu_total_energy_consumption_joules{namespace=\"rag\"}",
-              "legendFormat": "{{pod}} - Device {{device_id}}",
+              "expr": "milvus_datacoord_stored_rows_num{namespace=\"rag\"}",
+              "legendFormat": "{{collection_name}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "NIM GPU Total Energy Consumption",
-          "type": "timeseries"
-        }
-      ],
-      "title": "NIM GPU Metrics (Application View)",
-      "type": "row"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 10
-      },
-      "id": 103,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 21
-          },
-          "id": 30,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "rate(milvus_cgo_cgo_duration_seconds_count{namespace=\"rag\", name=\"search\"}[5m])",
-              "legendFormat": "Search Operations/sec",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Milvus Search Rate",
-          "type": "timeseries"
+          "title": "Milvus Stored Vectors",
+          "type": "stat"
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "fieldConfig": {
             "defaults": {
@@ -954,8 +1129,8 @@
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 12,
-            "y": 21
+            "x": 0,
+            "y": 528
           },
           "id": 29,
           "options": {
@@ -979,7 +1154,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"rag\", name=\"search\"}[5m])))",
@@ -990,7 +1165,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.95, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"rag\", name=\"search\"}[5m])))",
@@ -1002,7 +1177,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
               "expr": "histogram_quantile(0.99, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"rag\", name=\"search\"}[5m])))",
@@ -1018,12 +1193,45 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "thresholds"
+                "mode": "palette-classic-by-name"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
               },
               "mappings": [],
               "thresholds": {
@@ -1031,14 +1239,6 @@
                 "steps": [
                   {
                     "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 10000000
-                  },
-                  {
-                    "color": "red",
-                    "value": 50000000
                   }
                 ]
               },
@@ -1048,2178 +1248,2218 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 29
+            "w": 12,
+            "x": 12,
+            "y": 528
           },
-          "id": 26,
+          "id": 32,
           "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
+            "legend": {
               "calcs": [
+                "mean",
                 "lastNotNull"
               ],
-              "fields": "",
-              "values": false
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
           },
           "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+                "uid": "defaultazuremonitorworkspace-eastus2"
               },
               "editorMode": "code",
-              "expr": "milvus_datacoord_stored_rows_num{namespace=\"rag\"}",
+              "expr": "rate(milvus_proxy_search_vectors_count{namespace=\"rag\"}[5m])",
               "legendFormat": "{{collection_name}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Milvus Stored Vectors",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "decbytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 29
-          },
-          "id": 28,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "milvus_datacoord_stored_binlog_size{namespace=\"rag\"}",
-              "legendFormat": "Binlog Size",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Milvus Storage Size",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 16,
-            "y": 29
-          },
-          "id": 27,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "milvus_datacoord_collection_num{namespace=\"rag\"}",
-              "legendFormat": "Collections",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Milvus Collections",
-          "type": "stat"
+          "title": "Milvus Query Throughput (vectors/sec)",
+          "type": "timeseries"
         }
       ],
       "title": "Milvus Vector Database Metrics",
       "type": "row"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 25
       },
       "id": 101,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "max": 100,
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 60
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 18
-          },
-          "id": 3,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"gpu-operator\"}",
-              "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "GPU Utilization %",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 18
-          },
-          "id": 7,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "request_count_total{namespace=\"rag\"}",
-              "legendFormat": "{{pod}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Total NIM Requests",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "decmbytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 26
-          },
-          "id": 6,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_FB_USED{namespace=\"gpu-operator\"}",
-              "legendFormat": "Used - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_FB_FREE{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "Free - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "GPU Framebuffer Memory (HBM)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "max": 100,
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 60
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 12,
-            "y": 26
-          },
-          "id": 10,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{namespace=\"gpu-operator\"}",
-              "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "GPU Memory Controller Utilization",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 65
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "celsius"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 6,
-            "x": 18,
-            "y": 26
-          },
-          "id": 13,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_MEMORY_TEMP{namespace=\"gpu-operator\"}",
-              "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "GPU Memory Temperature",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "MHz"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 34
-          },
-          "id": 11,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_SM_CLOCK{namespace=\"gpu-operator\"}",
-              "legendFormat": "SM Clock - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_MEM_CLOCK{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "Memory Clock - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "GPU Clock Frequencies",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 0.5
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
-                  }
-                ]
-              },
-              "unit": "ops"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 34
-          },
-          "id": 15,
-          "options": {
-            "legend": {
-              "calcs": [
-                "sum"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "increase(DCGM_FI_DEV_ECC_DBE_VOL_TOTAL{namespace=\"gpu-operator\"}[5m])",
-              "legendFormat": "Double Bit - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "increase(DCGM_FI_DEV_ECC_SBE_VOL_TOTAL{namespace=\"gpu-operator\"}[5m])",
-              "hide": false,
-              "legendFormat": "Single Bit - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "GPU ECC Errors (Memory Errors)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "Bps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 42
-          },
-          "id": 14,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "rate(DCGM_FI_PROF_PCIE_TX_BYTES{namespace=\"gpu-operator\"}[5m])",
-              "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "rate(DCGM_FI_PROF_PCIE_RX_BYTES{namespace=\"gpu-operator\"}[5m])",
-              "hide": false,
-              "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "PCIe Bandwidth (Data Transfer)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 42
-          },
-          "id": 17,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"gpu-operator\"}",
-              "legendFormat": "Tensor Cores - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PIPE_FP64_ACTIVE{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "FP64 - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PIPE_FP32_ACTIVE{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "FP32 - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "C"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PIPE_FP16_ACTIVE{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "FP16 - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "D"
-            }
-          ],
-          "title": "Tensor Core & FP Pipeline Activity (AI/ML Workloads)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 50
-          },
-          "id": 16,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_GR_ENGINE_ACTIVE{namespace=\"gpu-operator\"}",
-              "legendFormat": "Graphics Engine - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_SM_ACTIVE{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "SM Active - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_SM_OCCUPANCY{namespace=\"gpu-operator\"}",
-              "hide": false,
-              "legendFormat": "SM Occupancy - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "C"
-            }
-          ],
-          "title": "GPU Engine Activity & SM Occupancy",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "Bps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 50
-          },
-          "id": 19,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "rate(DCGM_FI_PROF_NVLINK_TX_BYTES{namespace=\"gpu-operator\"}[5m])",
-              "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "rate(DCGM_FI_PROF_NVLINK_RX_BYTES{namespace=\"gpu-operator\"}[5m])",
-              "hide": false,
-              "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "NVLink Bandwidth (GPU-to-GPU)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "0": {
-                      "color": "green",
-                      "index": 0,
-                      "text": "None"
-                    }
-                  },
-                  "type": "value"
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 58
-          },
-          "id": 18,
-          "options": {
-            "colorMode": "background",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_XID_ERRORS",
-              "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "GPU XID Errors (Critical Hardware Errors)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 1
-                  },
-                  {
-                    "color": "red",
-                    "value": 5
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 58
-          },
-          "id": 21,
-          "options": {
-            "colorMode": "background",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "sum"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "increase(DCGM_FI_DEV_PCIE_REPLAY_COUNTER[5m])",
-              "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "PCIe Replay Counter (Link Quality)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "Bps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 66
-          },
-          "id": 20,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "rate(DCGM_FI_PROF_DRAM_ACTIVE[5m]) * 1000000",
-              "legendFormat": "DRAM Active - GPU {{gpu}} - {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "GPU Memory Bandwidth Utilization",
-          "type": "timeseries"
-        }
-      ],
+      "panels": [],
       "title": "GPU Hardware Metrics (DCGM Exporter)",
       "type": "row"
     },
     {
-      "collapsed": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "id": 4,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Temperature",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 65
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 13,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_MEMORY_TEMP{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Memory Temperature",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 34
+      },
+      "id": 3,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Utilization %",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "id": 10,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Memory Controller Utilization",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "MHz"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_SM_CLOCK{namespace=\"gpu-operator\"}",
+          "legendFormat": "SM Clock - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_MEM_CLOCK{namespace=\"gpu-operator\"}",
+          "hide": false,
+          "legendFormat": "Memory Clock - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "GPU Clock Frequencies",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "id": 17,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"gpu-operator\"}",
+          "legendFormat": "Tensor Cores - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PIPE_FP64_ACTIVE{namespace=\"gpu-operator\"}",
+          "hide": false,
+          "legendFormat": "FP64 - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PIPE_FP32_ACTIVE{namespace=\"gpu-operator\"}",
+          "hide": false,
+          "legendFormat": "FP32 - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PIPE_FP16_ACTIVE{namespace=\"gpu-operator\"}",
+          "hide": false,
+          "legendFormat": "FP16 - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "D"
+        }
+      ],
+      "title": "Tensor Core & FP Pipeline Activity (AI/ML Workloads)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 50
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_GR_ENGINE_ACTIVE{namespace=\"gpu-operator\"}",
+          "legendFormat": "Graphics Engine - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_SM_ACTIVE{namespace=\"gpu-operator\"}",
+          "hide": false,
+          "legendFormat": "SM Active - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_SM_OCCUPANCY{namespace=\"gpu-operator\"}",
+          "hide": false,
+          "legendFormat": "SM Occupancy - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "GPU Engine Activity & SM Occupancy",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 50
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(DCGM_FI_PROF_DRAM_ACTIVE[5m]) * 1000000",
+          "legendFormat": "DRAM Active - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Memory Bandwidth Utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 58
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(DCGM_FI_PROF_PCIE_TX_BYTES{namespace=\"gpu-operator\"}[5m])",
+          "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(DCGM_FI_PROF_PCIE_RX_BYTES{namespace=\"gpu-operator\"}[5m])",
+          "hide": false,
+          "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "PCIe Bandwidth (Data Transfer)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "description": "Total number of NVLink bandwidth counters for all lanes",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 58
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL{namespace=\"gpu-operator\"}[5m])",
+          "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL {namespace=\"gpu-operator\"}[5m])",
+          "hide": false,
+          "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "NVLink Bandwidth (GPU-to-GPU)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "None"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 66
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_XID_ERRORS",
+          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "GPU XID Errors (Critical Hardware Errors)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 66
+      },
+      "id": 21,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "increase(DCGM_FI_DEV_PCIE_REPLAY_COUNTER[5m])",
+          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "PCIe Replay Counter (Link Quality)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 74
       },
       "id": 104,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+      "panels": [],
+      "title": "DCGM GPU Metrics (Hardware View)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 70
-                  },
-                  {
-                    "color": "red",
-                    "value": 85
-                  }
-                ]
-              },
-              "unit": "percent"
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
             },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 20
-          },
-          "id": 105,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
             },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"gpu-operator\"}",
-              "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "DCGM GPU Utilization",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 75
-                  },
-                  {
-                    "color": "red",
-                    "value": 85
-                  }
-                ]
-              },
-              "unit": "celsius"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 20
-          },
-          "id": 106,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"gpu-operator\"}",
-              "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "DCGM GPU Temperature",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "watt"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 28
-          },
-          "id": 107,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"gpu-operator\"}",
-              "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "DCGM GPU Power Usage",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "normal"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "decmbytes"
-            },
-            "overrides": [
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
               {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Used"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "yellow",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
+                "color": "green"
               },
               {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Free"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "green",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
               }
             ]
           },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 28
-          },
-          "id": 108,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_FB_USED{namespace=\"gpu-operator\"}",
-              "legendFormat": "Used - GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_DEV_FB_FREE{namespace=\"gpu-operator\"}",
-              "legendFormat": "Free - GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "DCGM GPU Memory (Framebuffer)",
-          "type": "timeseries"
+          "unit": "percent"
         },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 75
+      },
+      "id": 105,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
+            "uid": "defaultazuremonitorworkspace-eastus2"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 36
-          },
-          "id": 109,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"gpu-operator\"}",
-              "legendFormat": "Tensor Core - GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "DCGM Tensor Core Activity",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "Bps"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 36
-          },
-          "id": 110,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PCIE_TX_BYTES",
-              "legendFormat": "TX - GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_MANAGED_PROMETHEUS_DEFAULTAZUREMONITORWORKSPACE-EASTUS2}"
-              },
-              "editorMode": "code",
-              "expr": "DCGM_FI_PROF_PCIE_RX_BYTES",
-              "legendFormat": "RX - GPU {{gpu}} {{kubernetes_node}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "DCGM PCIe Bandwidth",
-          "type": "timeseries"
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
         }
       ],
-      "title": "DCGM GPU Metrics (Hardware View)",
+      "title": "DCGM GPU Utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 75
+      },
+      "id": 106,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "DCGM GPU Temperature",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 83
+      },
+      "id": 107,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"gpu-operator\"}",
+          "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "DCGM GPU Power Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "decmbytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Free"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 83
+      },
+      "id": 108,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_FB_USED{namespace=\"gpu-operator\"}",
+          "legendFormat": "Used - GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_DEV_FB_FREE{namespace=\"gpu-operator\"}",
+          "legendFormat": "Free - GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "DCGM GPU Memory (Framebuffer)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 91
+      },
+      "id": 109,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"gpu-operator\"}",
+          "legendFormat": "Tensor Core - GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "DCGM Tensor Core Activity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 91
+      },
+      "id": 110,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PCIE_TX_BYTES",
+          "legendFormat": "TX - GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "DCGM_FI_PROF_PCIE_RX_BYTES",
+          "legendFormat": "RX - GPU {{gpu}} {{kubernetes_node}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "DCGM PCIe Bandwidth",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 99
+      },
+      "id": 102,
+      "panels": [],
+      "title": "NIM GPU Metrics (Application View)",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 100
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "gpu_power_usage_watts{namespace=\"rag\"} / 1000",
+          "legendFormat": "{{pod}} - Device {{device_id}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "NIM GPU Power Usage (from Application)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 0.6
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 100
+      },
+      "id": 23,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "gpu_utilization{namespace=\"rag\"}",
+          "legendFormat": "{{pod}} - Device {{device_id}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "NIM GPU Utilization (from Application)",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "decgbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 108
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "gpu_memory_used_bytes{namespace=\"rag\"}",
+          "legendFormat": "Used - {{pod}} - Device {{device_id}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "gpu_memory_total_bytes{namespace=\"rag\"} - gpu_memory_used_bytes{namespace=\"rag\"}",
+          "hide": false,
+          "legendFormat": "Free - {{pod}} - Device {{device_id}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "NIM GPU Memory Usage (from Application)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "defaultazuremonitorworkspace-eastus2"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "joule"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 108
+      },
+      "id": 25,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "delta"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "defaultazuremonitorworkspace-eastus2"
+          },
+          "editorMode": "code",
+          "expr": "gpu_total_energy_consumption_joules{namespace=\"rag\"}",
+          "legendFormat": "{{pod}} - Device {{device_id}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "NIM GPU Total Energy Consumption",
+      "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "5s",
   "schemaVersion": 41,
   "tags": [],
@@ -3227,13 +3467,12 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Consolidated NIM & GPU Metrics Dashboard",
   "uid": "consolidated-nim-gpu-full",
-  "version": 2,
-  "weekStart": ""
+  "version": 15
 }
