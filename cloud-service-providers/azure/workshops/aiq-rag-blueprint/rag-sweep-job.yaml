@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-sweep-script
+  namespace: rag
+data:
+  rag-sweep.sh: |
+    #!/usr/bin/env bash
+    set -e
+    
+    # Script to sweep through different concurrency levels for RAG service with HPA
+    # Requires genai-perf CLI tool installed and configured
+    # Original author(s): Juana Nakfour,  Anita Tragler, Ruchika Kharwar, NVIDIA Corp.
+    # Original source: https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/
+    # Modified by: Diego Casati, Microsoft Corp.
+    
+        export RAG_SERVICE="aiq-nim-llm.aira.svc.cluster.local:8000"
+    export NIM_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5"
+    export NIM_MODEL_NAME="nvidia/llama-3.3-nemotron-super-49b-v1.5"
+    export NIM_MODEL_TOKENIZER="nvidia/Llama-3_3-Nemotron-Super-49B-v1"
+    
+    export CONCURRENCY_RANGE="50 100 150 200 250 300"
+    export request_multiplier=15
+    
+    export ISL="256"
+    export OSL="256"
+    
+    # Skip collection-specific parameters for testing
+    # export COLLECTION="multimodal_data"
+    # export VDB_TOPK=10
+    # export RERANKER_TOPK=4
+    export OUTPUT_DIR="/results"
+    
+    mkdir -p $OUTPUT_DIR
+    
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Starting RAG sweep benchmark"
+    
+    for CR in ${CONCURRENCY_RANGE}; do
+    
+      total_requests=$((request_multiplier * CR))
+      EXPORT_FILE=RAG_CR-${CR}_ISL-${ISL}_OSL-${OSL}-$(date +"%Y-%m-%d-%H_%M_%S").json
+    
+      START_TIME=$(date +%s)
+      echo "[$(date +"%Y-%m-%d %H:%M:%S")] Running with concurrency: $CR, total requests: $total_requests"
+    
+      genai-perf profile \
+        -m $NIM_MODEL_NAME \
+        --service-kind openai \
+        --endpoint-type chat \
+        --streaming \
+        -u $RAG_SERVICE \
+        --request-count $total_requests \
+        --synthetic-input-tokens-mean $ISL \
+        --synthetic-input-tokens-stddev 0 \
+        --concurrency $CR \
+        --output-tokens-mean $OSL \
+        --extra-inputs max_tokens:$OSL \
+        --artifact-dir $OUTPUT_DIR \
+        --tokenizer $NIM_MODEL_TOKENIZER \
+        --profile-export-file $EXPORT_FILE
+    
+      END_TIME=$(date +%s)
+      elapsed_time=$((END_TIME - START_TIME))
+    
+      echo "[$(date +"%Y-%m-%d %H:%M:%S")] Completed: $EXPORT_FILE in $elapsed_time seconds"
+    done
+    
+    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Benchmark complete. Results in $OUTPUT_DIR"
+    ls -lh $OUTPUT_DIR/
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rag-sweep-benchmark
+  namespace: rag
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: rag-sweep-benchmark
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: genai-perf
+        image: nvcr.io/nvidia/tritonserver:25.01-py3-sdk
+        command: ["/bin/bash"]
+        args: ["/scripts/rag-sweep.sh"]
+        volumeMounts:
+        - name: script
+          mountPath: /scripts
+        - name: results
+          mountPath: /results
+        resources:
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+      volumes:
+      - name: script
+        configMap:
+          name: rag-sweep-script
+          defaultMode: 0755
+      - name: results
+        emptyDir: {}

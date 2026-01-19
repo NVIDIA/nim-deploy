@@ -43,7 +43,7 @@ Optimized containers for deploying AI models with TensorRT acceleration. This wo
 - **Page Elements NIM**: PDF text extraction
 
 ### **Tavily API**
-A research-grade web search API optimized for AI consumption, enabling real-time web research beyond your document collections.
+A web search API that returns structured, LLM-ready content instead of raw HTML. AI-Q uses Tavily to combine your private document collections with real-time web data when generating research reports. Without it, AI-Q is limited to searching only your uploaded documents. With Tavily enabled, research reports can cite both internal documents and current web sources.
 
 ### **Phoenix Tracing** (optional)
 An open-source observability platform providing distributed tracing and performance monitoring for AI workflows.
@@ -52,14 +52,36 @@ An open-source observability platform providing distributed tracing and performa
 NIM microservices are natively supported on Azure AI Foundry, enabling developers to quickly create a streamlined path for deployment. The microservices are running on Azure’s managed compute, removing the complexity of setting up and maintaining GPU infrastructure while ensuring high availability and scalability, even for highly demanding workloads. This enables teams to move quickly from model selection to production use. 
 
 ## Prerequisites 
-- Azure Account with access to 1-A100 GPUs (standard_nc96ads_a100_v4)
+- Azure Account with access to H100 GPUs (Standard_NC80adis_H100_v5)
 - Azure CLI configured and authenticated
 - kubectl installed
 - Helm 3.x installed
 - **NGC Account and API Key** ([Get it here](https://nvdam.widen.net/s/kfshg7fpsr/create-build-account-and-api-key-4))
 - **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
 
+### Prerequisites Validation
 
+Before starting, verify your environment meets all requirements:
+
+```bash
+# Check Azure CLI version
+az --version
+
+# Verify authentication
+az account show
+
+# Check kubectl installation
+kubectl version --client
+
+# Check Helm installation
+helm version
+
+# Verify NGC API key is set
+echo $NGC_API_KEY
+
+# Check GPU quota in your region
+az vm list-usage --location <your-region> --query "[?localName=='Standard NCADSv5 Family vCPUs'].{Name:localName, Current:currentValue, Limit:limit}" -o table
+```
 
 ### Hardware Requirements
 
@@ -68,15 +90,22 @@ The infrastructure provisioning script will automatically create an Azure Kubern
 * **Cluster Management Node Pool**:
   * **Machine Type**: `Standard_D32s_v5`
   * **Quantity**: 2 nodes (default for control/management)
+  * **vCPUs**: 32 per node, 64 total
+  * **Memory**: 128 GiB per node, 256 GiB total
 * **GPU Worker Node Pool**:
-  * **Machine Type**: `Standard_NC96ads_A100_v4`
-  * **Quantity**: 1 nodes
-  * **GPUs per node**: 4 x **NVIDIA A100** (80GB)
+  * **Machine Type**: `Standard_NC80adis_H100_v5`
+  * **Quantity**: 4 nodes
+  * **GPUs per node**: 2 x **NVIDIA H100 NVL** (95 GiB memory each)
+  * **Total GPUs**: 8 x NVIDIA H100 NVL
+  * **vCPUs**: 80 per node, 320 total
+  * **Memory**: 640 GiB per node, 2.56 TiB total
+
+**Note**: You can also use another SKU such as the `Standard_NC96ads_A100_v4` (1 node with 4x A100 80GB GPUs) but this limits the deployment of the `nim-llm` in-cluster. Using the `Standard_NC80adis_H100_v5` or similar SKU (4 nodes with 2x H100 NVL 95GB GPUs each) allows the `nim-llm` to be deployed in-cluster.
 
 You may adjust node counts and machine types in the environment variables to fit your workload and quota limits.
 
 
-# Task 1: Environment Configuration
+## Task 1: Environment Configuration
 
 ### 1. Install AKS Preview extension
 
@@ -120,11 +149,10 @@ export REGION=<PREFERRED_AZURE_REGION>
 export RESOURCE_GROUP=<RG-GROUP-NAME>
 export CLUSTER_NAME=rag-demo 
 export CLUSTER_MACHINE_TYPE=Standard_D32s_v5
-export NODE_POOL_MACHINE_TYPE=standard_nc96ads_a100_v4
-export NODE_COUNT=1
+export NODE_POOL_MACHINE_TYPE=Standard_NC80adis_H100_v5
+export NODE_COUNT=4
 export CPU_COUNT=2
 export CHART_NAME=rag-chart
-export NAMESPACE=rag
 ```
 
 ### 4. Create a Resource Group
@@ -158,13 +186,14 @@ az aks nodepool add --resource-group $RESOURCE_GROUP \
     --cluster-name $CLUSTER_NAME \
     --name gpupool \
     --node-count $NODE_COUNT \
-    --gpu-driver none \
     --node-vm-size $NODE_POOL_MACHINE_TYPE \
     --node-osdisk-size 2048 \
     --max-pods 110
 ```
 
-# Task 2: NVIDIA GPU Operator Installation
+**Note**: When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
+
+## Task 2: NVIDIA GPU Operator Installation
 
 ### 1. Add the NVIDIA Helm repository
 
@@ -186,12 +215,12 @@ kubectl get pods -A -o wide
 
 We need to wait until all pods are in "Running" status and their "Ready" column shows all pods ready (e.g. 1/1, 2/2 etc.)
 
-# Task 3: NVIDIA Blueprint Deployment
+## Task 3: NVIDIA Blueprint Deployment
 
 ### 1. Create a Kubernetes namespace
 
 ```bash
-kubectl create namespace $NAMESPACE
+kubectl create namespace rag
 ```
 
 ### 2. Install the RAG 2.3 blueprint Helm chart
@@ -223,34 +252,37 @@ https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.
 --set ngcApiSecret.password="${NGC_API_KEY}" 
 ```
 
-For more details on how to customize the [RAG Blueprint] (https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/README.md)
+For more details on how to customize the [RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/README.md)
 
 ### 3. Verify that the PODs are running
 
 ```bash
-kubectl get pods -n $NAMESPACE
+kubectl get pods -n rag
 ```
 
-### **IT CAN TAKE UP TO 20 mins ** for all services to come up. You can continue on next steps in the meantime while you wait. When all services start , it should look like this:
+> [!NOTE]
+> **IT CAN TAKE UP TO 20 mins** for all services to come up. You can continue on next steps in the meantime while you wait. When all services start, it should look like this:
+
 ```
-kubectl get pods -n $NAMESPACE
+kubectl get pods -n rag
 
-NAME                                                         READY   STATUS    RESTARTS      AGE
-ingestor-server-b999c9fb-lpdnd                               1/1     Running   0             22m
-milvus-standalone-7d97475c66-fdlm5                           1/1     Running   2 (21m ago)   22m
-rag-etcd-0                                                   1/1     Running   0             22m
-rag-frontend-b44c8bcc-v9rcn                                  1/1     Running   0             22m
-rag-minio-b88f5d5c5-fb7bs                                    1/1     Running   0             22m
-rag-nv-ingest-66fcb6d8f-67b25                                1/1     Running   0             22m
-rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-78b9b74dcd-mb7fb    1/1     Running   0             22m
-rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2-675c668db9-vjxws   1/1     Running   0             22m
-rag-redis-master-0                                           1/1     Running   0             22m
-rag-redis-replicas-0                                         1/1     Running   0             22m
-rag-server-674c9ff7df-fpkdx                                  1/1     Running   3 (19m ago)   22m
+NAME                                                         READY   STATUS    RESTARTS        AGE
+ingestor-server-b999c9fb-8w4w7                               1/1     Running     2 (35m ago)   2d17h
+milvus-standalone-7d97475c66-w8zvt                           1/1     Running     1 (35m ago)   2d17h
+rag-etcd-0                                                   1/1     Running     0             2d17h
+rag-frontend-b44c8bcc-c8lc5                                  1/1     Running     0             2d17h
+rag-minio-b88f5d5c5-sknj4                                    1/1     Running     0             2d17h
+rag-nemoretriever-page-elements-v2-c77466b7d-qnrxv           1/1     Running     0             2d17h
+rag-nemoretriever-table-structure-v1-5f75b96cfd-8kr2w        1/1     Running     0             2d17h
+rag-nv-ingest-66fcb6d8f-w4spd                                1/1     Running     0             2d17h
+rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-78b9b74dcd-nskdx    1/1     Running     0             2d17h
+rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2-675c668db9-nn2xb   1/1     Running     0             2d17h
+rag-redis-master-0                                           1/1     Running     0             2d17h
+rag-redis-replicas-0                                         1/1     Running     1 (34m ago)   2d17h
+rag-server-c9d7db684-z6s8x                                   1/1     Running     3 (33m ago)   2d17h
 ```
 
-
-# Task 4: Access the RAG Frontend Service
+## Task 4: Access the RAG Frontend Service
 
 The RAG Playground service exposes a UI that enables interaction with the end to end RAG pipeline. A user submits a prompt or a request and this triggers the chain server to communicate with all the necessary services required to generate output.
 
@@ -258,40 +290,27 @@ We need to take a few steps in order to access the service.
 
 ### Accessing the Frontend Service
 
-In order to access the UI, we need to expose an external load balancer service to allow TCP traffic to the service that is running our front end.
+In order to access the UI, we'll use port-forwarding to connect to the RAG frontend service.
 
-We can do this using the following command:
-
-```bash
-kubectl -n $NAMESPACE expose deployment rag-frontend --name=rag-frontend-lb --type=LoadBalancer --port=80 --target-port=3000
-```
-
-To access the UI of the application, we get the external IP address of the front end load balancer service:
+Before starting, verify that all PODs are running:
 
 ```bash
-kubectl -n $NAMESPACE get svc rag-frontend-lb
+kubectl get pods -n rag
 ```
 
-Output should look like this:
-```bash
-user1-54803080 [ ~ ]$ kubectl -n $NAMESPACE get svc rag-frontend-lb -w
-
-
-NAME              TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)        AGE
-rag-frontend-lb   LoadBalancer   10.0.229.183   9.163.78.170   80:32499/TCP   14m
-```
-
-### Before using the RAG app. Verify that all PODs are running:
+Once all pods are ready, create a port-forward to the RAG frontend:
 
 ```bash
-kubectl get pods -n $NAMESPACE
+kubectl port-forward -n rag svc/rag-frontend 8080:3000
 ```
 
-Open your browser and navigate to: http://EXTERNAL-IP-FROM-YOUR-CLI-RESULT-ABOVE
+This command will forward local port 8080 to the RAG frontend service port 3000. Keep this terminal window open.
+
+Open your browser and navigate to: http://localhost:8080
 
 From here, we should be able to interact with the service and get some outputs from the LLM.
 
-
+![RAG Frontend](imgs/rag-frontend.png)
 
 ###  Testing the RAG Blueprint
 
@@ -310,13 +329,22 @@ In order to test the RAG capabilities of this application, we need to upload a d
 ![test_collection.png](imgs/test-rag.png)
 
 
-# Task 5: Deploy AIQ Service
+## Task 5: Deploy AIQ Service
 
+Choose your Nemotron Super 49B deployment model:
 
-## Option A: Use Azure AI Foudry for nemotron-super-49b
+| Option | Deployment Type | Setup Time | GPU Requirements | Best For |
+|--------|----------------|------------|------------------|----------|
+| **Option A: Azure AI Foundry** | Managed inference service | Minutes | None (managed) | Production workloads, auto-scaling needs |
+| **Option B: NVIDIA Build API** | Hosted API | Seconds | None (hosted) | Quick prototyping, testing |
+| **Option C: In-Cluster** | Self-hosted on AKS | 15-30 mins | 2x H100 NVL GPUs | Data privacy, full control |
 
-To Deploy nemotron-super-49b on Azure AI Foundry , follow this workshop guide: [Deploy NVIDIA NIM on  Azure AI Foundry](../nim-aifoundry/README.md)
+All options provide identical LLM capabilities.
 
+<details>
+<summary><h3>Option A: Use Azure AI Foundry for nemotron-super-49b</h3></summary>
+
+To Deploy nemotron-super-49b on Azure AI Foundry, follow this workshop guide: [Deploy NVIDIA NIM on Azure AI Foundry](../nim-aifoundry/README.md)
 
 Go to nemotron-super-49b on Azure AI Foundry: 
 
@@ -326,29 +354,177 @@ Click Deploy:
 
 ![alt text](imgs/nemo-deploy-aifoundry.png)
 
-Oncle complete you will get an endpoint url and key:
+Once complete you will get an endpoint url and key:
 
 ![alt text](imgs/azure-aifoundry.png)
 
-```
+```bash
 export NVIDIA_API_URL="https://ai-azwestus-uma7-hbbtf.westus.inference.ml.azure.com/v1"
 export NVIDIA_API_KEY="xxx"
 ```
 
-## Option B: Use build.nvidia.api key created earlier for nemotron-super-49b
+</details>
 
-```
+<details>
+<summary><h3>Option B: Use build.nvidia.com API for nemotron-super-49b</h3></summary>
+
+```bash
 export NVIDIA_API_URL="https://integrate.api.nvidia.com/v1"
 export NVIDIA_API_KEY="nvapi-cxxxxx"
 ```
--------
-Set  **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
+
+</details>
+
+<details>
+<summary><h3>Option C: Deploy nemotron-super-49b locally in your AKS cluster</h3></summary>
+
+This option deploys the Nemotron 49B model directly on your AKS GPU nodes, giving you full control and avoiding external API dependencies. This requires sufficient GPU resources (recommended: 2x H100 NVL GPUs).
+
+#### 1. Create the nemotron-49b StatefulSet
+
+Create a file named `nemotron-49b-statefulset.yaml`:
+
+```bash
+cat <EOF>> nemotron-49b-statefulset.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiq-nim-llm
+  namespace: aira
+spec:
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: aiq-nim-llm
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aiq-nim-llm
+  namespace: aira
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiq-nim-llm
+  serviceName: aiq-nim-llm
+  template:
+    metadata:
+      labels:
+        app: aiq-nim-llm
+    spec:
+      containers:
+      - name: nim-llm
+        image: nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.8.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NGC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ngc-api-secret
+              key: password
+        - name: NIM_CACHE_PATH
+          value: /model-store
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            nvidia.com/gpu: "2"
+          requests:
+            nvidia.com/gpu: "2"
+        volumeMounts:
+        - mountPath: /model-store
+          name: model-store
+        - mountPath: /dev/shm
+          name: dshm
+      imagePullSecrets:
+      - name: ngc-secret
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 16Gi
+  volumeClaimTemplates:
+  - metadata:
+      name: model-store
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 500Gi
+EOF
 ```
-export MODEL_NAME=nvidia/llama-3.3-nemotron-super-49b-v1.5
+
+#### 2. Create the NGC secret in the aira namespace
+
+```bash
+kubectl create namespace aira
+kubectl create secret generic ngc-api-secret --from-literal=password=$NGC_API_KEY -n aira
+kubectl create secret docker-registry ngc-secret \
+  --docker-server=nvcr.io \
+  --docker-username='$oauthtoken' \
+  --docker-password=$NGC_API_KEY \
+  -n aira
+```
+
+#### 3. Deploy the StatefulSet
+
+```bash
+kubectl apply -f nemotron-49b-statefulset.yaml
+```
+
+#### 4. Monitor the deployment
+
+Watch pod status (model download can take 15-30 minutes)
+
+```bash
+kubectl get pods -n aira -w
+```
+
+Expect:
+
+```bash
+kubectl get pods -n aira
+NAME                                READY   STATUS    RESTARTS   AGE
+aiq-nim-llm-0                       1/1     Running   0          2d18h
+```
+
+Check logs
+
+```bash
+kubectl logs -n aira aiq-nim-llm-0 -f
+```
+
+Wait until the pod shows `1/1 Running` and logs indicate the model is loaded and server is ready.
+
+#### 5. Set environment variables for in-cluster deployment
+
+```bash
+export NVIDIA_API_URL="http://aiq-nim-llm.aira.svc.cluster.local:8000/v1"
+export NVIDIA_API_KEY="not-used-for-local"
+export MODEL_NAME="meta/llama-3.3-nemotron-super-49b-instruct"
+```
+
+**Note**: When using the in-cluster NIM, the API key is not validated (set to any value), and the model name should match the NIM's internal model name.
+
+</details>
+
+-------
+
+Set **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
+
+```bash
 export TAVILY_API_KEY="tvly-xxxxx"
 ```
 
-## Deploy AIQ Blueprint
+### Deploy AIQ Blueprint
 ```
 helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
   --create-namespace \
@@ -358,7 +534,7 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --set phoenix.image.repository=docker.io/arizephoenix/phoenix \
   --set phoenix.image.tag=latest \
   --set tavilyApiSecret.password="$TAVILY_API_KEY" \
-  --set nim-llm.enabled=false \
+  --set nim-llm.enabled=true \
   --set config.rag_url="http://rag-server.rag.svc.cluster.local:8081" \
   --set config.rag_ingest_url="http://ingestor-server.rag.svc.cluster.local:8082" \
   --set config.milvus_host="milvus.rag.svc.cluster.local" \
@@ -377,7 +553,7 @@ In order to access the UI, we need to expose an external load balancer service t
 We can do this using the following command:
 
 ```bash
-  kubectl -n aira expose deployment aiq-aira-frontend --name=aiq-aira-frontend-lb --type=LoadBalancer --port=80 --target-port=3000
+kubectl -n aira expose deployment aiq-aira-frontend --name=aiq-aira-frontend-lb --type=LoadBalancer --port=80 --target-port=3000
 ```
 
 To access the UI of the application, we get the external IP address of the front end load balancer service:
@@ -388,7 +564,7 @@ kubectl -n aira get svc aiq-aira-frontend-lb
 
 Output should look like this:
 ```bash
-user1-54803080 [ ~ ]$ kubectl -n aira get svc rag-frontend-lb -w
+kubectl -n aira get svc rag-frontend-lb -w
 
 
 NAME              TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)        AGE
@@ -415,7 +591,124 @@ It should look like this:
 
 ![alt text](imgs/aiq-home.png)
 
+### Monitoring and Observability
 
+With all services deployed, you now have access to comprehensive telemetry and monitoring capabilities. If you deployed Option C (in-cluster NIM), you have additional GPU and inference metrics available.
+
+#### Available Telemetry Endpoints
+
+| Pod/Service | Telemetry Type | Description | Access Method |
+|-------------|---------------|-------------|---------------|
+| `aiq-nim-llm-0` | GPU metrics, inference stats | Real-time GPU utilization, memory, model performance, token throughput (Option C only) | DCGM exporter, NIM metrics endpoint |
+| `aiq-phoenix-*` | Distributed tracing | Request traces, latency breakdown, LLM call chains, token usage | Port-forward to 6006, web UI |
+| DCGM Exporter (gpu-operator) | GPU hardware metrics | GPU utilization, temperature, memory, power consumption across all nodes | Prometheus metrics, DCGM CLI |
+| `aiq-aira-backend-*` | Application metrics | Backend health, API response times, error rates | Health endpoint `/health` |
+| `rag-server-*` | RAG pipeline metrics | Query performance, embedding latency, cache hit rates, reranking stats | Health endpoint `/health` |
+| `milvus-standalone-*` | Vector DB metrics | Search latency, index performance, storage utilization | Metrics endpoint `9091/metrics` |
+| ServiceMonitors | Prometheus integration | Centralized metrics collection for Azure Monitor or Prometheus | `kubectl get servicemonitors -A` |
+
+#### Access GPU Metrics (Option C)
+
+If you deployed the in-cluster NIM (Option C), check GPU utilization:
+
+```bash
+# View GPU metrics from DCGM exporter
+kubectl get pods -n gpu-operator -l app=nvidia-dcgm-exporter
+
+# Check GPU utilization for nim-llm pod
+kubectl exec -it aiq-nim-llm-0 -n aira -- nvidia-smi
+
+# View detailed GPU metrics
+kubectl exec -it <dcgm-exporter-pod> -n gpu-operator -- dcgmi discovery -l
+```
+
+#### Access Phoenix Tracing
+
+Phoenix provides distributed tracing for all AI workflows:
+
+```bash
+# Access Phoenix UI
+kubectl port-forward -n aira svc/aiq-phoenix 6006:6006
+```
+
+Open http://localhost:6006 in your browser to view:
+- **Request traces**: End-to-end request flow through RAG, LLM, and web search
+- **Latency breakdown**: Time spent in each component (embedding, retrieval, LLM inference)
+- **Token usage**: Input/output tokens per request, cost estimation
+- **Error rates**: Failed requests, retry attempts, error patterns
+
+#### Health Check Endpoints
+
+```bash
+# AI-Q Backend health
+kubectl exec -it <backend-pod> -n aira -- curl localhost:8000/health
+
+# RAG Server health  
+kubectl exec -it <rag-server-pod> -n rag -- curl localhost:8081/health
+
+# Milvus health
+kubectl exec -it milvus-standalone-<pod-id> -n rag -- curl localhost:9091/healthz
+
+# In-cluster NIM health (Option C only)
+kubectl exec -it aiq-nim-llm-0 -n aira -- curl localhost:8000/v1/health/ready
+```
+
+#### ServiceMonitor Integration
+
+ServiceMonitors are deployed for integration with Azure Monitor or Prometheus:
+
+```bash
+# List all ServiceMonitors
+kubectl get servicemonitors -A
+
+# View specific ServiceMonitor configuration
+kubectl describe servicemonitor <name> -n <namespace>
+```
+
+These ServiceMonitors automatically expose metrics for:
+- GPU utilization and health
+- Inference latency and throughput  
+- Vector database performance
+- RAG pipeline statistics
+
+#### Azure Managed Grafana Dashboards
+
+For enhanced visualization of all metrics, you can deploy Grafana to create comprehensive dashboards. Grafana integrates with the ServiceMonitor/Prometheus stack to provide:
+
+**Nemotron 49B LLM Metrics Dashboard** (Option C)
+- Inference latency percentiles (p50, p95, p99)
+- Token throughput and generation speed
+- Request rates and error tracking
+- Inter Token Latency (ITL) Heatmap
+- Time to First Token (TTFT) Heatmap
+- Total NIM requests
+
+![NIM Dashboard](imgs/grafana-nemotron-dashboard.png)
+
+**GPU Monitoring Dashboard**
+- Real-time GPU utilization across all nodes
+- Temperature, memory, and power consumption trends
+- Per-model GPU allocation and efficiency (Option C)
+
+![GPU Dashboard](imgs/grafana-gpu-dashboard.png)
+
+
+**RAG Pipeline Dashboard**
+- End-to-end query latency breakdown
+- Embedding generation time
+- Vector search performance
+- Reranking latency
+- Cache hit/miss ratios
+
+![RAG Pipeline Dashboard](imgs/grafana-rag-dashboard.png)
+
+**Milvus Performance Dashboard**
+- Vector search latency trends
+- Index build/query performance
+- Storage utilization and growth
+- Concurrent query handling
+
+![Milvus Dashboard](imgs/grafana-milvus-dashboard.png)
 
 ## Task 6: Loading Default Collections
 
@@ -423,9 +716,40 @@ AI-Q includes pre-curated Biomedical and Financial document collections. Load th
 
 ###  Apply Load Files Job
 
-
 ```bash
-wget -O load-files.yaml https://tinyurl.com/aiq-load-data
+cat <EOF>> load-files.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-files-nv-ingest
+  namespace: aira
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: ngc-secret
+      containers:
+      - name: load-files-nv-ingest
+        image: nvcr.io/nvidia/blueprint/aira-load-files:v1.1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: MILVUS_HOST
+          value: "milvus.rag.svc.cluster.local"
+        - name: MILVUS_PORT
+          value: "19530"
+        - name: RAG_INGEST_URL
+          value: "http://ingestor-server.rag.svc.cluster.local:8082"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: tempdata
+          mountPath: /tmp-data
+      volumes:
+      - name: tempdata
+        emptyDir: {}
+
+      restartPolicy: OnFailure
+EOF
 ```
 
 Then apply the load-files job:
@@ -444,7 +768,13 @@ kubectl logs -l job-name=load-files-nv-ingest -n aira -f
 
 Watch for completion messages. This process takes 5-10 minutes depending on cluster performance.
 
-Once Job is complete, you will see the pre-created collections:
+Once Job is complete, you will see the pre-created collections in Milvus:
+
+**Available Collections:**
+- **Biomedical Dataset** (`biomedical_collection`) - Research papers and medical literature focused on healthcare and life sciences
+- **Financial Dataset** (`financial_collection`) - Financial reports, earnings statements, and commercial lending documents
+
+These collections are stored as vector embeddings in Milvus and are ready for semantic search and retrieval.
 
 ![alt text](imgs/collections.png)
 
@@ -453,7 +783,7 @@ Once Job is complete, you will see the pre-created collections:
 
 ###  Generate Your First Research Report
 
-1. In the AI-Q interface, select **"Financial Dataset"** from the collection dropdown
+1. In the AI-Q interface, select **"Financial Dataset"** (`financial_collection`) from the collection dropdown
   
   ![alt text](imgs/financial-collection.png)
 2. Enable **"Web Search"** toggle (to include Tavily results)
@@ -475,3 +805,60 @@ Once Job is complete, you will see the pre-created collections:
 4. Click **"Save"** when satisfied
 
 ![alt text](imgs/result1.png)
+
+## Cleanup
+
+### Remove AI-Q Deployment
+
+```bash
+# Uninstall AI-Q Helm release
+helm uninstall aiq -n aira
+
+# Delete namespace
+kubectl delete namespace aira
+```
+
+### Remove RAG Blueprint
+
+```bash
+# Uninstall RAG Helm release
+helm uninstall rag -n rag
+
+# Delete namespace
+kubectl delete namespace rag
+```
+
+### Remove GPU Operator
+
+```bash
+# List GPU Operator releases
+helm list -n gpu-operator
+
+# Uninstall GPU Operator
+helm uninstall <release-name> -n gpu-operator
+
+# Delete namespace
+kubectl delete namespace gpu-operator
+```
+
+### Delete AKS Cluster
+
+```bash
+# Delete the entire cluster
+az aks delete --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --yes --no-wait
+
+# Delete resource group (removes all associated resources)
+az group delete --name $RESOURCE_GROUP --yes --no-wait
+```
+
+### Verify Cleanup
+
+```bash
+# Check resource group status
+az group show --name $RESOURCE_GROUP
+
+# List remaining resources
+az resource list --resource-group $RESOURCE_GROUP -o table
+```
+
+**Warning**: Deleting the resource group will remove ALL resources including storage accounts, networks, and persistent volumes. Ensure you have backed up any important data before proceeding.

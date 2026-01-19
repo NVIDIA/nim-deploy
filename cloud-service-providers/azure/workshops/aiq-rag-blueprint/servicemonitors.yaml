@@ -1,0 +1,101 @@
+# Consolidated ServiceMonitors for AIQ RAG Blueprint
+# This file contains all ServiceMonitor resources for monitoring NIMs and services
+# Used with Azure Monitor managed Prometheus
+
+---
+# ServiceMonitor for AIQ NIM LLM (Nemotron)
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: aiq-nim-llm
+  namespace: aira
+  labels:
+    app: aiq-nim-llm
+spec:
+  namespaceSelector:
+    matchNames:
+    - aira
+  selector:
+    matchLabels:
+      app: aiq-nim-llm
+  endpoints:
+  - port: http
+    path: /v1/metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+# ServiceMonitor for Milvus Vector Database
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: milvus-standalone
+  namespace: rag
+spec:
+  namespaceSelector:
+    matchNames:
+    - rag
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: milvus
+      app.kubernetes.io/instance: rag
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+# ServiceMonitor for Embedding NIM
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rag-embedding-nim
+  namespace: rag
+spec:
+  namespaceSelector:
+    matchNames:
+    - rag
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nvidia-nim-llama-32-nv-embedqa-1b-v2
+  endpoints:
+  - interval: 30s
+    path: /v1/metrics
+    port: http
+
+---
+# ServiceMonitor for Reranking NIM
+apiVersion: azmonitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rag-reranking-nim
+  namespace: rag
+spec:
+  namespaceSelector:
+    matchNames:
+    - rag
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nvidia-nim-llama-32-nv-rerankqa-1b-v2
+  endpoints:
+  - interval: 30s
+    path: /v1/metrics
+    port: http
+
+---
+# ServiceMonitor for DCGM Exporter (GPU Metrics)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dcgm-exporter-metrics
+  namespace: gpu-operator
+  labels:
+    app: nvidia-dcgm-exporter
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+  endpoints:
+  - port: gpu-metrics
+    interval: 15s
+    path: /metrics

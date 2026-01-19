@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiq-nim-llm
+  namespace: aira
+spec:
+  selector:
+    app: aiq-nim-llm
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  - name: metrics
+    port: 8002
+    targetPort: 8002
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aiq-nim-llm
+  namespace: aira
+spec:
+  serviceName: aiq-nim-llm
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiq-nim-llm
+  template:
+    metadata:
+      labels:
+        app: aiq-nim-llm
+    spec:
+      hostIPC: true
+      imagePullSecrets:
+      - name: ngc-secret
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: nim-llm
+        image: nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8002
+          name: metrics
+        env:
+        - name: NGC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ngc-api
+              key: NGC_API_KEY
+        - name: NIM_CACHE_PATH
+          value: /opt/nim/.cache
+        - name: NIM_RELAX_MEM_CONSTRAINTS
+          value: "1"
+        - name: NCCL_P2P_DISABLE
+          value: "1"
+        resources:
+          requests:
+            nvidia.com/gpu: "2"
+          limits:
+            nvidia.com/gpu: "2"
+        volumeMounts:
+        - name: nim-cache
+          mountPath: /opt/nim/.cache
+  volumeClaimTemplates:
+  - metadata:
+      name: nim-cache
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 200Gi
