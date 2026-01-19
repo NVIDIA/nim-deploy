@@ -311,7 +311,8 @@ az aks nodepool add \
   --node-taints sku=gpu:NoSchedule
 ```
 
-> [!NOTE]: When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
+> [!NOTE]
+> When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
 
 Finally, create a grafana folder and import the sample dashboard:
 
@@ -356,7 +357,7 @@ helm install gpu-operator nvidia/gpu-operator \
   --set daemonsets.tolerations[0].effect=NoSchedule
 ```
 
-> [!NOTE]: 
+> [!NOTE]
 > - `driver.enabled=true` - GPU Operator installs NVIDIA drivers (required for DCGM)
 > - `toolkit.enabled=true` - Provides NVIDIA Container Toolkit (required for DCGM to access GPU libraries)
 > - `dcgmExporter.enabled=true` - Deploys DCGM exporter pods for GPU metrics collection
@@ -369,7 +370,8 @@ helm install gpu-operator nvidia/gpu-operator \
 kubectl get pods -n gpu-operator
 ```
 
-> [!NOTE]: Driver installation takes 3-5 minutes. Wait for all pods to reach Running status before proceeding.
+> [!NOTE]
+> Driver installation takes 3-5 minutes. Wait for all pods to reach Running status before proceeding.
 
 Expect (after 3-5 minutes):
 
@@ -464,7 +466,8 @@ helm install \
   --set ngcApiSecret.password="${NGC_API_KEY}"
 ```
 
-> [!NOTE]: The tolerations for `sku=gpu:NoSchedule` are required because GPU nodes are tainted to ensure only GPU workloads are scheduled on them. These tolerations are set for:
+> [!NOTE]
+> The tolerations for `sku=gpu:NoSchedule` are required because GPU nodes are tainted to ensure only GPU workloads are scheduled on them. These tolerations are set for:
 > - Embedding NIM (nvidia-nim-llama-32-nv-embedqa-1b-v2)
 > - Reranking NIM (nvidia-nim-llama-32-nv-rerankqa-1b-v2)
 > - NV-Ingest document processing NIMs (page-elements, table-structure)
@@ -606,10 +609,10 @@ This option deploys the Nemotron 49B model directly on your AKS GPU nodes, givin
 kubectl create ns aira
 ```
 
-2. Create the NGC secret in the aira namespace
+2. Create the NGC secrets in the aira namespace
 
 ```bash
-kubectl create secret generic ngc-api-secret --from-literal=password=$NGC_API_KEY -n aira
+kubectl create secret generic ngc-api --from-literal=NGC_API_KEY=$NGC_API_KEY -n aira
 kubectl create secret docker-registry ngc-secret \
   --docker-server=nvcr.io \
   --docker-username='$oauthtoken' \
