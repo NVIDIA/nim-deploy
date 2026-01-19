@@ -262,19 +262,20 @@ az aks create -g ${RESOURCE_GROUP} \
 ### 7. Get AKS cluster credentials
 
 ```bash
-az aks get-credentials --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME
+az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${CLUSTER_NAME} --file cluster.config
 ```
 
 ### 8. Create the GPU node pool
 
 ```bash
-az aks nodepool add --resource-group $RESOURCE_GROUP \
-    --cluster-name $CLUSTER_NAME \
-    --name gpupool \
-    --node-count $NODE_COUNT \
-    --node-vm-size $NODE_POOL_MACHINE_TYPE \
-    --node-osdisk-size 2048 \
-    --max-pods 110
+az aks nodepool add \
+  --resource-group ${RESOURCE_GROUP} \
+  --cluster-name ${CLUSTER_NAME} \
+  --name gpupool \
+  --node-count ${NODE_COUNT} \
+  --node-vm-size ${NODE_POOL_MACHINE_TYPE} \
+  --node-osdisk-size 2048 \
+  --max-pods 110
 ```
 
 **Note**: When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
