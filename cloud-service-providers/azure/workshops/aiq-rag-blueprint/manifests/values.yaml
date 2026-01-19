@@ -40,7 +40,11 @@ fullnameOverride: "rag-server"
 # -- Kubernetes scheduling
 nodeSelector: {}
 affinity: {}
-tolerations: []
+tolerations:
+  - key: "sku"
+    operator: "Equal"
+    value: "gpu"
+    effect: "NoSchedule"
 
 # -- Common service account for rag-server
 serviceAccount:
@@ -264,7 +268,11 @@ ingestor-server:
   # -- Pod scheduling
   nodeSelector: {}
   affinity: {}
-  tolerations: []
+  tolerations:
+    - key: "sku"
+      operator: "Equal"
+      value: "gpu"
+      effect: "NoSchedule"
 
   replicaCount: 1
 

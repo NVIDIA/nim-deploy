@@ -32,6 +32,11 @@ spec:
         app: aiq-nim-llm
     spec:
       hostIPC: true
+      tolerations:
+      - key: sku
+        operator: Equal
+        value: gpu
+        effect: NoSchedule
       imagePullSecrets:
       - name: ngc-secret
       securityContext:

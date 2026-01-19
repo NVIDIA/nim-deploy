@@ -93,9 +93,6 @@ kubectl version --client
 # Check Helm installation
 helm version
 
-# Verify NGC API key is set
-echo $NGC_API_KEY
-
 # Check GPU quota in your region
 az vm list-usage --location <your-region> --query "[?localName=='Standard NCADSv5 Family vCPUs'].{Name:localName, Current:currentValue, Limit:limit}" -o table
 ```
@@ -153,17 +150,17 @@ az extension update --name aks-preview
 
 ### 2. Configure NVIDIA API Key
 
-As part of the RAG blueprint several NVIDIA NIMs will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://org.ngc.nvidia.com/setup/api-key). We can export this key to be used as an environment variable:
-
-```bash
-export NGC_API_KEY="<YOUR NGC API KEY>"
-```
+As part of the RAG blueprint several NVIDIA NIMs will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://org.ngc.nvidia.com/setup/api-key). We will save this key to be used as an environment variable `NGC_API_KEY="nvapi-..."`.
 
 ### 3. Set up environment variables
 
 ```bash
+
+# NVIDIA API key available at https://org.ngc.nvidia.com/setup/api-key
 export NGC_API_KEY="nvapi-..."
 export NVIDIA_API_KEY=${NGC_API_KEY}
+
+# Tavily API Key - Free tier available at https://tavily.com
 export TAVILY_API_KEY="tvly-..."
 
 # Note: SDK appends /v1 automatically, so don't include it here
@@ -177,7 +174,7 @@ export RESOURCE_GROUP=rg-aiq-rag
 export CLUSTER_NAME=rag-demo
 export CLUSTER_MACHINE_TYPE=Standard_D32s_v5
 export NODE_POOL_MACHINE_TYPE=Standard_NC80adis_H100_v5
-export NODE_COUNT=1
+export NODE_COUNT=4
 export CPU_COUNT=2
 
 # Namespace Configuration
@@ -190,10 +187,10 @@ export KUBECONFIG=${PWD}/cluster.config
 export CHART_NAME=rag-chart
 
 # Azure Managed Grafana
-export GRAFANA_NAME="aiq-rag-${RANDOM}"
+export GRAFANA_NAME="aiq-rag-workshop-${RANDOM}"
 
 # Azure Monitor Workspace
-export AZ_MONITOR_WORKSPACE_NAME="aiq-rag-aks-labs"
+export AZ_MONITOR_WORKSPACE_NAME="aiq-rag-workshop"
 ```
 
 ### 4. Create a Resource Group
@@ -207,7 +204,7 @@ az group create -l ${REGION} -n ${RESOURCE_GROUP}
 ```bash
 az monitor account create \
   --resource-group ${RESOURCE_GROUP} \
-  --location ${LOCATION} \
+  --location ${REGION} \
   --name ${AZ_MONITOR_WORKSPACE_NAME}
 ```
 
@@ -219,21 +216,36 @@ AZ_MONITOR_WORKSPACE_ID=$(az monitor account show \
   --name ${AZ_MONITOR_WORKSPACE_NAME} \
   --query id -o tsv)
 ```
+
+Verify that the ${AZ_MONITOR_WORKSPACE_ID} is properly set
+
+```bash
+echo ${AZ_MONITOR_WORKSPACE_ID}
+```
+
+Expect:
+
+```bash
+/subscriptions/XXXXXXX-XXXX-XXXX-XXXX-XXXXXX/resourcegroups/rg-aiq-rag/providers/microsoft.monitor/accounts/aiq-rag-aks-labs
+```
+
 ### 6. Create an Azure Managed Grafana instance
 
 The Azure CLI extension for Azure Managed Grafana (amg) allows us to create, edit, delete the Azure Managed Grafana instance from the cli. If you can't add this extension, you can still perform these actions using the Azure Portal.
 
 Add the Azure Manage Grafana extension to az cli:
+
+```bash
 az extension add --name amg
+```
 
 Create an Azure Managed Grafana instance:
-You can now proceed with the creation of the Managed Grafana instance:
 
 ```bash
 az grafana create \
   --name ${GRAFANA_NAME} \
   --resource-group ${RESOURCE_GROUP} \
-  --location ${LOCATION}
+  --location ${REGION}
 ```
 
 Once created, save the Grafana resource ID
@@ -245,18 +257,31 @@ GRAFANA_RESOURCE_ID=$(az grafana show \
   --query id -o tsv)
 ```
 
+Verify that the ${GRAFANA_RESOURCE_ID} is properly set:
+
+```bash
+echo ${GRAFANA_RESOURCE_ID}
+```
+
+Expect:
+
+```bash
+/subscriptions/XXXXX-XXXX-XXX-XXXX-XXXXXX/resourceGroups/rg-aiq-rag/providers/Microsoft.Dashboard/grafana/aiq-rag-workshop-25151
+```
+
 ### 6. Create AKS cluster
 
 ```bash
 az aks create -g ${RESOURCE_GROUP} \
-    -n ${CLUSTER_NAME} \
+    --name ${CLUSTER_NAME} \
     --location ${REGION} \
     --node-count ${CPU_COUNT} \
     --node-vm-size ${CLUSTER_MACHINE_TYPE} \
     --enable-azure-monitor-metrics \
     --grafana-resource-id ${GRAFANA_RESOURCE_ID} \
     --azure-monitor-workspace-resource-id ${AZ_MONITOR_WORKSPACE_ID} \
-    --tier Standard
+    --tier Standard \
+    --ssh-access disabled
 ```
 
 ### 7. Get AKS cluster credentials
@@ -267,6 +292,14 @@ az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${CLUSTER_NAME}
 
 ### 8. Create the GPU node pool
 
+Before proceeding, we need to register the new `ManagedGPUExperiencePreview` feature
+
+```bash
+az feature register --namespace Microsoft.ContainerService --name ManagedGPUExperiencePreview
+```
+
+Once registered, create the new node pool:
+
 ```bash
 az aks nodepool add \
   --resource-group ${RESOURCE_GROUP} \
@@ -274,11 +307,30 @@ az aks nodepool add \
   --name gpupool \
   --node-count ${NODE_COUNT} \
   --node-vm-size ${NODE_POOL_MACHINE_TYPE} \
-  --node-osdisk-size 2048 \
-  --max-pods 110
+  --gpu-driver none \
+  --node-taints sku=gpu:NoSchedule
 ```
 
-**Note**: When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
+> [!NOTE]: When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
+
+Finally, create a grafana folder and import the sample dashboard:
+
+```bash
+az grafana folder create \
+  --name ${GRAFANA_NAME} \
+  --title AIQ-RAG-Workshop\
+  --resource-group ${RESOURCE_GROUP}
+```
+
+Import the sample dashboard
+
+```bash
+az grafana dashboard import \
+  --name ${GRAFANA_NAME} \
+  --resource-group ${RESOURCE_GROUP} \
+  --folder 'AIQ-RAG-Workshop' \
+  --definition manifests/consolidated-nim-dashboard-example.json
+```
 
 ## Task 2: NVIDIA GPU Operator Installation
 
@@ -291,16 +343,67 @@ helm repo add nvidia https://helm.ngc.nvidia.com/nvidia --pass-credentials && he
 ### 2. Install the GPU Operator
 
 ```bash
-helm install --create-namespace --namespace gpu-operator nvidia/gpu-operator --wait --generate-name
+helm install gpu-operator nvidia/gpu-operator \
+  --namespace gpu-operator \
+  --create-namespace \
+  --set driver.enabled=true \
+  --set toolkit.enabled=true \
+  --set dcgmExporter.enabled=true \
+  --set dcgmExporter.serviceMonitor.enabled=false \
+  --set daemonsets.tolerations[0].key=sku \
+  --set daemonsets.tolerations[0].operator=Equal \
+  --set daemonsets.tolerations[0].value=gpu \
+  --set daemonsets.tolerations[0].effect=NoSchedule
 ```
+
+> [!NOTE]: 
+> - `driver.enabled=true` - GPU Operator installs NVIDIA drivers (required for DCGM)
+> - `toolkit.enabled=true` - Provides NVIDIA Container Toolkit (required for DCGM to access GPU libraries)
+> - `dcgmExporter.enabled=true` - Deploys DCGM exporter pods for GPU metrics collection
+> - `dcgmExporter.serviceMonitor.enabled=false` - We'll use Azure Monitor compatible ServiceMonitors instead
+> - `daemonsets.tolerations` - Required to schedule GPU Operator components on tainted GPU nodes
 
 ### 3. Validate the installation 
 
 ```bash
-kubectl get pods -A -o wide
+kubectl get pods -n gpu-operator
 ```
 
-We need to wait until all pods are in "Running" status and their "Ready" column shows all pods ready (e.g. 1/1, 2/2 etc.)
+> [!NOTE]: Driver installation takes 3-5 minutes. Wait for all pods to reach Running status before proceeding.
+
+Expect (after 3-5 minutes):
+
+```bash
+NAME                                                         READY   STATUS    RESTARTS   AGE
+gpu-feature-discovery-xxxxx                                  1/1     Running   0          5m
+gpu-operator-xxxxx                                           1/1     Running   0          5m
+gpu-operator-node-feature-discovery-gc-xxxxx                 1/1     Running   0          5m
+gpu-operator-node-feature-discovery-master-xxxxx             1/1     Running   0          5m
+gpu-operator-node-feature-discovery-worker-xxxxx             1/1     Running   0          5m
+nvidia-container-toolkit-daemonset-xxxxx                     1/1     Running   0          4m
+nvidia-cuda-validator-xxxxx                                  0/1     Completed 0          3m
+nvidia-dcgm-exporter-xxxxx                                   1/1     Running   0          4m
+nvidia-device-plugin-daemonset-xxxxx                         1/1     Running   0          4m
+nvidia-driver-daemonset-xxxxx                                1/1     Running   0          4m
+nvidia-mig-manager-xxxxx                                     1/1     Running   0          3m
+nvidia-operator-validator-xxxxx                              1/1     Running   0          4m
+```
+
+You should see:
+- **4 nvidia-driver-daemonset pods** (1 per GPU node) - Installing NVIDIA drivers
+- **4 nvidia-container-toolkit-daemonset pods** (1 per GPU node) - Container runtime integration
+- **4 nvidia-dcgm-exporter pods** (1 per GPU node) - **GPU metrics collection**
+- **4 nvidia-device-plugin-daemonset pods** (1 per GPU node) - GPU resource management
+- **4 nvidia-cuda-validator pods** (Completed) - Validation that CUDA works
+- **4 nvidia-operator-validator pods** (1 per GPU node) - Overall validation
+
+Verify GPU resources are allocatable:
+
+```bash
+kubectl get nodes -l agentpool=gpunp -o json | jq -r '.items[0].status.allocatable["nvidia.com/gpu"]'
+```
+
+Expect: `2` (GPUs per node)
 
 ## Task 3: NVIDIA Blueprint Deployment
 
@@ -321,23 +424,51 @@ wget -O values.yaml https://tinyurl.com/rag23values
 Install RAG2.3 Blueprint,  with NIMS llama-32-nv-embedqa-1b,llama-32-nv-rerankqa-1b,nemoretriever-page-elements-v2, nemoretriever-table-structure-v1 deployed on our A100 GPU Node. For Nemotron Super 49B we point to build.nvidia.com API :
 
 ```bash
-helm upgrade --install rag  --create-namespace -n rag \
-https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
---username '$oauthtoken' \
---password "${NGC_API_KEY}" \
---values manifests/values.yaml \
---set nim-llm.enabled=false \
---set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
---set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
---set ingestor-server.enabled=true \
---set nv-ingest.enabled=true \
---set nv-ingest.nemoretriever-page-elements-v2.deployed=true \
---set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
---set nv-ingest.nemoretriever-table-structure-v1.deployed=true \
---set nv-ingest.paddleocr-nim.deployed=false \
---set imagePullSecret.password="${NGC_API_KEY}" \
---set ngcApiSecret.password="${NGC_API_KEY}" 
+helm install \
+  --namespace rag \
+  --create-namespace rag \
+  https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
+  --username '$oauthtoken' \
+  --password "${NGC_API_KEY}" \
+  --values manifests/values.yaml \
+  --set nim-llm.enabled=false \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].key=sku \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].operator=Equal \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].value=gpu \
+  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].effect=NoSchedule \
+  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
+  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].key=sku \
+  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].operator=Equal \
+  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].value=gpu \
+  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].effect=NoSchedule \
+  --set ingestor-server.enabled=true \
+  --set nv-ingest.enabled=true \
+  --set nv-ingest.nemoretriever-page-elements-v2.deployed=true \
+  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].key=sku \
+  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].operator=Equal \
+  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].value=gpu \
+  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].effect=NoSchedule \
+  --set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
+  --set nv-ingest.nemoretriever-table-structure-v1.deployed=true \
+  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].key=sku \
+  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].operator=Equal \
+  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].value=gpu \
+  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].effect=NoSchedule \
+  --set nv-ingest.paddleocr-nim.deployed=false \
+  --set nv-ingest.tolerations[0].key=sku \
+  --set nv-ingest.tolerations[0].operator=Equal \
+  --set nv-ingest.tolerations[0].value=gpu \
+  --set nv-ingest.tolerations[0].effect=NoSchedule \
+  --set imagePullSecret.password="${NGC_API_KEY}" \
+  --set ngcApiSecret.password="${NGC_API_KEY}"
 ```
+
+> [!NOTE]: The tolerations for `sku=gpu:NoSchedule` are required because GPU nodes are tainted to ensure only GPU workloads are scheduled on them. These tolerations are set for:
+> - Embedding NIM (nvidia-nim-llama-32-nv-embedqa-1b-v2)
+> - Reranking NIM (nvidia-nim-llama-32-nv-rerankqa-1b-v2)
+> - NV-Ingest document processing NIMs (page-elements, table-structure)
+> - NV-Ingest service itself
 
 For more details on how to customize the [RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/README.md)
 
@@ -348,26 +479,7 @@ kubectl get pods -n rag
 ```
 
 > [!NOTE]
-> **IT CAN TAKE UP TO 20 mins** for all services to come up. You can continue on next steps in the meantime while you wait. When all services start, it should look like this:
-
-```
-kubectl get pods -n rag
-
-NAME                                                         READY   STATUS    RESTARTS        AGE
-ingestor-server-b999c9fb-8w4w7                               1/1     Running     2 (35m ago)   2d17h
-milvus-standalone-7d97475c66-w8zvt                           1/1     Running     1 (35m ago)   2d17h
-rag-etcd-0                                                   1/1     Running     0             2d17h
-rag-frontend-b44c8bcc-c8lc5                                  1/1     Running     0             2d17h
-rag-minio-b88f5d5c5-sknj4                                    1/1     Running     0             2d17h
-rag-nemoretriever-page-elements-v2-c77466b7d-qnrxv           1/1     Running     0             2d17h
-rag-nemoretriever-table-structure-v1-5f75b96cfd-8kr2w        1/1     Running     0             2d17h
-rag-nv-ingest-66fcb6d8f-w4spd                                1/1     Running     0             2d17h
-rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-78b9b74dcd-nskdx    1/1     Running     0             2d17h
-rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2-675c668db9-nn2xb   1/1     Running     0             2d17h
-rag-redis-master-0                                           1/1     Running     0             2d17h
-rag-redis-replicas-0                                         1/1     Running     1 (34m ago)   2d17h
-rag-server-c9d7db684-z6s8x                                   1/1     Running     3 (33m ago)   2d17h
-```
+> **IT CAN TAKE UP TO 20 mins** for all services to come up. You can continue on next steps in the meantime while you wait.
 
 ## Task 4: Access the RAG Frontend Service
 
@@ -383,6 +495,25 @@ Before starting, verify that all PODs are running:
 
 ```bash
 kubectl get pods -n rag
+```
+
+Expect:
+
+```bash
+NAME                                                         READY   STATUS    RESTARTS      AGE
+ingestor-server-b999c9fb-855c7                               1/1     Running   0             57m
+milvus-standalone-7d97475c66-42q9k                           1/1     Running   1 (56m ago)   57m
+rag-etcd-0                                                   1/1     Running   0             57m
+rag-frontend-b44c8bcc-fgx9z                                  1/1     Running   0             57m
+rag-minio-b88f5d5c5-r4w2c                                    1/1     Running   0             57m
+rag-nemoretriever-page-elements-v2-598c95db78-d4rdx          1/1     Running   0             12m
+rag-nemoretriever-table-structure-v1-68b89bfcdb-jxvnz        1/1     Running   0             12m
+rag-nv-ingest-59d849cc57-27md7                               1/1     Running   0             13m
+rag-nvidia-nim-llama-32-nv-embedqa-1b-v2-5646d8d6d6-nrx7v    1/1     Running   0             13m
+rag-nvidia-nim-llama-32-nv-rerankqa-1b-v2-5897c9b79f-vj56s   1/1     Running   0             13m
+rag-redis-master-0                                           1/1     Running   0             57m
+rag-redis-replicas-0                                         1/1     Running   0             57m
+rag-server-674c9ff7df-ktgxl                                  1/1     Running   2 (55m ago)   57m
 ```
 
 Once all pods are ready, create a port-forward to the RAG frontend:
@@ -469,98 +600,27 @@ export NVIDIA_API_KEY="nvapi-cxxxxx"
 
 This option deploys the Nemotron 49B model directly on your AKS GPU nodes, giving you full control and avoiding external API dependencies. This requires sufficient GPU resources (recommended: 2x H100 NVL GPUs).
 
-#### 1. Create the nemotron-49b StatefulSet
-
-Create a file named `nemotron-49b-statefulset.yaml`:
+1. Create the aira namespace
 
 ```bash
-cat <EOF>> nemotron-49b-statefulset.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: aiq-nim-llm
-  namespace: aira
-spec:
-  ports:
-  - name: http
-    port: 8000
-    protocol: TCP
-    targetPort: 8000
-  selector:
-    app: aiq-nim-llm
-  type: ClusterIP
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: aiq-nim-llm
-  namespace: aira
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: aiq-nim-llm
-  serviceName: aiq-nim-llm
-  template:
-    metadata:
-      labels:
-        app: aiq-nim-llm
-    spec:
-      containers:
-      - name: nim-llm
-        image: nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.8.2
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: NGC_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: ngc-api-secret
-              key: password
-        - name: NIM_CACHE_PATH
-          value: /model-store
-        ports:
-        - containerPort: 8000
-          name: http
-          protocol: TCP
-        resources:
-          limits:
-            nvidia.com/gpu: "2"
-          requests:
-            nvidia.com/gpu: "2"
-        volumeMounts:
-        - mountPath: /model-store
-          name: model-store
-        - mountPath: /dev/shm
-          name: dshm
-      imagePullSecrets:
-      - name: ngc-secret
-      volumes:
-      - name: dshm
-        emptyDir:
-          medium: Memory
-          sizeLimit: 16Gi
-  volumeClaimTemplates:
-  - metadata:
-      name: model-store
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: 500Gi
-EOF
+kubectl create ns aira
 ```
 
-#### 2. Create the NGC secret in the aira namespace
+2. Create the NGC secret in the aira namespace
 
 ```bash
-kubectl create namespace aira
 kubectl create secret generic ngc-api-secret --from-literal=password=$NGC_API_KEY -n aira
 kubectl create secret docker-registry ngc-secret \
   --docker-server=nvcr.io \
   --docker-username='$oauthtoken' \
   --docker-password=$NGC_API_KEY \
   -n aira
+```
+
+3. Create the nemotron-49b StatefulSet
+
+```bash
+kubectl apply -f manifests/nemotron-49b-statefulset.yaml
 ```
 
 #### 3. Deploy the StatefulSet
@@ -612,6 +672,7 @@ The last portion missing before we can deploy the AI-Q Bluepring is the **Tavily
 ```bash
 export TAVILY_API_KEY="tvly-xxxxx"
 ```
+
 We are now ready to deploy the AI-Q Blueprint on our AKS cluster!
 
 ```bash
@@ -1176,3 +1237,7 @@ az resource list --resource-group $RESOURCE_GROUP -o table
 ```
 
 **Warning**: Deleting the resource group will remove ALL resources including storage accounts, networks, and persistent volumes. Ensure you have backed up any important data before proceeding.
+
+## References
+
+* (Create a fully managed GPU node pool on Azure Kubernetes Service (AKS) (preview))[https://learn.microsoft.com/en-us/azure/aks/aks-managed-gpu-nodes?tabs=add-ubuntu-gpu-node-pool]

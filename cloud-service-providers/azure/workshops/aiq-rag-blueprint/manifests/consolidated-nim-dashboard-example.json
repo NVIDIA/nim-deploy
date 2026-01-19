@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 220,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -37,7 +37,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -94,10 +94,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum by(le) (rate(time_to_first_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by(le) (rate(time_to_first_token_seconds_bucket{namespace=\"$aiq_namespace\"}[$__rate_interval])))",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -109,7 +109,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -165,10 +165,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(generation_tokens_total{namespace=\"aira\"}[$__rate_interval])",
+          "expr": "rate(generation_tokens_total{namespace=\"$aiq_namespace\"}[$__rate_interval])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -180,7 +180,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -233,10 +233,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "prompt_tokens_total{namespace=\"aira\"}",
+          "expr": "prompt_tokens_total{namespace=\"$aiq_namespace\"}",
           "legendFormat": "Context Tokens",
           "range": true,
           "refId": "A"
@@ -244,10 +244,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "generation_tokens_total{namespace=\"aira\"}",
+          "expr": "generation_tokens_total{namespace=\"$aiq_namespace\"}",
           "hide": false,
           "legendFormat": "Generated Tokens",
           "range": true,
@@ -260,7 +260,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -308,10 +308,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "request_success_total{namespace=\"aira\"}",
+          "expr": "request_success_total{namespace=\"$aiq_namespace\"}",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -323,7 +323,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -371,10 +371,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum(request_finish_total{namespace=\"aira\"})",
+          "expr": "sum(request_finish_total{namespace=\"$aiq_namespace\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -386,7 +386,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -443,10 +443,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum by(le) (rate(time_per_output_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by(le) (rate(time_per_output_token_seconds_bucket{namespace=\"$aiq_namespace\"}[$__rate_interval])))",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -458,7 +458,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -538,10 +538,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(request_success_total{namespace=\"aira\"}[$__rate_interval])",
+          "expr": "rate(request_success_total{namespace=\"$aiq_namespace\"}[$__rate_interval])",
           "legendFormat": "Successful Requests/sec",
           "range": true,
           "refId": "A"
@@ -549,10 +549,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(request_failure_total{namespace=\"aira\"}[$__rate_interval])",
+          "expr": "rate(request_failure_total{namespace=\"$aiq_namespace\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "Failed Requests/sec",
           "range": true,
@@ -565,7 +565,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -629,10 +629,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(time_per_output_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])",
+          "expr": "rate(time_per_output_token_seconds_bucket{namespace=\"$aiq_namespace\"}[$__rate_interval])",
           "format": "heatmap",
           "legendFormat": "{{le}}",
           "range": true,
@@ -645,7 +645,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -709,11 +709,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(time_to_first_token_seconds_bucket{namespace=\"aira\"}[$__rate_interval])",
+          "expr": "rate(time_to_first_token_seconds_bucket{namespace=\"$aiq_namespace\"}[$__rate_interval])",
           "format": "heatmap",
           "legendFormat": "{{le}}",
           "range": true,
@@ -726,7 +726,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -775,10 +775,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "request_success_total{namespace=\"aira\"}",
+          "expr": "request_success_total{namespace=\"$aiq_namespace\"}",
           "legendFormat": "{{pod}}",
           "range": true,
           "refId": "A"
@@ -800,7 +800,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "fieldConfig": {
             "defaults": {
@@ -881,10 +881,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"rag\"}[5m])))",
+              "expr": "histogram_quantile(0.50, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
               "legendFormat": "p50 - {{collection_name}}",
               "range": true,
               "refId": "A"
@@ -892,10 +892,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"rag\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
               "hide": false,
               "legendFormat": "p95 - {{collection_name}}",
               "range": true,
@@ -904,10 +904,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"rag\"}[5m])))",
+              "expr": "histogram_quantile(0.99, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
               "hide": false,
               "legendFormat": "p99 - {{collection_name}}",
               "range": true,
@@ -920,7 +920,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "fieldConfig": {
             "defaults": {
@@ -986,10 +986,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "milvus_datacoord_stored_index_files_size{namespace=\"rag\"}",
+              "expr": "milvus_datacoord_stored_index_files_size{namespace=\"$rag_namespace\"}",
               "legendFormat": "{{collection_name}}",
               "range": true,
               "refId": "A"
@@ -1001,7 +1001,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "fieldConfig": {
             "defaults": {
@@ -1058,10 +1058,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "milvus_datacoord_stored_rows_num{namespace=\"rag\"}",
+              "expr": "milvus_datacoord_stored_rows_num{namespace=\"$rag_namespace\"}",
               "legendFormat": "{{collection_name}}",
               "range": true,
               "refId": "A"
@@ -1073,7 +1073,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "fieldConfig": {
             "defaults": {
@@ -1154,10 +1154,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"rag\", name=\"search\"}[5m])))",
+              "expr": "histogram_quantile(0.50, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
               "legendFormat": "p50",
               "range": true,
               "refId": "A"
@@ -1165,10 +1165,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"rag\", name=\"search\"}[5m])))",
+              "expr": "histogram_quantile(0.95, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
               "hide": false,
               "legendFormat": "p95",
               "range": true,
@@ -1177,10 +1177,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"rag\", name=\"search\"}[5m])))",
+              "expr": "histogram_quantile(0.99, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
               "hide": false,
               "legendFormat": "p99",
               "range": true,
@@ -1193,7 +1193,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "fieldConfig": {
             "defaults": {
@@ -1274,10 +1274,10 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "defaultazuremonitorworkspace-eastus2"
+                "uid": "$datasource"
               },
               "editorMode": "code",
-              "expr": "rate(milvus_proxy_search_vectors_count{namespace=\"rag\"}[5m])",
+              "expr": "rate(milvus_proxy_search_vectors_count{namespace=\"$rag_namespace\"}[5m])",
               "legendFormat": "{{collection_name}}",
               "range": true,
               "refId": "A"
@@ -1306,7 +1306,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1361,10 +1361,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1376,7 +1376,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1431,10 +1431,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_MEMORY_TEMP{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_MEMORY_TEMP{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1446,7 +1446,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1503,10 +1503,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1518,7 +1518,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1575,10 +1575,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1590,7 +1590,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1670,10 +1670,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_SM_CLOCK{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_SM_CLOCK{namespace=\"$gpu_namespace\"}",
           "legendFormat": "SM Clock - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1681,10 +1681,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_MEM_CLOCK{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_MEM_CLOCK{namespace=\"$gpu_namespace\"}",
           "hide": false,
           "legendFormat": "Memory Clock - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -1697,7 +1697,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1778,10 +1778,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"$gpu_namespace\"}",
           "legendFormat": "Tensor Cores - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1789,10 +1789,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_PIPE_FP64_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_PIPE_FP64_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
           "legendFormat": "FP64 - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -1801,10 +1801,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_PIPE_FP32_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_PIPE_FP32_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
           "legendFormat": "FP32 - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -1813,10 +1813,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_PIPE_FP16_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_PIPE_FP16_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
           "legendFormat": "FP16 - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -1829,7 +1829,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -1910,10 +1910,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_GR_ENGINE_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_GR_ENGINE_ACTIVE{namespace=\"$gpu_namespace\"}",
           "legendFormat": "Graphics Engine - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -1921,10 +1921,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_SM_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_SM_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
           "legendFormat": "SM Active - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -1933,10 +1933,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_SM_OCCUPANCY{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_SM_OCCUPANCY{namespace=\"$gpu_namespace\"}",
           "hide": false,
           "legendFormat": "SM Occupancy - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -1949,7 +1949,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2030,7 +2030,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_PROF_DRAM_ACTIVE[5m]) * 1000000",
@@ -2045,7 +2045,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2126,10 +2126,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(DCGM_FI_PROF_PCIE_TX_BYTES{namespace=\"gpu-operator\"}[5m])",
+          "expr": "rate(DCGM_FI_PROF_PCIE_TX_BYTES{namespace=\"$gpu_namespace\"}[5m])",
           "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2137,10 +2137,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(DCGM_FI_PROF_PCIE_RX_BYTES{namespace=\"gpu-operator\"}[5m])",
+          "expr": "rate(DCGM_FI_PROF_PCIE_RX_BYTES{namespace=\"$gpu_namespace\"}[5m])",
           "hide": false,
           "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -2153,7 +2153,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "description": "Total number of NVLink bandwidth counters for all lanes",
       "fieldConfig": {
@@ -2236,10 +2236,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL{namespace=\"gpu-operator\"}[5m])",
+          "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL{namespace=\"$gpu_namespace\"}[5m])",
           "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2247,10 +2247,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL {namespace=\"gpu-operator\"}[5m])",
+          "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL {namespace=\"$gpu_namespace\"}[5m])",
           "hide": false,
           "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
           "range": true,
@@ -2263,7 +2263,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2327,7 +2327,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_XID_ERRORS",
@@ -2342,7 +2342,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2399,7 +2399,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
           "expr": "increase(DCGM_FI_DEV_PCIE_REPLAY_COUNTER[5m])",
@@ -2427,7 +2427,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2517,10 +2517,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2532,7 +2532,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2622,10 +2622,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2637,7 +2637,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2719,10 +2719,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"$gpu_namespace\"}",
           "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2734,7 +2734,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2845,10 +2845,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_FB_USED{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_FB_USED{namespace=\"$gpu_namespace\"}",
           "legendFormat": "Used - GPU {{gpu}} {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2856,10 +2856,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_DEV_FB_FREE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_DEV_FB_FREE{namespace=\"$gpu_namespace\"}",
           "legendFormat": "Free - GPU {{gpu}} {{kubernetes_node}}",
           "range": true,
           "refId": "B"
@@ -2871,7 +2871,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -2953,10 +2953,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"gpu-operator\"}",
+          "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"$gpu_namespace\"}",
           "legendFormat": "Tensor Core - GPU {{gpu}} {{kubernetes_node}}",
           "range": true,
           "refId": "A"
@@ -2968,7 +2968,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -3050,7 +3050,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PCIE_TX_BYTES",
@@ -3061,7 +3061,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PCIE_RX_BYTES",
@@ -3089,7 +3089,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -3170,10 +3170,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "gpu_power_usage_watts{namespace=\"rag\"} / 1000",
+          "expr": "gpu_power_usage_watts{namespace=\"$rag_namespace\"} / 1000",
           "legendFormat": "{{pod}} - Device {{device_id}}",
           "range": true,
           "refId": "A"
@@ -3185,7 +3185,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -3242,10 +3242,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "gpu_utilization{namespace=\"rag\"}",
+          "expr": "gpu_utilization{namespace=\"$rag_namespace\"}",
           "legendFormat": "{{pod}} - Device {{device_id}}",
           "range": true,
           "refId": "A"
@@ -3257,7 +3257,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -3338,10 +3338,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "gpu_memory_used_bytes{namespace=\"rag\"}",
+          "expr": "gpu_memory_used_bytes{namespace=\"$rag_namespace\"}",
           "legendFormat": "Used - {{pod}} - Device {{device_id}}",
           "range": true,
           "refId": "A"
@@ -3349,10 +3349,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "gpu_memory_total_bytes{namespace=\"rag\"} - gpu_memory_used_bytes{namespace=\"rag\"}",
+          "expr": "gpu_memory_total_bytes{namespace=\"$rag_namespace\"} - gpu_memory_used_bytes{namespace=\"$rag_namespace\"}",
           "hide": false,
           "legendFormat": "Free - {{pod}} - Device {{device_id}}",
           "range": true,
@@ -3365,7 +3365,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "defaultazuremonitorworkspace-eastus2"
+        "uid": "$datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -3446,10 +3446,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "defaultazuremonitorworkspace-eastus2"
+            "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "gpu_total_energy_consumption_joules{namespace=\"rag\"}",
+          "expr": "gpu_total_energy_consumption_joules{namespace=\"$rag_namespace\"}",
           "legendFormat": "{{pod}} - Device {{device_id}}",
           "range": true,
           "refId": "A"
@@ -3464,7 +3464,92 @@
   "schemaVersion": 41,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "defaultazuremonitorworkspace-eastus2",
+          "value": "defaultazuremonitorworkspace-eastus2"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "rag",
+          "value": "rag"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "RAG Namespace",
+        "multi": false,
+        "name": "rag_namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "rag",
+            "value": "rag"
+          }
+        ],
+        "query": "rag",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "aira",
+          "value": "aira"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "AIQ Namespace",
+        "multi": false,
+        "name": "aiq_namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "aira",
+            "value": "aira"
+          }
+        ],
+        "query": "aira",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "gpu-operator",
+          "value": "gpu-operator"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "GPU Operator Namespace",
+        "multi": false,
+        "name": "gpu_namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "gpu-operator",
+            "value": "gpu-operator"
+          }
+        ],
+        "query": "gpu-operator",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
   },
   "time": {
     "from": "now-30m",

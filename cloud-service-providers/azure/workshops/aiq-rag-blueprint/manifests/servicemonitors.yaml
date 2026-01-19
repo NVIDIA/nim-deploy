@@ -84,7 +84,7 @@ spec:
 
 ---
 # ServiceMonitor for DCGM Exporter (GPU Metrics)
-apiVersion: monitoring.coreos.com/v1
+apiVersion: azmonitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: dcgm-exporter-metrics
