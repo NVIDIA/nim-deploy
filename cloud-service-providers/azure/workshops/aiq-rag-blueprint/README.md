@@ -351,12 +351,8 @@ az aks nodepool add \
   --name gpupool \
   --node-count ${NODE_COUNT} \
   --node-vm-size ${NODE_POOL_MACHINE_TYPE} \
-  --gpu-driver none \
-  --node-taints sku=gpu:NoSchedule
+  --gpu-driver none
 ```
-
-> [!NOTE]
-> When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
 
 ## Task 2: NVIDIA GPU Operator Installation
 
@@ -375,11 +371,7 @@ helm install gpu-operator nvidia/gpu-operator \
   --set driver.enabled=true \
   --set toolkit.enabled=true \
   --set dcgmExporter.enabled=true \
-  --set dcgmExporter.serviceMonitor.enabled=false \
-  --set daemonsets.tolerations[0].key=sku \
-  --set daemonsets.tolerations[0].operator=Equal \
-  --set daemonsets.tolerations[0].value=gpu \
-  --set daemonsets.tolerations[0].effect=NoSchedule
+  --set dcgmExporter.serviceMonitor.enabled=false
 ```
 
 > [!NOTE]
@@ -387,7 +379,6 @@ helm install gpu-operator nvidia/gpu-operator \
 > - `toolkit.enabled=true` - Provides NVIDIA Container Toolkit (required for DCGM to access GPU libraries)
 > - `dcgmExporter.enabled=true` - Deploys DCGM exporter pods for GPU metrics collection
 > - `dcgmExporter.serviceMonitor.enabled=false` - We'll use Azure Monitor compatible ServiceMonitors instead
-> - `daemonsets.tolerations` - Required to schedule GPU Operator components on tainted GPU nodes
 
 ### 3. Validate the installation 
 
@@ -417,17 +408,17 @@ nvidia-operator-validator-xxxxx                              1/1     Running   0
 ```
 
 You should see:
-- **4 nvidia-driver-daemonset pods** (1 per GPU node) - Installing NVIDIA drivers
-- **4 nvidia-container-toolkit-daemonset pods** (1 per GPU node) - Container runtime integration
-- **4 nvidia-dcgm-exporter pods** (1 per GPU node) - **GPU metrics collection**
-- **4 nvidia-device-plugin-daemonset pods** (1 per GPU node) - GPU resource management
-- **4 nvidia-cuda-validator pods** (Completed) - Validation that CUDA works
-- **4 nvidia-operator-validator pods** (1 per GPU node) - Overall validation
+- **nvidia-driver-daemonset pods** (1 per GPU node) - Installing NVIDIA drivers
+- **nvidia-container-toolkit-daemonset pods** (1 per GPU node) - Container runtime integration
+- **nvidia-dcgm-exporter pods** (1 per GPU node) - **GPU metrics collection**
+- **nvidia-device-plugin-daemonset pods** (1 per GPU node) - GPU resource management
+- **nvidia-cuda-validator pods** (Completed) - Validation that CUDA works
+- **nvidia-operator-validator pods** (1 per GPU node) - Overall validation
 
 Verify GPU resources are allocatable:
 
 ```bash
-kubectl get nodes -l agentpool=gpunp -o json | jq -r '.items[0].status.allocatable["nvidia.com/gpu"]'
+kubectl get nodes -l agentpool=gpupool -o json | jq -r '.items[0].status.allocatable["nvidia.com/gpu"]'
 ```
 
 Expect: `2` (GPUs per node)
@@ -528,8 +519,6 @@ Open your browser and navigate to: http://EXTERNAL-IP-FROM-YOUR-CLI-RESULT-ABOVE
 
 From here, we should be able to interact with the service and get some outputs from the LLM.
 
-![RAG Frontend](imgs/rag-frontend.png)
-
 ###  Testing the RAG Blueprint
 
 In order to test the RAG capabilities of this application, we need to upload a document:
@@ -540,7 +529,6 @@ In order to test the RAG capabilities of this application, we need to upload a d
 ![upload_popup.png](imgs/upload-rag23.png)
 
 * Wait for "Collection Created successfully" notification
-
 
 * Close the prompt window, and click the "Test_Collection" checkbox on the left:
 
@@ -655,6 +643,7 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --username '$oauthtoken' \
   --password "${NGC_API_KEY}" \
   --values manifests/aiq-nim-values.yaml \
+  --set imagePullSecret.password="$NGC_API_KEY" \
   --set tavilyApiSecret.password="$TAVILY_API_KEY" \
   --set ngcApiSecret.password="$NGC_API_KEY"
 ```
