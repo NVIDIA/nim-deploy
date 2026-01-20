@@ -860,38 +860,84 @@ For enhanced visualization of all metrics, you can deploy Grafana to create comp
 
 **Nemotron 49B LLM Metrics Dashboard** (NIM LLM metrics only available when following Option C above)
 
-- Token throughput and generation speed
-- Request rates and error tracking
-- Inter Token Latency (ITL) Heatmap
-- Time to First Token (TTFT) Heatmap
-- Total NIM requests
+| Metric Name | Description |
+|-------------|-------------|
+| `nv_inference_request_success` | Total number of successful inference requests |
+| `nv_inference_request_failure` | Total number of failed inference requests |
+| `nv_inference_request_duration_us` | Request processing time in microseconds (includes queuing, inference, and post-processing) |
+| `nv_inference_queue_duration_us` | Time spent waiting in the request queue before processing |
+| `nv_inference_compute_input_duration_us` | Time spent processing input tokens |
+| `nv_inference_compute_infer_duration_us` | Time spent in model inference |
+| `nv_inference_compute_output_duration_us` | Time spent generating output tokens |
+| `nv_inference_pending_request_count` | Number of requests currently waiting in queue |
+| `nv_inference_exec_count` | Number of inference executions completed |
+| `nv_inference_time_to_first_token_us` | Latency from request receipt to first token generation (TTFT) |
+| `nv_inference_inter_token_latency_us` | Average time between consecutive output tokens (ITL) |
+| `nv_gpu_utilization` | GPU utilization percentage during inference |
+| `nv_gpu_power_usage` | GPU power consumption in watts |
+| `nv_energy_consumption` | Total energy consumed by GPU in joules |
 
 ![Nemotron Dashboard](imgs/grafana-nemotron-dashboard.png)
 
 **Milvus Performance Dashboard**
 
-- Vector search latency trends
-- Index build/query performance
-- Storage utilization and growth
-- Query Throughput (vectors/sec)
+| Metric Name | Description |
+|-------------|-------------|
+| `milvus_querynode_search_latency_sum` | Total latency for vector search operations in milliseconds |
+| `milvus_querynode_search_latency_count` | Number of search operations performed |
+| `milvus_querynode_search_vectors_count` | Total number of vectors searched (query throughput) |
+| `milvus_querynode_sq_req_latency` | Sealed query request latency (for historical data) |
+| `milvus_indexnode_build_latency` | Time taken to build vector indices |
+| `milvus_indexnode_task_num` | Number of indexing tasks in queue or processing |
+| `milvus_datanode_storage_size` | Total storage used by Milvus in bytes |
+| `milvus_datanode_segment_num` | Number of data segments stored |
+| `milvus_datanode_flush_latency` | Time taken to flush data to persistent storage |
+| `milvus_rootcoord_collection_num` | Total number of collections in the database |
+| `milvus_querynode_cache_hit_rate` | Cache hit rate for query operations (0-1) |
+| `milvus_querynode_sq_seg_latency` | Per-segment query latency |
 
 ![Milvus Dashboard](imgs/grafana-milvus-dashboard.png)
 
 **GPU Hardware Metrics Dashboard**
-- Real-time GPU utilization across all nodes
-- Temperature, memory, and power consumption trends
-- Per-model GPU allocation and efficiency (Option C)
+
+| Metric Name | Description |
+|-------------|-------------|
+| `DCGM_FI_DEV_GPU_UTIL` | GPU utilization percentage (0-100) |
+| `DCGM_FI_DEV_MEM_COPY_UTIL` | Memory controller utilization percentage |
+| `DCGM_FI_DEV_GPU_TEMP` | GPU temperature in Celsius |
+| `DCGM_FI_DEV_POWER_USAGE` | Current GPU power usage in watts |
+| `DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION` | Total energy consumed since driver load in millijoules |
+| `DCGM_FI_DEV_FB_USED` | Framebuffer memory used in megabytes |
+| `DCGM_FI_DEV_FB_FREE` | Framebuffer memory available in megabytes |
+| `DCGM_FI_PROF_PIPE_TENSOR_ACTIVE` | Tensor Core activity percentage |
+| `DCGM_FI_PROF_SM_ACTIVE` | Streaming Multiprocessor (SM) active percentage |
+| `DCGM_FI_PROF_SM_OCCUPANCY` | SM occupancy percentage (warps active vs. max possible) |
+| `DCGM_FI_PROF_PCIE_TX_BYTES` | PCIe transmit throughput in bytes per second |
+| `DCGM_FI_PROF_PCIE_RX_BYTES` | PCIe receive throughput in bytes per second |
 
 ![GPU Dashboard](imgs/grafana-gpu-dashboard.png)
 
 **DCGM GPU Metrics (Hardware View)**
 
-- DCGM GPU Utilization 
-- DCGM GPU Temperature
-- DCGM GPU Power Usage
-- DCGM GPU Memory (Framebuffer)
-- DCGM PCIe Bandwidth
-- DCGM Tensor Core Activity
+| Metric Name | Description |
+|-------------|-------------|
+| `DCGM_FI_DEV_GPU_UTIL` | GPU utilization - percentage of time GPU was actively processing (0-100%) |
+| `DCGM_FI_DEV_MEM_COPY_UTIL` | Memory utilization - percentage of time memory was being copied (0-100%) |
+| `DCGM_FI_DEV_GPU_TEMP` | GPU die temperature in degrees Celsius |
+| `DCGM_FI_DEV_MEMORY_TEMP` | GPU HBM (High Bandwidth Memory) temperature in Celsius |
+| `DCGM_FI_DEV_POWER_USAGE` | Current GPU power draw in watts |
+| `DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION` | Cumulative energy consumed in millijoules since driver initialization |
+| `DCGM_FI_DEV_FB_USED` | GPU framebuffer memory currently in use (megabytes) |
+| `DCGM_FI_DEV_FB_FREE` | GPU framebuffer memory available (megabytes) |
+| `DCGM_FI_DEV_FB_TOTAL` | Total GPU framebuffer memory capacity (megabytes) |
+| `DCGM_FI_PROF_PCIE_TX_BYTES` | PCIe transmit throughput - bytes sent from GPU to CPU per second |
+| `DCGM_FI_PROF_PCIE_RX_BYTES` | PCIe receive throughput - bytes received by GPU from CPU per second |
+| `DCGM_FI_PROF_PIPE_TENSOR_ACTIVE` | Tensor Core pipeline utilization - percentage of time Tensor Cores are active (0-100%) |
+| `DCGM_FI_PROF_SM_ACTIVE` | Streaming Multiprocessor active time - percentage of cycles at least one warp is active (0-100%) |
+| `DCGM_FI_PROF_SM_OCCUPANCY` | SM occupancy - ratio of active warps to maximum theoretical warps (0-100%) |
+| `DCGM_FI_PROF_DRAM_ACTIVE` | DRAM (HBM) utilization - percentage of time reading or writing to device memory (0-100%) |
+| `DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL` | Total NVLink bandwidth utilization across all links in bytes per second |
+| `DCGM_FI_DEV_XID_ERRORS` | GPU hardware error code (XID) - non-zero indicates critical GPU errors |
 
 ![DCGM Dashboard](imgs/grafana-dcgm-dashboard.png)
 
