@@ -156,7 +156,7 @@ az extension update --name aks-preview
 5. Clone the workshop repo
 
 ```bash
-git clone https://github.com/dcasati/nim-deploy.git
+git clone https://github.com/NVIDIA/nim-deploy.git
 ```
 
 6. Then change into the workshop directory:
@@ -164,13 +164,6 @@ git clone https://github.com/dcasati/nim-deploy.git
 ```bash
 cd nim-deploy/cloud-service-providers/azure/workshops/aiq-rag-blueprint/
 ```
-
-7. Checkout the workshop branch
-
-```bash
-git checkout reactor-26621
-```
-
 ### 2. Configure NVIDIA API Key
 
 As part of the RAG blueprint several NVIDIA NIMs will be deployed. In order to get started with NIM, we'll need to make sure we have access to an [NVIDIA API key](https://org.ngc.nvidia.com/setup/api-key). We will save this key to be used as an environment variable `NGC_API_KEY="nvapi-..."`.
