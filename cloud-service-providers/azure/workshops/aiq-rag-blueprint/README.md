@@ -156,7 +156,6 @@ As part of the RAG blueprint several NVIDIA NIMs will be deployed. In order to g
 ### 3. Set up environment variables
 
 ```bash
-
 # NVIDIA API key available at https://org.ngc.nvidia.com/setup/api-key
 export NGC_API_KEY="nvapi-..."
 export NVIDIA_API_KEY=${NGC_API_KEY}
@@ -270,7 +269,7 @@ Expect:
 /subscriptions/XXXXX-XXXX-XXX-XXXX-XXXXXX/resourceGroups/rg-aiq-rag/providers/Microsoft.Dashboard/grafana/aiq-rag-workshop-25151
 ```
 
-### 6. Create AKS cluster
+### 7. Create AKS cluster
 
 ```bash
 az aks create -g ${RESOURCE_GROUP} \
@@ -285,21 +284,13 @@ az aks create -g ${RESOURCE_GROUP} \
     --ssh-access disabled
 ```
 
-### 7. Get AKS cluster credentials
+### 8. Get AKS cluster credentials
 
 ```bash
 az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${CLUSTER_NAME} --file cluster.config
 ```
 
-### 8. Create the GPU node pool
-
-Before proceeding, we need to register the new `ManagedGPUExperiencePreview` feature
-
-```bash
-az feature register --namespace Microsoft.ContainerService --name ManagedGPUExperiencePreview
-```
-
-Once registered, create the new node pool:
+### 9. Create the GPU node pool
 
 ```bash
 az aks nodepool add \
@@ -410,13 +401,7 @@ Expect: `2` (GPUs per node)
 
 ## Task 3: NVIDIA Blueprint Deployment
 
-### 1. Create a Kubernetes namespace
-
-```bash
-kubectl create namespace rag
-```
-
-### 2. Install the RAG 2.3 blueprint Helm chart
+### 1. Install the RAG 2.3 blueprint Helm chart
 
 > [!INFO] In order to save GPU resources, we will be deploying the text-only ingestion blueprint.
 
@@ -443,7 +428,7 @@ helm install rag \
 
 For more details on how to customize the [RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag/blob/v2.3.0/README.md)
 
-### 3. Verify that the PODs are running
+### 2. Verify that the PODs are running
 
 ```bash
 kubectl get pods -n rag
@@ -554,53 +539,9 @@ export NVIDIA_API_URL="https://ai-azwestus-uma7-hbbtf.westus.inference.ml.azure.
 export NVIDIA_API_KEY="xxx"
 ```
 
-</details>
-
-<details>
-<summary><h3>Option B: Use build.nvidia.com API for nemotron-super-49b</h3></summary>
-
-```bash
-export NVIDIA_API_URL="https://integrate.api.nvidia.com/v1"
-export NVIDIA_API_KEY="nvapi-cxxxxx"
-```
-
-</details>
-
-<details>
-<summary><h3>Option C: Deploy nemotron-super-49b locally in your AKS cluster</h3></summary>
-
-This option deploys the Nemotron 49B model directly on your AKS GPU nodes, giving you full control and avoiding external API dependencies. This requires sufficient GPU resources (recommended: 2x H100 NVL GPUs).
-
-#### 1. Set environment variables for in-cluster deployment
-
-```bash
-export NVIDIA_API_URL="http://aiq-nim-llm.aira.svc.cluster.local:8000/v1"
-export NVIDIA_API_KEY="not-used-for-local"
-export MODEL_NAME="meta/llama-3.3-nemotron-super-49b-instruct"
-```
-
-> [!NOTE]
-> When using the in-cluster NIM, the API key is not validated (set to any value), and the model name should match the NIM's internal model name.
-
-#### Create the nemotron-49b StatefulSet
-
-```bash
-kubectl apply -f manifests/nemotron-49b-statefulset.yaml
-```
-
-Watch pod status (model download can take 15-30 minutes)
-
-```bash
-kubectl get pods -n aira -w
-```
-
-</details>
-
 ### Deploy AIQ Blueprint
 
 We are now ready to deploy the AI-Q Blueprint on our AKS cluster!
-
-**For Options A and B** (External API):
 
 ```bash
 helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
@@ -623,7 +564,47 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --set backendEnvVars.NEMOTRON_MODEL_NAME="$MODEL_NAME"
 ```
 
-**For Option C** (In-Cluster NIM):
+</details>
+
+<details>
+<summary><h3>Option B: Use build.nvidia.com API for nemotron-super-49b</h3></summary>
+
+On this option, we will be using the NIM-LLM that is hosted by NVIDIA. Set the `NVIDIA_API_URL` to point to `https://integrate.api.nvidia.com/v1`
+
+```bash
+export NVIDIA_API_URL="https://integrate.api.nvidia.com/v1"
+```
+
+### Deploy AIQ Blueprint
+
+We are now ready to deploy the AI-Q Blueprint on our AKS cluster!
+
+```bash
+helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
+  --create-namespace \
+  --username '$oauthtoken' \
+  --password "${NGC_API_KEY}" \
+  --set phoenix.enabled=true \
+  --set phoenix.image.repository=docker.io/arizephoenix/phoenix \
+  --set phoenix.image.tag=latest \
+  --set tavilyApiSecret.password="$TAVILY_API_KEY" \
+  --set nim-llm.enabled=false \
+  --set config.rag_url="http://rag-server.rag.svc.cluster.local:8081" \
+  --set config.rag_ingest_url="http://ingestor-server.rag.svc.cluster.local:8082" \
+  --set config.milvus_host="milvus.rag.svc.cluster.local" \
+  --set config.milvus_port="19530" \
+  --set backendEnvVars.INSTRUCT_BASE_URL="$NVIDIA_API_URL" \
+  --set backendEnvVars.INSTRUCT_API_KEY="$NVIDIA_API_KEY" \
+  --set backendEnvVars.NEMOTRON_BASE_URL="$NVIDIA_API_URL" \
+  --set backendEnvVars.NEMOTRON_API_KEY="$NVIDIA_API_KEY" \
+  --set backendEnvVars.NEMOTRON_MODEL_NAME="$MODEL_NAME"
+```
+</details>
+
+<details>
+<summary><h3>Option C: Deploy nemotron-super-49b locally in your AKS cluster</h3></summary>
+
+This option deploys the Nemotron 49B model directly on your AKS GPU nodes, giving you full control and avoiding external API dependencies. This requires sufficient GPU resources (recommended: 2x H100 NVL GPUs).
 
 ```bash
 helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
@@ -641,6 +622,8 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
 > - Custom environment variables (`NIM_CACHE_PATH`, `NIM_RELAX_MEM_CONSTRAINTS`, `NCCL_P2P_DISABLE`)
 > - 2x GPU allocation
 > - Integration with RAG services
+
+</details>
 
 ### Accessing the Frontend Service
 
@@ -693,46 +676,10 @@ AI-Q includes pre-curated Biomedical and Financial document collections. Load th
 
 ###  Apply Load Files Job
 
-```bash
-cat <EOF>> load-files.yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: load-files-nv-ingest
-  namespace: aira
-spec:
-  template:
-    spec:
-      imagePullSecrets:
-      - name: ngc-secret
-      containers:
-      - name: load-files-nv-ingest
-        image: nvcr.io/nvidia/blueprint/aira-load-files:v1.1.0
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: MILVUS_HOST
-          value: "milvus.rag.svc.cluster.local"
-        - name: MILVUS_PORT
-          value: "19530"
-        - name: RAG_INGEST_URL
-          value: "http://ingestor-server.rag.svc.cluster.local:8082"
-        - name: PYTHONUNBUFFERED
-          value: "1"
-        volumeMounts:
-        - name: tempdata
-          mountPath: /tmp-data
-      volumes:
-      - name: tempdata
-        emptyDir: {}
-
-      restartPolicy: OnFailure
-EOF
-```
-
-Then apply the load-files job:
+Apply the load-files job:
 
 ```bash
-kubectl apply -f load-files.yaml
+kubectl apply -f manifests/load-files.yaml
 ```
 
 This will create a Kubernetes job that loads the pre-curated datasets into your Milvus vector database.
@@ -742,12 +689,30 @@ This will create a Kubernetes job that loads the pre-curated datasets into your 
 ```bash
 kubectl logs -l job-name=load-files-nv-ingest -n aira -f
 ```
+Expect: 
+
+```bash
+DEBUG:asyncio:Using selector: EpollSelector
+INFO:__main__:Starting upload of files to RAG server
+INFO:__main__:Found 2 zip files in directory .
+INFO:__main__:Processing zip file: ./Biomedical_Dataset.zip
+INFO:__main__:Existing collections: {'message': 'Collections listed successfully.', 'total_collections': 4, 'collections': [{'collection_name': 'test_collection', 'num_entities': 0, 'metadata_schema': [{'name': 'filename', 'type': 'string', 'required': False, 'array_type': None, 'max_length': None, 'description': 'Name of the uploaded file'}]}, {'collection_name': 'meta', 'num_entities': 3, 'metadata_schema': []}, {'collection_name': 'Canada_Wood_House', 'num_entities': 629, 'metadata_schema': [{'name': 'filename', 'type': 'string', 'required': False, 'array_type': None, 'max_length': None, 'description': 'Name of the uploaded file'}]}, {'collection_name': 'metadata_schema', 'num_entities': 2, 'metadata_schema': []}]}
+INFO:__main__:Created collection with result: {"message":"Collection creation process completed.","successful":["Biomedical_Dataset"],"failed":[],"total_success":1,"total_failed":0}
+INFO:__main__:Unzipping ./Biomedical_Dataset.zip to output/Biomedical_Dataset
+INFO:__main__:Starting upload of 43 files to Biomedical_Dataset
+INFO:__main__:Upload started with message: Ingestion started in background
+INFO:__main__:Polling task 56ee7e72-ca11-4f29-bcc9-e11c2dbb16a2, status: PENDING
+INFO:__main__:Uploading files to Biomedical_Dataset. Elapsed time: 10 seconds
+INFO:__main__:Uploading files to Biomedical_Dataset. Elapsed time: 20 seconds
+INFO:__main__:Uploading files to Biomedical_Dataset. Elapsed time: 30 seconds
+```
 
 Watch for completion messages. This process takes 5-10 minutes depending on cluster performance.
 
 Once Job is complete, you will see the pre-created collections in Milvus:
 
 **Available Collections:**
+
 - **Biomedical Dataset** (`biomedical_collection`) - Research papers and medical literature focused on healthcare and life sciences
 - **Financial Dataset** (`financial_collection`) - Financial reports, earnings statements, and commercial lending documents
 
@@ -755,9 +720,7 @@ These collections are stored as vector embeddings in Milvus and are ready for se
 
 ![alt text](imgs/collections.png)
 
-
 ## Task 7. Test AI-Q Research Features
-
 ###  Generate Your First Research Report
 
 1. In the AI-Q interface, select **"Financial Dataset"** (`financial_collection`) from the collection dropdown
@@ -835,127 +798,19 @@ Open http://localhost:6006 in your browser to view:
 
 ServiceMonitors are deployed for integration with Azure Monitor or Prometheus. 
 
-1. Create the service monitors: 
-
-```bash
-cat <<EOF > servicemonitors.yaml
-# Consolidated ServiceMonitors for AIQ RAG Blueprint
-# This file contains all ServiceMonitor resources for monitoring NIMs and services
-# Used with Azure Monitor managed Prometheus
-
----
-# ServiceMonitor for AIQ NIM LLM (Nemotron)
-apiVersion: azmonitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: aiq-nim-llm
-  namespace: aira
-  labels:
-    app: aiq-nim-llm
-spec:
-  namespaceSelector:
-    matchNames:
-    - aira
-  selector:
-    matchLabels:
-      app: aiq-nim-llm
-  endpoints:
-  - port: http
-    path: /v1/metrics
-    interval: 30s
-    scrapeTimeout: 10s
-
----
-# ServiceMonitor for Milvus Vector Database
-apiVersion: azmonitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: milvus-standalone
-  namespace: rag
-spec:
-  namespaceSelector:
-    matchNames:
-    - rag
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: milvus
-      app.kubernetes.io/instance: rag
-  endpoints:
-  - port: metrics
-    interval: 30s
-    path: /metrics
-
----
-# ServiceMonitor for Embedding NIM
-apiVersion: azmonitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: rag-embedding-nim
-  namespace: rag
-spec:
-  namespaceSelector:
-    matchNames:
-    - rag
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nvidia-nim-llama-32-nv-embedqa-1b-v2
-  endpoints:
-  - interval: 30s
-    path: /v1/metrics
-    port: http
-
----
-# ServiceMonitor for Reranking NIM
-apiVersion: azmonitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: rag-reranking-nim
-  namespace: rag
-spec:
-  namespaceSelector:
-    matchNames:
-    - rag
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: nvidia-nim-llama-32-nv-rerankqa-1b-v2
-  endpoints:
-  - interval: 30s
-    path: /v1/metrics
-    port: http
-
----
-# ServiceMonitor for DCGM Exporter (GPU Metrics)
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: dcgm-exporter-metrics
-  namespace: gpu-operator
-  labels:
-    app: nvidia-dcgm-exporter
-spec:
-  selector:
-    matchLabels:
-      app: nvidia-dcgm-exporter
-  endpoints:
-  - port: gpu-metrics
-    interval: 15s
-    path: /metrics
-EOF
-```
-
-2. Apply the ServiceMonitor to the cluster
+1. Apply the ServiceMonitor to the cluster
 
 ```bash
 kubectl apply -f servicemonitors.yaml
 ```
 
-3. List all ServiceMonitors
+2. List all ServiceMonitors
 
 ```bash
 kubectl get servicemonitors -A
 ```
 
-4. View specific ServiceMonitor configuration
+3. View specific ServiceMonitor configuration
 
 ```bash
 kubectl describe servicemonitor <name> -n <namespace>
@@ -973,115 +828,12 @@ These ServiceMonitors automatically expose metrics for:
 We can use the `rag-sweep-hpa.sh` script described in the blog post (Enabling Horizontal Autoscaling of Enterprise RAG Components on Kubernetes)[https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/] to gather some statistic on the NIM-LLM deployed on the cluster:
 
 ```bash
-cat <<EOF> rag-sweep-job.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: rag-sweep-script
-  namespace: rag
-data:
-  rag-sweep.sh: |
-    #!/usr/bin/env bash
-    set -e
-    
-    # Script to sweep through different concurrency levels for RAG service with HPA
-    # Requires genai-perf CLI tool installed and configured
-    # Original author(s): Juana Nakfour,  Anita Tragler, Ruchika Kharwar, NVIDIA Corp.
-    # Original source: https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/
-    # Modified by: Diego Casati, Microsoft Corp.
-    
-        export RAG_SERVICE="aiq-nim-llm.aira.svc.cluster.local:8000"
-    export NIM_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5"
-    export NIM_MODEL_NAME="nvidia/llama-3.3-nemotron-super-49b-v1.5"
-    export NIM_MODEL_TOKENIZER="nvidia/Llama-3_3-Nemotron-Super-49B-v1"
-    
-    export CONCURRENCY_RANGE="50 100 150 200 250 300"
-    export request_multiplier=15
-    
-    export ISL="256"
-    export OSL="256"
-    
-    # Skip collection-specific parameters for testing
-    # export COLLECTION="multimodal_data"
-    # export VDB_TOPK=10
-    # export RERANKER_TOPK=4
-    export OUTPUT_DIR="/results"
-    
-    mkdir -p $OUTPUT_DIR
-    
-    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Starting RAG sweep benchmark"
-    
-    for CR in ${CONCURRENCY_RANGE}; do
-    
-      total_requests=$((request_multiplier * CR))
-      EXPORT_FILE=RAG_CR-${CR}_ISL-${ISL}_OSL-${OSL}-$(date +"%Y-%m-%d-%H_%M_%S").json
-    
-      START_TIME=$(date +%s)
-      echo "[$(date +"%Y-%m-%d %H:%M:%S")] Running with concurrency: $CR, total requests: $total_requests"
-    
-      genai-perf profile \
-        -m $NIM_MODEL_NAME \
-        --service-kind openai \
-        --endpoint-type chat \
-        --streaming \
-        -u $RAG_SERVICE \
-        --request-count $total_requests \
-        --synthetic-input-tokens-mean $ISL \
-        --synthetic-input-tokens-stddev 0 \
-        --concurrency $CR \
-        --output-tokens-mean $OSL \
-        --extra-inputs max_tokens:$OSL \
-        --artifact-dir $OUTPUT_DIR \
-        --tokenizer $NIM_MODEL_TOKENIZER \
-        --profile-export-file $EXPORT_FILE
-    
-      END_TIME=$(date +%s)
-      elapsed_time=$((END_TIME - START_TIME))
-    
-      echo "[$(date +"%Y-%m-%d %H:%M:%S")] Completed: $EXPORT_FILE in $elapsed_time seconds"
-    done
-    
-    echo "[$(date +"%Y-%m-%d %H:%M:%S")] Benchmark complete. Results in $OUTPUT_DIR"
-    ls -lh $OUTPUT_DIR/
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: rag-sweep-benchmark
-  namespace: rag
-spec:
-  backoffLimit: 2
-  template:
-    metadata:
-      labels:
-        app: rag-sweep-benchmark
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: genai-perf
-        image: nvcr.io/nvidia/tritonserver:25.01-py3-sdk
-        command: ["/bin/bash"]
-        args: ["/scripts/rag-sweep.sh"]
-        volumeMounts:
-        - name: script
-          mountPath: /scripts
-        - name: results
-          mountPath: /results
-        resources:
-          limits:
-            cpu: "4"
-            memory: "8Gi"
-          requests:
-            cpu: "2"
-            memory: "4Gi"
-      volumes:
-      - name: script
-        configMap:
-          name: rag-sweep-script
-          defaultMode: 0755
-      - name: results
-        emptyDir: {}
-EOF
+kubectl apply -f manifests/rag-sweep-job.yaml
+```
+You can verify the completion of the job by looking at its log:
+
+```bash
+
 ```
 
 ### Azure Managed Grafana Dashboards
