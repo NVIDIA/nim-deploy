@@ -114,7 +114,8 @@ The infrastructure provisioning script will automatically create an Azure Kubern
   * **vCPUs**: 80 per node, 320 total
   * **Memory**: 640 GiB per node, 2.56 TiB total
 
-**Note**: You can also use another SKU such as the `Standard_NC96ads_A100_v4` (1 node with 4x A100 80GB GPUs) but this limits the deployment of the `nim-llm` in-cluster. Using the `Standard_NC80adis_H100_v5` or similar SKU (4 nodes with 2x H100 NVL 95GB GPUs each) allows the `nim-llm` to be deployed in-cluster.
+> [!NOTE]
+> You can also use another SKU such as the `Standard_NC96ads_A100_v4` (1 node with 4x A100 80GB GPUs) but this limits the deployment of the `nim-llm` in-cluster. Using the `Standard_NC80adis_H100_v5` or similar SKU (4 nodes with 2x H100 NVL 95GB GPUs each) allows the `nim-llm` to be deployed in-cluster.
 
 You may adjust node counts and machine types in the environment variables to fit your workload and quota limits.
 
@@ -129,9 +130,9 @@ Once you log in, click on the Cloud Shell button, located at the top bar:
 
 ![Azure_Cloud_Shell.png](imgs/Azure_Cloud_Shell.png)
 
-(Note: if it's not visible, click on the 3 dots):
-
-![Azure_Cloud_Shell_Expand.png](imgs/Azure_Cloud_Shell_Expand.png)
+> [!NOTE]
+> If it's not visible, click on the 3 dots):
+> ![Azure_Cloud_Shell_Expand.png](imgs/Azure_Cloud_Shell_Expand.png)
 
 2. When asked, select **Bash**
 
@@ -417,51 +418,18 @@ kubectl create namespace rag
 
 ### 2. Install the RAG 2.3 blueprint Helm chart
 
-Note: in order to save GPU resources, we will be deploying the text-only ingestion blueprint.
-Execute the below, to download the values.yaml file:
-<!-- ```bash
-wget -O values.yaml https://tinyurl.com/rag23values
-``` -->
+> [!INFO] In order to save GPU resources, we will be deploying the text-only ingestion blueprint.
 
-Install RAG2.3 Blueprint,  with NIMS llama-32-nv-embedqa-1b,llama-32-nv-rerankqa-1b,nemoretriever-page-elements-v2, nemoretriever-table-structure-v1 deployed on our A100 GPU Node. For Nemotron Super 49B we point to build.nvidia.com API :
+Install RAG2.3 Blueprint with NIMs llama-32-nv-embedqa-1b, llama-32-nv-rerankqa-1b, nemoretriever-page-elements-v2, and nemoretriever-table-structure-v1 deployed on GPU nodes:
 
 ```bash
-helm install \
+helm install rag \
   --namespace rag \
-  --create-namespace rag \
+  --create-namespace \
   https://helm.ngc.nvidia.com/nvidia/blueprint/charts/nvidia-blueprint-rag-v2.3.0.tgz \
   --username '$oauthtoken' \
   --password "${NGC_API_KEY}" \
-  --values manifests/values.yaml \
-  --set nim-llm.enabled=false \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.enabled=true \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].key=sku \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].operator=Equal \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].value=gpu \
-  --set nvidia-nim-llama-32-nv-embedqa-1b-v2.tolerations[0].effect=NoSchedule \
-  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.enabled=true \
-  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].key=sku \
-  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].operator=Equal \
-  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].value=gpu \
-  --set nvidia-nim-llama-32-nv-rerankqa-1b-v2.tolerations[0].effect=NoSchedule \
-  --set ingestor-server.enabled=true \
-  --set nv-ingest.enabled=true \
-  --set nv-ingest.nemoretriever-page-elements-v2.deployed=true \
-  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].key=sku \
-  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].operator=Equal \
-  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].value=gpu \
-  --set nv-ingest.nemoretriever-page-elements-v2.tolerations[0].effect=NoSchedule \
-  --set nv-ingest.nemoretriever-graphic-elements-v1.deployed=false \
-  --set nv-ingest.nemoretriever-table-structure-v1.deployed=true \
-  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].key=sku \
-  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].operator=Equal \
-  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].value=gpu \
-  --set nv-ingest.nemoretriever-table-structure-v1.tolerations[0].effect=NoSchedule \
-  --set nv-ingest.paddleocr-nim.deployed=false \
-  --set nv-ingest.tolerations[0].key=sku \
-  --set nv-ingest.tolerations[0].operator=Equal \
-  --set nv-ingest.tolerations[0].value=gpu \
-  --set nv-ingest.tolerations[0].effect=NoSchedule \
+  --values manifests/rag-values.yaml \
   --set imagePullSecret.password="${NGC_API_KEY}" \
   --set ngcApiSecret.password="${NGC_API_KEY}"
 ```
@@ -603,60 +571,7 @@ export NVIDIA_API_KEY="nvapi-cxxxxx"
 
 This option deploys the Nemotron 49B model directly on your AKS GPU nodes, giving you full control and avoiding external API dependencies. This requires sufficient GPU resources (recommended: 2x H100 NVL GPUs).
 
-1. Create the aira namespace
-
-```bash
-kubectl create ns aira
-```
-
-2. Create the NGC secrets in the aira namespace
-
-```bash
-kubectl create secret generic ngc-api --from-literal=NGC_API_KEY=$NGC_API_KEY -n aira
-kubectl create secret docker-registry ngc-secret \
-  --docker-server=nvcr.io \
-  --docker-username='$oauthtoken' \
-  --docker-password=$NGC_API_KEY \
-  -n aira
-```
-
-3. Create the nemotron-49b StatefulSet
-
-```bash
-kubectl apply -f manifests/nemotron-49b-statefulset.yaml
-```
-
-#### 3. Deploy the StatefulSet
-
-```bash
-kubectl apply -f nemotron-49b-statefulset.yaml
-```
-
-#### 4. Monitor the deployment
-
-Watch pod status (model download can take 15-30 minutes)
-
-```bash
-kubectl get pods -n aira -w
-```
-
-Expect:
-
-```bash
-kubectl get pods -n aira
-NAME                                READY   STATUS    RESTARTS   AGE
-aiq-nim-llm-0                       1/1     Running   0          2d18h
-```
-
-Check logs
-
-```bash
-kubectl logs -n aira aiq-nim-llm-0 -f
-```
-
-Wait until the pod shows `1/1 Running` and logs indicate the model is loaded and server is ready.
-
-#### 5. Set environment variables for in-cluster deployment
+#### 1. Set environment variables for in-cluster deployment
 
 ```bash
 export NVIDIA_API_URL="http://aiq-nim-llm.aira.svc.cluster.local:8000/v1"
@@ -664,19 +579,28 @@ export NVIDIA_API_KEY="not-used-for-local"
 export MODEL_NAME="meta/llama-3.3-nemotron-super-49b-instruct"
 ```
 
-**Note**: When using the in-cluster NIM, the API key is not validated (set to any value), and the model name should match the NIM's internal model name.
+> [!NOTE]
+> When using the in-cluster NIM, the API key is not validated (set to any value), and the model name should match the NIM's internal model name.
+
+#### Create the nemotron-49b StatefulSet
+
+```bash
+kubectl apply -f manifests/nemotron-49b-statefulset.yaml
+```
+
+Watch pod status (model download can take 15-30 minutes)
+
+```bash
+kubectl get pods -n aira -w
+```
 
 </details>
 
 ### Deploy AIQ Blueprint
 
-The last portion missing before we can deploy the AI-Q Bluepring is the **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
-
-```bash
-export TAVILY_API_KEY="tvly-xxxxx"
-```
-
 We are now ready to deploy the AI-Q Blueprint on our AKS cluster!
+
+**For Options A and B** (External API):
 
 ```bash
 helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
@@ -687,7 +611,7 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --set phoenix.image.repository=docker.io/arizephoenix/phoenix \
   --set phoenix.image.tag=latest \
   --set tavilyApiSecret.password="$TAVILY_API_KEY" \
-  --set nim-llm.enabled=true \
+  --set nim-llm.enabled=false \
   --set config.rag_url="http://rag-server.rag.svc.cluster.local:8081" \
   --set config.rag_ingest_url="http://ingestor-server.rag.svc.cluster.local:8082" \
   --set config.milvus_host="milvus.rag.svc.cluster.local" \
@@ -697,7 +621,26 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --set backendEnvVars.NEMOTRON_BASE_URL="$NVIDIA_API_URL" \
   --set backendEnvVars.NEMOTRON_API_KEY="$NVIDIA_API_KEY" \
   --set backendEnvVars.NEMOTRON_MODEL_NAME="$MODEL_NAME"
-  ```
+```
+
+**For Option C** (In-Cluster NIM):
+
+```bash
+helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/charts/aiq-aira-v1.2.0.tgz \
+  --create-namespace \
+  --username '$oauthtoken' \
+  --password "${NGC_API_KEY}" \
+  --values manifests/aiq-nim-values.yaml \
+  --set tavilyApiSecret.password="$TAVILY_API_KEY" \
+  --set ngcApiSecret.password="$NGC_API_KEY"
+```
+
+> [!NOTE]
+> Option C uses the `aiq-nim-values.yaml` file which configures the in-cluster Nemotron 49B NIM with:
+> - GPU tolerations for tainted nodes (`sku=gpu:NoSchedule`)
+> - Custom environment variables (`NIM_CACHE_PATH`, `NIM_RELAX_MEM_CONSTRAINTS`, `NCCL_P2P_DISABLE`)
+> - 2x GPU allocation
+> - Integration with RAG services
 
 ### Accessing the Frontend Service
 

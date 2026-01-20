@@ -1,0 +1,43 @@
+nim-llm:
+  enabled: true
+  image:
+    repository: nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      nvidia.com/gpu: 2
+    limits:
+      nvidia.com/gpu: 2
+  tolerations:
+    - key: sku
+      operator: Equal
+      value: gpu
+      effect: NoSchedule
+  env:
+    - name: NIM_CACHE_PATH
+      value: /opt/nim/.cache
+    - name: NIM_RELAX_MEM_CONSTRAINTS
+      value: "1"
+    - name: NCCL_P2P_DISABLE
+      value: "1"
+
+phoenix:
+  enabled: true
+  image:
+    repository: docker.io/arizephoenix/phoenix
+    tag: latest
+    pullPolicy: IfNotPresent
+
+config:
+  rag_url: "http://rag-server.rag.svc.cluster.local:8081"
+  rag_ingest_url: "http://ingestor-server.rag.svc.cluster.local:8082"
+  milvus_host: "milvus.rag.svc.cluster.local"
+  milvus_port: "19530"
+
+backendEnvVars:
+  INSTRUCT_BASE_URL: "http://instruct-llm.aira.svc.cluster.local:8000/v1"
+  INSTRUCT_API_KEY: "not-used"
+  NEMOTRON_BASE_URL: "http://instruct-llm.aira.svc.cluster.local:8000/v1"
+  NEMOTRON_API_KEY: "not-used"
+  NEMOTRON_MODEL_NAME: "meta/llama-3.3-nemotron-super-49b-instruct"

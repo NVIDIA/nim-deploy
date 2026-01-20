@@ -642,6 +642,11 @@ nvidia-nim-llama-32-nv-embedqa-1b-v2:
       nvidia.com/gpu: 1
   nim:
     ngcAPIKey: ""
+  tolerations:
+    - key: "sku"
+      operator: "Equal"
+      value: "gpu"
+      effect: "NoSchedule"
 
 # subsection: nvidia-nim-llama-32-nemoretriever-1b-vlm-embed-v1
 # NIM VLM Embedding
@@ -676,6 +681,11 @@ nvidia-nim-llama-32-nv-rerankqa-1b-v2:
       nvidia.com/gpu: 1
   nim:
     ngcAPIKey: ""
+  tolerations:
+    - key: "sku"
+      operator: "Equal"
+      value: "gpu"
+      effect: "NoSchedule"
 
 # subsection: nim-vlm
 # NIM Vision-Language (VLM)
@@ -711,6 +721,11 @@ nv-ingest:
   resources:
     limits:
       nvidia.com/gpu: 0
+  tolerations:
+    - key: "sku"
+      operator: "Equal"
+      value: "gpu"
+      effect: "NoSchedule"
   envVars:
     ARROW_DEFAULT_MEMORY_POOL: "system"
     INGEST_LOG_LEVEL: WARNING
@@ -911,6 +926,11 @@ nv-ingest:
     image:
       repository: nvcr.io/nim/nvidia/nemoretriever-page-elements-v2
       tag: "1.5.0"
+    tolerations:
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
     env:
       - name: NIM_HTTP_API_PORT
         value: "8000"
@@ -957,6 +977,11 @@ nv-ingest:
     image:
       repository: nvcr.io/nim/nvidia/nemoretriever-table-structure-v1
       tag: "1.5.0"
+    tolerations:
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
     env:
       - name: NIM_HTTP_API_PORT
         value: "8000"
