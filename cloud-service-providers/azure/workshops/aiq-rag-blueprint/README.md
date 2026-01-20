@@ -1,6 +1,5 @@
 # Deploy NVIDIA AI-Q  Research Blueprint on Azure Kubernetes Service + Azure AI Foundry
 
-
 ![Azure_Cloud_Shell.png](imgs/AIQonAzureFoundry.png)
 
 ## Introduction
@@ -74,6 +73,7 @@ NIM microservices are natively supported on Azure AI Foundry, enabling developer
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) version 1.34.2 or later
 - Helm 3.x installed
 - A terminal with `bash` (e.g.: Windows Terminal with WSL or Azure Cloud Shell)
+- git version 2.45.4 or later.
 - **NGC Account and API Key** ([Get it here](https://nvdam.widen.net/s/kfshg7fpsr/create-build-account-and-api-key-4))
 - **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
 
@@ -93,6 +93,9 @@ kubectl version --client
 
 # Check Helm installation
 helm version
+
+# Check git installation
+git -v
 
 # Check GPU quota in your region
 az vm list-usage --location <your-region> --query "[?localName=='Standard NCADSv5 Family vCPUs'].{Name:localName, Current:currentValue, Limit:limit}" -o table
@@ -143,11 +146,29 @@ Once you log in, click on the Cloud Shell button, located at the top bar:
 
 ![Subscription.png](imgs/Subscription.png)
 
-4. Run the below commands:
+4. Once Cloud Shell opens, run the below commands:
 
 ```bash
 az extension add --name aks-preview
 az extension update --name aks-preview
+```
+
+5. Clone the workshop repo
+
+```bash
+git clone https://github.com/dcasati/nim-deploy.git
+```
+
+6. Then change into the workshop directory:
+
+```bash
+cd nim-deploy/cloud-service-providers/azure/workshops/aiq-rag-blueprint/
+```
+
+7. Checkout the workshop branch
+
+```bash
+git checkout reactor-26621
 ```
 
 ### 2. Configure NVIDIA API Key
@@ -404,7 +425,8 @@ Expect: `2` (GPUs per node)
 
 ### 1. Install the RAG 2.3 blueprint Helm chart
 
-> [!INFO] In order to save GPU resources, we will be deploying the text-only ingestion blueprint.
+> [!NOTE]
+> In order to save GPU resources, we will be deploying the text-only ingestion blueprint.
 
 Install RAG2.3 Blueprint with NIMs llama-32-nv-embedqa-1b, llama-32-nv-rerankqa-1b, nemoretriever-page-elements-v2, and nemoretriever-table-structure-v1 deployed on GPU nodes:
 
@@ -473,15 +495,25 @@ rag-redis-replicas-0                                         1/1     Running   0
 rag-server-674c9ff7df-ktgxl                                  1/1     Running   2 (55m ago)   57m
 ```
 
-Once all pods are ready, create a port-forward to the RAG frontend:
+Once all pods are ready, expose the RAG frontend:
 
 ```bash
-kubectl port-forward -n rag svc/rag-frontend 8080:3000
+kubectl -n $NAMESPACE expose deployment rag-frontend --name=rag-frontend-lb --type=LoadBalancer --port=80 --target-port=3000
 ```
 
-This command will forward local port 8080 to the RAG frontend service port 3000. Keep this terminal window open.
+This command will expose the **rag-frontend** with a public IP address. You can get that IP address with this:
 
-Open your browser and navigate to: http://localhost:8080
+```bash
+kubectl -n rag get svc rag-frontend-lb
+```
+Expect:
+
+```bash
+NAME              TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)        AGE
+rag-frontend-lb   LoadBalancer   10.0.229.183   9.163.78.170   80:32499/TCP   14m
+```
+
+Open your browser and navigate to: http://EXTERNAL-IP-FROM-YOUR-CLI-RESULT-ABOVE
 
 From here, we should be able to interact with the service and get some outputs from the LLM.
 
@@ -616,7 +648,6 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --set ngcApiSecret.password="$NGC_API_KEY"
 ```
 
-> [!NOTE]
 > Option C uses the `aiq-nim-values.yaml` file which configures the in-cluster Nemotron 49B NIM with:
 > - GPU tolerations for tainted nodes (`sku=gpu:NoSchedule`)
 > - Custom environment variables (`NIM_CACHE_PATH`, `NIM_RELAX_MEM_CONSTRAINTS`, `NCCL_P2P_DISABLE`)
