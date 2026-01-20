@@ -500,7 +500,7 @@ rag-server-674c9ff7df-ktgxl                                  1/1     Running   2
 Once all pods are ready, expose the RAG frontend:
 
 ```bash
-kubectl -n $NAMESPACE expose deployment rag-frontend --name=rag-frontend-lb --type=LoadBalancer --port=80 --target-port=3000
+kubectl -n rag expose deployment rag-frontend --name=rag-frontend-lb --type=LoadBalancer --port=80 --target-port=3000
 ```
 
 This command will expose the **rag-frontend** with a public IP address. You can get that IP address with this:
@@ -832,7 +832,7 @@ ServiceMonitors are deployed for integration with Azure Monitor or Prometheus.
 1. Apply the ServiceMonitor to the cluster
 
 ```bash
-kubectl apply -f servicemonitors.yaml
+kubectl apply -f manifests/servicemonitors.yaml
 ```
 
 2. List all ServiceMonitors
