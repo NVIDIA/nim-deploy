@@ -69,10 +69,11 @@ NIM microservices are natively supported on Azure AI Foundry, enabling developer
 
 ## Prerequisites 
 
-- Azure Account with access to H100 GPUs (Standard_NC80adis_H100_v5)
-- Azure CLI configured and authenticated
-- kubectl installed
+- Azure Account with access to  1-A100 GPUs (standard_nc96ads_a100_v4) or H100 GPUs (Standard_NC80adis_H100_v5) if deploying the LLM-NIM in-cluster.
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/) version 2.80 or later configured and authenticated
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) version 1.34.2 or later
 - Helm 3.x installed
+- A terminal with `bash` (e.g.: Windows Terminal with WSL or Azure Cloud Shell)
 - **NGC Account and API Key** ([Get it here](https://nvdam.widen.net/s/kfshg7fpsr/create-build-account-and-api-key-4))
 - **Tavily API Key** ([Sign up here](https://tavily.com) - Free tier available)
 
