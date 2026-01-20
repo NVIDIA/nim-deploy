@@ -291,42 +291,16 @@ Expect:
 /subscriptions/XXXXX-XXXX-XXX-XXXX-XXXXXX/resourceGroups/rg-aiq-rag/providers/Microsoft.Dashboard/grafana/aiq-rag-workshop-25151
 ```
 
-### 7. Create AKS cluster
+To access your Grafana Dashboard:
 
 ```bash
-az aks create -g ${RESOURCE_GROUP} \
-    --name ${CLUSTER_NAME} \
-    --location ${REGION} \
-    --node-count ${CPU_COUNT} \
-    --node-vm-size ${CLUSTER_MACHINE_TYPE} \
-    --enable-azure-monitor-metrics \
-    --grafana-resource-id ${GRAFANA_RESOURCE_ID} \
-    --azure-monitor-workspace-resource-id ${AZ_MONITOR_WORKSPACE_ID} \
-    --tier Standard \
-    --ssh-access disabled
-```
-
-### 8. Get AKS cluster credentials
-
-```bash
-az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${CLUSTER_NAME} --file cluster.config
-```
-
-### 9. Create the GPU node pool
-
-```bash
-az aks nodepool add \
+GRAFANA_UI=$(az grafana show \
+  --name ${GRAFANA_NAME} \
   --resource-group ${RESOURCE_GROUP} \
-  --cluster-name ${CLUSTER_NAME} \
-  --name gpupool \
-  --node-count ${NODE_COUNT} \
-  --node-vm-size ${NODE_POOL_MACHINE_TYPE} \
-  --gpu-driver none \
-  --node-taints sku=gpu:NoSchedule
-```
+  --query "properties.endpoint" -o tsv)
 
-> [!NOTE]
-> When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
+echo "Your Azure Managed Grafana is accessible at: $GRAFANA_UI"
+```
 
 Finally, create a grafana folder and import the sample dashboard:
 
@@ -346,6 +320,43 @@ az grafana dashboard import \
   --folder 'AIQ-RAG-Workshop' \
   --definition manifests/consolidated-nim-dashboard-example.json
 ```
+
+### 7. Create AKS cluster
+
+```bash
+az aks create -g ${RESOURCE_GROUP} \
+    --name ${CLUSTER_NAME} \
+    --location ${REGION} \
+    --node-count ${CPU_COUNT} \
+    --node-vm-size ${CLUSTER_MACHINE_TYPE} \
+    --enable-azure-monitor-metrics \
+    --grafana-resource-id ${GRAFANA_RESOURCE_ID} \
+    --azure-monitor-workspace-resource-id ${AZ_MONITOR_WORKSPACE_ID} \
+    --tier Standard \
+    --no-ssh-key
+```
+
+### 8. Get AKS cluster credentials
+
+```bash
+az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${CLUSTER_NAME}
+```
+
+### 9. Create the GPU node pool
+
+```bash
+az aks nodepool add \
+  --resource-group ${RESOURCE_GROUP} \
+  --cluster-name ${CLUSTER_NAME} \
+  --name gpupool \
+  --node-count ${NODE_COUNT} \
+  --node-vm-size ${NODE_POOL_MACHINE_TYPE} \
+  --gpu-driver none \
+  --node-taints sku=gpu:NoSchedule
+```
+
+> [!NOTE]
+> When creating GPU node pools without the `--gpu-driver none` flag, AKS automatically installs NVIDIA drivers as part of the node image deployment. For Standard_NC80adis_H100_v5 SKUs, if you want to use the NVIDIA GPU Operator to manage drivers instead, you can use the `--gpu-driver none` flag during node pool creation. In this workshop, since we deploy the GPU Operator in Task 2, the operator will detect and work with the automatically installed drivers (currently version 580.95.05 with CUDA 13.0 on H100 nodes).
 
 ## Task 2: NVIDIA GPU Operator Installation
 
