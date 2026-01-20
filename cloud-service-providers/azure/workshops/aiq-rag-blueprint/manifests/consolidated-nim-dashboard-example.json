@@ -1,4 +1,65 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP",
+      "label": "Managed_Prometheus_aiq-rag-workshop",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "bargauge",
+      "name": "Bar gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.6.3"
+    },
+    {
+      "type": "panel",
+      "id": "heatmap",
+      "name": "Heatmap",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie chart",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -18,7 +79,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 63,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -94,7 +155,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.5, sum by(le) (rate(time_to_first_token_seconds_bucket{namespace=\"$aiq_namespace\"}[$__rate_interval])))",
@@ -165,7 +226,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(generation_tokens_total{namespace=\"$aiq_namespace\"}[$__rate_interval])",
@@ -233,7 +294,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "prompt_tokens_total{namespace=\"$aiq_namespace\"}",
@@ -260,7 +321,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -323,7 +384,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -386,7 +447,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -458,7 +519,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -549,7 +610,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(request_failure_total{namespace=\"$aiq_namespace\"}[$__rate_interval])",
@@ -629,7 +690,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(time_per_output_token_seconds_bucket{namespace=\"$aiq_namespace\"}[$__rate_interval])",
@@ -709,7 +770,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -775,7 +836,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "request_success_total{namespace=\"$aiq_namespace\"}",
@@ -884,7 +945,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
@@ -907,7 +968,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
@@ -989,7 +1050,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "milvus_datacoord_stored_index_files_size{namespace=\"$rag_namespace\"}",
@@ -1061,7 +1122,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "milvus_datacoord_stored_rows_num{namespace=\"$rag_namespace\"}",
@@ -1157,7 +1218,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
@@ -1181,7 +1242,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
@@ -1278,7 +1339,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(milvus_proxy_search_vectors_count{namespace=\"$rag_namespace\"}[5m])",
@@ -1361,7 +1422,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"$gpu_namespace\"}",
@@ -1431,7 +1492,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_MEMORY_TEMP{namespace=\"$gpu_namespace\"}",
@@ -1503,7 +1564,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"$gpu_namespace\"}",
@@ -1575,7 +1636,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{namespace=\"$gpu_namespace\"}",
@@ -1670,7 +1731,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_SM_CLOCK{namespace=\"$gpu_namespace\"}",
@@ -1697,7 +1758,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1789,7 +1850,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_FP64_ACTIVE{namespace=\"$gpu_namespace\"}",
@@ -1813,7 +1874,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_FP16_ACTIVE{namespace=\"$gpu_namespace\"}",
@@ -1910,7 +1971,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_GR_ENGINE_ACTIVE{namespace=\"$gpu_namespace\"}",
@@ -1933,7 +1994,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_SM_OCCUPANCY{namespace=\"$gpu_namespace\"}",
@@ -2030,7 +2091,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_PROF_DRAM_ACTIVE[5m]) * 1000000",
@@ -2126,7 +2187,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_PROF_PCIE_TX_BYTES{namespace=\"$gpu_namespace\"}[5m])",
@@ -2153,7 +2214,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "description": "Total number of NVLink bandwidth counters for all lanes",
       "fieldConfig": {
@@ -2247,7 +2308,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL {namespace=\"$gpu_namespace\"}[5m])",
@@ -2327,7 +2388,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_XID_ERRORS",
@@ -2399,7 +2460,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "increase(DCGM_FI_DEV_PCIE_REPLAY_COUNTER[5m])",
@@ -2517,7 +2578,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"$gpu_namespace\"}",
@@ -2623,7 +2684,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"$gpu_namespace\"}",
@@ -2720,7 +2781,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"$gpu_namespace\"}",
@@ -2846,7 +2907,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_FB_USED{namespace=\"$gpu_namespace\"}",
@@ -2872,7 +2933,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2969,7 +3030,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3062,7 +3123,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PCIE_RX_BYTES",
@@ -3171,7 +3232,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "gpu_power_usage_watts{namespace=\"$rag_namespace\"} / 1000",
@@ -3243,7 +3304,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "gpu_utilization{namespace=\"$rag_namespace\"}",
@@ -3339,7 +3400,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "$datasource"
+            "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
           },
           "editorMode": "code",
           "expr": "gpu_memory_used_bytes{namespace=\"$rag_namespace\"}",
@@ -3366,7 +3427,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "$datasource"
+        "uid": "${DS_MANAGED_PROMETHEUS_AIQ-RAG-WORKSHOP}"
       },
       "fieldConfig": {
         "defaults": {
@@ -3460,17 +3521,13 @@
       "type": "timeseries"
     }
   ],
-  "preload": false,
   "refresh": "5s",
   "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Managed_Prometheus_aiq-rag-workshop",
-          "value": "aiq-rag-workshop"
-        },
+        "current": {},
         "includeAll": false,
         "label": "Datasource",
         "name": "datasource",
@@ -3544,5 +3601,6 @@
   "timezone": "browser",
   "title": "Consolidated NIM & GPU Metrics Dashboard",
   "uid": "consolidated-nim-gpu-full",
-  "version": 23
+  "version": 1,
+  "weekStart": ""
 }
