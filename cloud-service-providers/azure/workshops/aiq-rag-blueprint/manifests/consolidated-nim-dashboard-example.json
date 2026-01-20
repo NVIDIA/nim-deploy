@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 63,
   "links": [],
   "panels": [
     {
@@ -788,7 +788,7 @@
       "type": "stat"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -796,499 +796,499 @@
         "y": 24
       },
       "id": 103,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 416
-          },
-          "id": 31,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
-              "legendFormat": "p50 - {{collection_name}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
-              "hide": false,
-              "legendFormat": "p95 - {{collection_name}}",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
-              "hide": false,
-              "legendFormat": "p99 - {{collection_name}}",
-              "range": true,
-              "refId": "C"
-            }
-          ],
-          "title": "Milvus Collection Search Performance (p50/p95/p99)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 50000000000
-                  },
-                  {
-                    "color": "red",
-                    "value": 100000000000
-                  }
-                ]
-              },
-              "unit": "decbytes"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 520
-          },
-          "id": 33,
-          "options": {
-            "displayMode": "gradient",
-            "legend": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "maxVizHeight": 300,
-            "minVizHeight": 16,
-            "minVizWidth": 8,
-            "namePlacement": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showUnfilled": true,
-            "sizing": "auto",
-            "valueMode": "color"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "milvus_datacoord_stored_index_files_size{namespace=\"$rag_namespace\"}",
-              "legendFormat": "{{collection_name}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Milvus Index Storage Size by Collection",
-          "type": "bargauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 10000000
-                  },
-                  {
-                    "color": "red",
-                    "value": 50000000
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 520
-          },
-          "id": 26,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "milvus_datacoord_stored_rows_num{namespace=\"$rag_namespace\"}",
-              "legendFormat": "{{collection_name}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Milvus Stored Vectors",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 528
-          },
-          "id": 29,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
-              "legendFormat": "p50",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
-              "hide": false,
-              "legendFormat": "p95",
-              "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
-              "hide": false,
-              "legendFormat": "p99",
-              "range": true,
-              "refId": "C"
-            }
-          ],
-          "title": "Milvus Vector Search Latency",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic-by-name"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 528
-          },
-          "id": 32,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "$datasource"
-              },
-              "editorMode": "code",
-              "expr": "rate(milvus_proxy_search_vectors_count{namespace=\"$rag_namespace\"}[5m])",
-              "legendFormat": "{{collection_name}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Milvus Query Throughput (vectors/sec)",
-          "type": "timeseries"
-        }
-      ],
+      "panels": [],
       "title": "Milvus Vector Database Metrics",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
+          "legendFormat": "p50 - {{collection_name}}",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
+          "hide": false,
+          "legendFormat": "p95 - {{collection_name}}",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum by(le, collection_name) (rate(milvus_proxy_collection_sq_latency_bucket{namespace=\"$rag_namespace\"}[5m])))",
+          "hide": false,
+          "legendFormat": "p99 - {{collection_name}}",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "Milvus Collection Search Performance (p50/p95/p99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 50000000000
+              },
+              {
+                "color": "red",
+                "value": 100000000000
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 33,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "milvus_datacoord_stored_index_files_size{namespace=\"$rag_namespace\"}",
+          "legendFormat": "{{collection_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Milvus Index Storage Size by Collection",
+      "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "yellow",
+                "value": 10000000
+              },
+              {
+                "color": "red",
+                "value": 50000000
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 26,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "milvus_datacoord_stored_rows_num{namespace=\"$rag_namespace\"}",
+          "legendFormat": "{{collection_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Milvus Stored Vectors",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "id": 29,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
+          "format": "time_series",
+          "legendFormat": "p50",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
+          "hide": false,
+          "legendFormat": "p95",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum by(le) (rate(milvus_cgo_cgo_duration_seconds_bucket{namespace=\"$rag_namespace\", name=\"search\"}[5m])))",
+          "hide": false,
+          "legendFormat": "p99",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "title": "Milvus Vector Search Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic-by-name"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "id": 32,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.6.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+          },
+          "editorMode": "code",
+          "expr": "rate(milvus_proxy_search_vectors_count{namespace=\"$rag_namespace\"}[5m])",
+          "legendFormat": "{{collection_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Milvus Query Throughput (vectors/sec)",
+      "type": "timeseries"
     },
     {
       "collapsed": false,
@@ -1296,7 +1296,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 49
       },
       "id": 101,
       "panels": [],
@@ -1338,7 +1338,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 50
       },
       "id": 4,
       "options": {
@@ -1365,7 +1365,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -1408,7 +1408,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 50
       },
       "id": 13,
       "options": {
@@ -1435,7 +1435,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_MEMORY_TEMP{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -1480,7 +1480,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 58
       },
       "id": 3,
       "options": {
@@ -1507,7 +1507,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -1552,7 +1552,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 58
       },
       "id": 10,
       "options": {
@@ -1579,7 +1579,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -1647,7 +1647,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 42
+        "y": 66
       },
       "id": 11,
       "options": {
@@ -1674,7 +1674,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_SM_CLOCK{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "SM Clock - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "SM Clock - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -1686,7 +1686,7 @@
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_MEM_CLOCK{namespace=\"$gpu_namespace\"}",
           "hide": false,
-          "legendFormat": "Memory Clock - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "Memory Clock - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "B"
         }
@@ -1754,7 +1754,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 42
+        "y": 66
       },
       "id": 17,
       "options": {
@@ -1782,7 +1782,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "Tensor Cores - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "Tensor Cores - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -1794,7 +1794,7 @@
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_FP64_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
-          "legendFormat": "FP64 - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "FP64 - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "B"
         },
@@ -1806,7 +1806,7 @@
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_FP32_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
-          "legendFormat": "FP32 - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "FP32 - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "C"
         },
@@ -1818,7 +1818,7 @@
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_FP16_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
-          "legendFormat": "FP16 - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "FP16 - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "D"
         }
@@ -1886,7 +1886,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 50
+        "y": 74
       },
       "id": 16,
       "options": {
@@ -1914,7 +1914,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_GR_ENGINE_ACTIVE{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "Graphics Engine - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "Graphics Engine - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -1926,7 +1926,7 @@
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_SM_ACTIVE{namespace=\"$gpu_namespace\"}",
           "hide": false,
-          "legendFormat": "SM Active - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "SM Active - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "B"
         },
@@ -1938,7 +1938,7 @@
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_SM_OCCUPANCY{namespace=\"$gpu_namespace\"}",
           "hide": false,
-          "legendFormat": "SM Occupancy - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "SM Occupancy - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "C"
         }
@@ -2006,7 +2006,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 50
+        "y": 74
       },
       "id": 20,
       "options": {
@@ -2034,7 +2034,7 @@
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_PROF_DRAM_ACTIVE[5m]) * 1000000",
-          "legendFormat": "DRAM Active - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "DRAM Active - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -2102,7 +2102,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 58
+        "y": 82
       },
       "id": 14,
       "options": {
@@ -2130,7 +2130,7 @@
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_PROF_PCIE_TX_BYTES{namespace=\"$gpu_namespace\"}[5m])",
-          "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "TX - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -2142,7 +2142,7 @@
           "editorMode": "code",
           "expr": "rate(DCGM_FI_PROF_PCIE_RX_BYTES{namespace=\"$gpu_namespace\"}[5m])",
           "hide": false,
-          "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "RX - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "B"
         }
@@ -2212,7 +2212,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 58
+        "y": 82
       },
       "id": 19,
       "options": {
@@ -2240,7 +2240,7 @@
           },
           "editorMode": "code",
           "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL{namespace=\"$gpu_namespace\"}[5m])",
-          "legendFormat": "TX - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "TX - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -2252,7 +2252,7 @@
           "editorMode": "code",
           "expr": "rate(DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL {namespace=\"$gpu_namespace\"}[5m])",
           "hide": false,
-          "legendFormat": "RX - GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "RX - GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "B"
         }
@@ -2302,7 +2302,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 66
+        "y": 90
       },
       "id": 18,
       "options": {
@@ -2374,7 +2374,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 66
+        "y": 90
       },
       "id": 21,
       "options": {
@@ -2403,7 +2403,7 @@
           },
           "editorMode": "code",
           "expr": "increase(DCGM_FI_DEV_PCIE_REPLAY_COUNTER[5m])",
-          "legendFormat": "GPU {{gpu}} - {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} - {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -2417,7 +2417,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 98
       },
       "id": 104,
       "panels": [],
@@ -2492,7 +2492,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 75
+        "y": 99
       },
       "id": 105,
       "options": {
@@ -2521,7 +2521,8 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_UTIL{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
+          "format": "time_series",
+          "legendFormat": "GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -2597,7 +2598,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 75
+        "y": 99
       },
       "id": 106,
       "options": {
@@ -2626,7 +2627,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_GPU_TEMP{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -2694,7 +2695,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 83
+        "y": 107
       },
       "id": 107,
       "options": {
@@ -2723,7 +2724,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_POWER_USAGE{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -2822,7 +2823,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 83
+        "y": 107
       },
       "id": 108,
       "options": {
@@ -2849,7 +2850,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_FB_USED{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "Used - GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "Used - GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -2860,7 +2861,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_DEV_FB_FREE{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "Free - GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "Free - GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "B"
         }
@@ -2928,7 +2929,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 91
+        "y": 115
       },
       "id": 109,
       "options": {
@@ -2957,7 +2958,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PIPE_TENSOR_ACTIVE{namespace=\"$gpu_namespace\"}",
-          "legendFormat": "Tensor Core - GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "Tensor Core - GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "A"
         }
@@ -3025,7 +3026,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 91
+        "y": 115
       },
       "id": 110,
       "options": {
@@ -3054,7 +3055,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PCIE_TX_BYTES",
-          "legendFormat": "TX - GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "TX - GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "A"
         },
@@ -3065,7 +3066,7 @@
           },
           "editorMode": "code",
           "expr": "DCGM_FI_PROF_PCIE_RX_BYTES",
-          "legendFormat": "RX - GPU {{gpu}} {{kubernetes_node}}",
+          "legendFormat": "RX - GPU {{gpu}} {{hostname}}",
           "range": true,
           "refId": "B"
         }
@@ -3079,7 +3080,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 123
       },
       "id": 102,
       "panels": [],
@@ -3146,7 +3147,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 124
       },
       "id": 22,
       "options": {
@@ -3219,7 +3220,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 100
+        "y": 124
       },
       "id": 23,
       "options": {
@@ -3314,7 +3315,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 108
+        "y": 132
       },
       "id": 24,
       "options": {
@@ -3422,7 +3423,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 108
+        "y": 132
       },
       "id": 25,
       "options": {
@@ -3467,32 +3468,25 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "defaultazuremonitorworkspace-eastus2",
-          "value": "defaultazuremonitorworkspace-eastus2"
+          "text": "Managed_Prometheus_aiq-rag-workshop",
+          "value": "aiq-rag-workshop"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "Datasource",
-        "multi": false,
         "name": "datasource",
         "options": [],
         "query": "prometheus",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "type": "datasource"
       },
       {
         "current": {
-          "selected": false,
           "text": "rag",
           "value": "rag"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "RAG Namespace",
-        "multi": false,
         "name": "rag_namespace",
         "options": [
           {
@@ -3502,19 +3496,15 @@
           }
         ],
         "query": "rag",
-        "skipUrlSync": false,
         "type": "custom"
       },
       {
         "current": {
-          "selected": false,
           "text": "aira",
           "value": "aira"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "AIQ Namespace",
-        "multi": false,
         "name": "aiq_namespace",
         "options": [
           {
@@ -3524,19 +3514,15 @@
           }
         ],
         "query": "aira",
-        "skipUrlSync": false,
         "type": "custom"
       },
       {
         "current": {
-          "selected": false,
           "text": "gpu-operator",
           "value": "gpu-operator"
         },
-        "hide": 0,
         "includeAll": false,
         "label": "GPU Operator Namespace",
-        "multi": false,
         "name": "gpu_namespace",
         "options": [
           {
@@ -3546,18 +3532,17 @@
           }
         ],
         "query": "gpu-operator",
-        "skipUrlSync": false,
         "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Consolidated NIM & GPU Metrics Dashboard",
   "uid": "consolidated-nim-gpu-full",
-  "version": 15
+  "version": 23
 }

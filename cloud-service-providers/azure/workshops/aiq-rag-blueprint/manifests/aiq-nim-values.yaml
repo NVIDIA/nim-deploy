@@ -38,6 +38,7 @@ config:
 backendEnvVars:
   INSTRUCT_BASE_URL: "http://instruct-llm.aira.svc.cluster.local:8000/v1"
   INSTRUCT_API_KEY: "not-used"
+  INSTRUCT_MODEL_NAME: "nvidia/llama-3.3-nemotron-super-49b-v1.5"
   NEMOTRON_BASE_URL: "http://instruct-llm.aira.svc.cluster.local:8000/v1"
   NEMOTRON_API_KEY: "not-used"
-  NEMOTRON_MODEL_NAME: "meta/llama-3.3-nemotron-super-49b-instruct"
+  NEMOTRON_MODEL_NAME: "nvidia/llama-3.3-nemotron-super-49b-v1.5"

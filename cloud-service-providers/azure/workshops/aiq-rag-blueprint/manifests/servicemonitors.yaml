@@ -17,9 +17,10 @@ spec:
     - aira
   selector:
     matchLabels:
-      app: aiq-nim-llm
+      app.kubernetes.io/name: nim-llm
+      app.kubernetes.io/instance: aiq
   endpoints:
-  - port: http
+  - port: http-openai
     path: /v1/metrics
     interval: 30s
     scrapeTimeout: 10s

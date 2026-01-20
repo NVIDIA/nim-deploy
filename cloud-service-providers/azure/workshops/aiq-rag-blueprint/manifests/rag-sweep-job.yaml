@@ -14,7 +14,7 @@ data:
     # Original source: https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/
     # Modified by: Diego Casati, Microsoft Corp.
     
-        export RAG_SERVICE="aiq-nim-llm.aira.svc.cluster.local:8000"
+    export RAG_SERVICE="instruct-llm.aira.svc.cluster.local:8000"
     export NIM_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5"
     export NIM_MODEL_NAME="nvidia/llama-3.3-nemotron-super-49b-v1.5"
     export NIM_MODEL_TOKENIZER="nvidia/Llama-3_3-Nemotron-Super-49B-v1"

@@ -563,7 +563,6 @@ helm upgrade --install aiq -n aira https://helm.ngc.nvidia.com/nvidia/blueprint/
   --set backendEnvVars.NEMOTRON_API_KEY="$NVIDIA_API_KEY" \
   --set backendEnvVars.NEMOTRON_MODEL_NAME="$MODEL_NAME"
 ```
-
 </details>
 
 <details>
@@ -825,7 +824,7 @@ These ServiceMonitors automatically expose metrics for:
 
 ### Load test the cluster
 
-We can use the `rag-sweep-hpa.sh` script described in the blog post (Enabling Horizontal Autoscaling of Enterprise RAG Components on Kubernetes)[https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/] to gather some statistic on the NIM-LLM deployed on the cluster:
+We can use the `rag-sweep-hpa.sh` script described in the blog post [Enabling Horizontal Autoscaling of Enterprise RAG Components on Kubernetes](https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/) to gather some statistic on the NIM-LLM deployed on the cluster:
 
 ```bash
 kubectl apply -f manifests/rag-sweep-job.yaml
@@ -833,7 +832,26 @@ kubectl apply -f manifests/rag-sweep-job.yaml
 You can verify the completion of the job by looking at its log:
 
 ```bash
+ kubectl logs -n rag jobs/rag-sweep-benchmark
+```
 
+This job can take up to 20 minutes. Once the job finishes, you should see an output similar to this:
+
+```bash
+                        NVIDIA GenAI-Perf | LLM Metrics                         
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━┓
+┃                         Statistic ┃  avg ┃  min ┃  max ┃  p99 ┃  p90 ┃   p75 ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━┩
+│          Time To First Token (ms) │ 8,3… │ 74.… │ 15,… │ 13,… │ 9,8… │ 9,28… │
+│         Time To Second Token (ms) │ 98.… │ 0.00 │ 633… │ 148… │ 141… │ 138.… │
+│              Request Latency (ms) │ 16,… │ 3,8… │ 24,… │ 23,… │ 18,… │ 18,1… │
+│          Inter Token Latency (ms) │ 33.… │ 14.… │ 39.… │ 38.… │ 37.… │ 35.51 │
+│   Output Sequence Length (tokens) │ 256… │ 242… │ 258… │ 256… │ 256… │ 256.… │
+│    Input Sequence Length (tokens) │ 256… │ 256… │ 256… │ 256… │ 256… │ 256.… │
+│ Output Token Throughput (per sec) │ 3,6… │  N/A │  N/A │  N/A │  N/A │   N/A │
+│      Request Throughput (per sec) │ 14.… │  N/A │  N/A │  N/A │  N/A │   N/A │
+│             Request Count (count) │ 3,7… │  N/A │  N/A │  N/A │  N/A │   N/A │
+└───────────────────────────────────┴──────┴──────┴──────┴──────┴──────┴───────┘
 ```
 
 ### Azure Managed Grafana Dashboards
@@ -934,8 +952,5 @@ az group show --name $RESOURCE_GROUP
 az resource list --resource-group $RESOURCE_GROUP -o table
 ```
 
-**Warning**: Deleting the resource group will remove ALL resources including storage accounts, networks, and persistent volumes. Ensure you have backed up any important data before proceeding.
-
-## References
-
-* (Create a fully managed GPU node pool on Azure Kubernetes Service (AKS) (preview))[https://learn.microsoft.com/en-us/azure/aks/aks-managed-gpu-nodes?tabs=add-ubuntu-gpu-node-pool]
+> [!WARNING]
+> Deleting the resource group will remove ALL resources including storage accounts, networks, and persistent volumes. Ensure you have backed up any important data before proceeding.
