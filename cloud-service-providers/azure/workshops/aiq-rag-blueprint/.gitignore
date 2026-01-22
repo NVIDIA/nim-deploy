@@ -1,0 +1,42 @@
+# Sensitive credentials and configuration files
+# NEVER commit these files - they contain secrets, API keys, and cluster credentials
+.envrc
+*.envrc
+cluster.config
+kubeconfig
+*.kubeconfig
+
+# Kubernetes config files with credentials
+*.config
+
+# Files with API keys or tokens
+secrets.yaml
+secrets.env
+*.secret
+*.secrets
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# Temporary or generated files
+*.tmp
+*.temp
+*.log
+*.swp
+*~
+
+# Optional monitoring files (if not part of core workshop)
+# Uncomment these if they're not needed:
+# prometheus-values.yaml
+# *-servicemonitor.yaml
+# consolidated-nim-dashboard-full.json

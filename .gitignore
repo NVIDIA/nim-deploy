@@ -31,3 +31,8 @@ custom-values.yaml
 # promptflow generated files
 .promptflow/
 __pycache__
+
+# envrc files
+*.envrc
+cloud-service-providers/azure/workshops/aiq-rag-blueprint/*.pdf
+cloud-service-providers/azure/workshops/aiq-rag-blueprint/cluster.config

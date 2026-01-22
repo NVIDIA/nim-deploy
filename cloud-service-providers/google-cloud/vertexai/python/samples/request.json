@@ -1,5 +1,5 @@
 {
-    "model": "meta/llama3-8b-instruct",
+    "model": "meta/llama-3.3-nemotron-super-49b-instruct",
     "messages": [
       {
         "role": "user",
