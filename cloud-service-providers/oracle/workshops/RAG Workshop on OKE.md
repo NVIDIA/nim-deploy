@@ -98,7 +98,7 @@ To complete this workshop, you need:
 | Text Only (this workshop) | 4 | 5 |
 | Full Multimodal | 8 | 9 |
 
-> **Note**: This workshop uses the Text Only configuration (4 GPUs on H100, 5 GPUs on A100) which supports text extraction from PDFs. The Full Multimodal configuration adds support for tables, charts, and images.
+> **Note**: This workshop uses the Text Only configuration (4 GPUs on H100, 5 GPUs on A100) which supports text extraction from PDFs. Use **1 node** — Text Only fits on a single 8-GPU node. The Full Multimodal configuration adds support for tables, charts, and images; see the [RAG Blueprint on OKE Guide](../blueprints/RAG%20Blueprint%20on%20OKE%20Guide.md) for node count and options.
 
 ### IAM Policy Requirements
 
@@ -123,7 +123,7 @@ In this task, you'll create an OKE cluster with GPU nodes using the OCI Console 
    - **Kubernetes API endpoint**: Select **Public endpoint**
    - **Node type**: Select **Managed**
    - **Shape**: Select `BM.GPU.H100.8` or `BM.GPU.A100-v2.8`
-   - **Number of nodes**: `1`
+   - **Number of nodes**: `1` (Text Only fits on one 8-GPU node)
    - **Boot volume size**: `500` GB
 
 4. Click **Create cluster**
@@ -506,6 +506,7 @@ To avoid incurring further costs, clean up the resources when you're done.
 
 ## Learn More
 
+- [RAG Blueprint on OKE Guide](../blueprints/RAG%20Blueprint%20on%20OKE%20Guide.md) — Full Multimodal, node count, CLI deployment
 - [NVIDIA RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag)
 - [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/)
 - [NVIDIA NeMo Retriever](https://developer.nvidia.com/nemo-microservices)

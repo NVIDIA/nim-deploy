@@ -122,7 +122,7 @@ To complete this workshop, you need:
 | Text RAG + Shared LLM AIQ (this workshop) | 4 | 5 |
 | Full RAG + Full AIQ | 10 | 13 |
 
-> **Note**: This workshop uses the shared LLM configuration to minimize GPU requirements.
+> **Note**: This workshop uses **1 node** with Text RAG + Shared LLM AIQ to minimize GPU requirements. For Full RAG + Full AIQ (2 nodes) and other options, see the [AIQ Blueprint on OKE Guide](../blueprints/AIQ%20Blueprint%20on%20OKE%20Guide.md).
 
 ### IAM Policy Requirements
 
@@ -569,6 +569,7 @@ Clean up resources when done.
 
 ## Learn More
 
+- [AIQ Blueprint on OKE Guide](../blueprints/AIQ%20Blueprint%20on%20OKE%20Guide.md) — full deployment options, 2-node setup, Full RAG + Full AIQ
 - [NVIDIA AIQ Blueprint](https://github.com/NVIDIA-AI-Blueprints/aiq)
 - [NVIDIA RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag)
 - [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/)

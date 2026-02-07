@@ -66,6 +66,13 @@ Allow group <GROUP_NAME> to use instance-configurations in compartment <COMPARTM
 **Additional Requirements:**
 - **Boot Volume**: Minimum 500GB
 
+**Cluster size (nodes):**
+
+| Nodes | Configuration |
+|-------|---------------|
+| **2** | Full RAG + Full AIQ (Option A + Configuration 1) — 10 H100 or 13 A100 GPUs |
+| **1** | Shared LLM AIQ only (Configuration 2): **H100** → Full RAG (8 GPUs); **A100** → Text Ingestion RAG / Option B (5 GPUs) |
+
 ---
 
 ## Infrastructure Setup
@@ -82,7 +89,7 @@ The fastest way - auto-provisions networking.
    - Name: `gpu-cluster`
    - Kubernetes API endpoint: **Public endpoint**
    - Shape: Select GPU shape based on [Hardware Requirements](#hardware-requirements)
-   - Nodes: `1`
+   - Nodes: `2` or `1` — see [Cluster size](#hardware-requirements) above.
    - Boot volume: `500` GB
 4. Click **Create cluster** and wait 10-15 min
 5. Configure kubectl:
@@ -597,7 +604,7 @@ export REGION="<your-region>"
 export CLUSTER_NAME="gpu-cluster"
 export VCN_NAME="gpu-vcn"
 export NODE_SHAPE="<gpu-shape>"  # See Hardware Requirements (e.g., BM.GPU.H100.8, BM.GPU.A100-v2.8)
-export NODE_COUNT=1
+export NODE_COUNT=2   # 2 = Full RAG + Full AIQ; 1 = Shared LLM AIQ only (see Hardware Requirements)
 export CAPACITY_RESERVATION_ID=""  # Optional: ocid1.capacityreservation... or leave empty for on-demand
 
 K8S_VERSION=$(oci ce cluster-options get --cluster-option-id all --region $REGION \
