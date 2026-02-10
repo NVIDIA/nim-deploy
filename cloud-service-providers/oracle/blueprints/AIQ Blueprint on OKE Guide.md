@@ -6,13 +6,13 @@ This guide provides step-by-step instructions for deploying the NVIDIA AIQ (AI-Q
 
 ## Overview
 
-The NVIDIA AIQ Blueprint deploys an AI-powered research assistant that combines agentic workflows with Retrieval Augmented Generation (RAG) capabilities. AIQ enables users to conduct research, analyze documents, and generate insights using advanced language models.
+The NVIDIA AIQ Blueprint deploys an AI-powered research assistant that combines agentic workflows with Retrieval Augmented Generation (RAG) capabilities, powered by [NVIDIA NIM](https://developer.nvidia.com/nim). AIQ enables users to conduct research, analyze documents, and generate insights using advanced language models.
 
 **Important**: The AIQ Blueprint requires the RAG Blueprint to be deployed first. AIQ builds on top of RAG's document ingestion, embedding, and retrieval capabilities.
 
 ### Key Features
 
-- Agentic workflows with AI-powered research assistant that can plan and execute complex tasks
+- Agentic workflows with an AI-powered research assistant that can plan and execute complex tasks
 - RAG integration leveraging the RAG Blueprint for document ingestion and retrieval
 - Multi-model support using separate LLMs for instruction-following and reasoning tasks
 - Interactive research assistant web interface for conducting research
@@ -64,7 +64,7 @@ Allow group <GROUP_NAME> to use instance-configurations in compartment <COMPARTM
 > **Note**: Nemotron Super 49B requires 1 GPU on H100 but 2 GPUs on A100 due to FP8 vs FP16 quantization.
 
 **Additional Requirements:**
-- **Boot Volume**: Minimum 500GB
+- **Boot Volume**: Minimum 500 GB
 
 **Cluster size (nodes):**
 
@@ -81,7 +81,7 @@ This section covers the steps to prepare your OCI infrastructure for running the
 
 ### Console Quick Create (Recommended)
 
-The fastest way - auto-provisions networking.
+The fastest way — auto-provisions networking.
 
 1. Go to **OCI Console** → **Developer Services** → **Kubernetes Clusters (OKE)**
 2. Click **Create cluster** → Select **Quick create** → **Submit**
@@ -106,7 +106,7 @@ oci ce cluster create-kubeconfig --cluster-id $CLUSTER_ID --region $REGION \
 
 ### Pre-Deployment Setup
 
-> **Already have a cluster?** Start here. Created one above? Continue here.
+> **Already have a cluster?** Start here — whether you have an existing cluster or just created one above.
 
 #### 1. Verify Storage Size
 
@@ -116,7 +116,7 @@ Check that your node's storage matches your boot volume size:
 kubectl describe nodes | grep ephemeral-storage | head -1
 ```
 
-If you specified 500GB boot volume, you should see ~`512628992Ki` (~489GB). If you see ~`37206272Ki` (~35GB), the volume needs expanding - continue to step 2. Otherwise, skip to step 3.
+If you specified a 500 GB boot volume, you should see ~`512628992Ki` (~489 GB). If you see ~`37206272Ki` (~35 GB), the volume needs expanding; continue to step 2. Otherwise, skip to step 3.
 
 #### 2. Expand Boot Volume (if needed)
 
@@ -136,7 +136,7 @@ kubectl run restart-kubelet --rm -it --restart=Never --privileged \
   --overrides='{"spec":{"hostPID":true,"nodeName":"'$NODE_NAME'"}}' \
   --image=docker.io/library/oraclelinux:8 -- nsenter -t 1 -m -u -i -n systemctl restart kubelet
 
-# Verify (should now show ~512628992Ki for 500GB)
+# Verify (should now show ~512628992Ki for 500 GB)
 sleep 10 && kubectl describe nodes | grep ephemeral-storage | head -1
 ```
 
@@ -147,7 +147,7 @@ sudo /usr/libexec/oci-growfs -y
 sudo systemctl restart kubelet
 ```
 
-#### 3. Setup Cluster
+#### 3. Set Up Cluster
 
 ```bash
 # Remove GPU taints
@@ -203,7 +203,7 @@ REVISION: 1
 
 > **Note**: The `docker.io/` prefix is required on OKE because CRI-O enforces fully qualified image names.
 
-**For A100 (9 GPUs)** - add LLM GPU override:
+**For A100 (9 GPUs)** — add LLM GPU override:
 
 ```bash
   --set nim-llm.resources.limits."nvidia\.com/gpu"=2 \
@@ -239,7 +239,7 @@ STATUS: deployed
 REVISION: 1
 ```
 
-**For A100 (5 GPUs)** - add LLM GPU override:
+**For A100 (5 GPUs)** — add LLM GPU override:
 
 ```bash
   --set nim-llm.resources.limits."nvidia\.com/gpu"=2 \
@@ -250,7 +250,7 @@ REVISION: 1
 
 ### Verify RAG Deployment
 
-Wait for all pods to be ready (10-15 minutes for LLM model download):
+Wait for all pods to be ready (10-15 minutes for LLM download):
 
 ```bash
 kubectl get pods -n rag -w
@@ -328,7 +328,7 @@ REVISION: 1
 
 ### Configuration 2: Shared LLM AIQ (adds 0 GPUs)
 
-Uses the existing RAG LLM (Nemotron Super 49B) for both reasoning AND instruction-following. No additional LLM deployment required.
+Uses the existing RAG LLM (Nemotron Super 49B) for both reasoning and instruction-following. No additional LLM deployment required.
 
 **Additional GPUs Required:** None (uses existing RAG LLM)
 
@@ -359,7 +359,7 @@ REVISION: 1
 | `aiq-aira-backend-*` | AIQ backend service |
 | `aiq-aira-frontend-*` | AIQ web interface |
 
-> **Note**: No LLM pod in `aiq` namespace - using RAG's `rag-nim-llm-0` for both tasks.
+> **Note**: No LLM pod in `aiq` namespace — using RAG's `rag-nim-llm-0` for both tasks.
 
 ---
 
@@ -373,7 +373,7 @@ Wait for pods to be ready (5-10 minutes, or 10-15 minutes if using Full AIQ with
 kubectl get pods -n aiq -w
 ```
 
-Expected Output (Config 1 - Full AIQ):
+Expected Output (Config 1 — Full AIQ):
 ```
 NAME                                READY   STATUS    RESTARTS   AGE
 aiq-aira-backend-xxxxx              1/1     Running   0          10m
@@ -381,7 +381,7 @@ aiq-aira-frontend-xxxxx             1/1     Running   0          10m
 aiq-nim-llm-0                       1/1     Running   0          10m
 ```
 
-Expected Output (Config 2 - Shared LLM):
+Expected Output (Config 2 — Shared LLM):
 ```
 NAME                                READY   STATUS    RESTARTS   AGE
 aiq-aira-backend-xxxxx              1/1     Running   0          5m

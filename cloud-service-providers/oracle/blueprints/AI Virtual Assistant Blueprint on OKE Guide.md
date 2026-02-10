@@ -1,37 +1,41 @@
-# NVIDIA VSS Blueprint on Oracle Kubernetes Engine (OKE)
+# NVIDIA AI Virtual Assistant Blueprint on Oracle Kubernetes Engine (OKE)
 
-This guide provides step-by-step instructions for deploying the NVIDIA VSS (Video Search and Summarization) Blueprint on Oracle Cloud Infrastructure (OCI) using Oracle Kubernetes Engine (OKE) and GPU instances.
+This guide provides step-by-step instructions for deploying the NVIDIA AI Virtual Assistant Blueprint on Oracle Cloud Infrastructure (OCI) using Oracle Kubernetes Engine (OKE) and GPU instances.
 
-> *For the most up-to-date information, licensing, and terms of use, please refer to the [NVIDIA VSS Blueprint](https://github.com/NVIDIA-AI-Blueprints/video-search-and-summarization).*
+> *For the most up-to-date information, licensing, and terms of use, please refer to the [NVIDIA AI Virtual Assistant Blueprint](https://github.com/NVIDIA-AI-Blueprints/ai-virtual-assistant).*
 
 ## Overview
 
-The NVIDIA Video Search and Summarization Blueprint enables intelligent video analysis using AI, powered by [NVIDIA NIM](https://developer.nvidia.com/nim). It combines Vision Language Models (VLM) with Large Language Models (LLM) to understand video content, extract insights, and enable natural language search across video libraries.
+The NVIDIA AI Virtual Assistant Blueprint is a reference solution for a text-based virtual assistant that enhances customer service operations using [NVIDIA NIM](https://developer.nvidia.com/nim) microservices and Retrieval Augmented Generation (RAG). It enables context-aware, multi-turn conversations and provides general and personalized Q&A responses based on structured and unstructured data, such as order history and product details.
+
+This blueprint demonstrates how to deploy the AI Virtual Assistant on OKE using the Helm chart provided in the blueprint repository, with OKE-specific configuration for fully qualified container image names and LoadBalancer access to the web UI.
 
 ### Key Features
 
-- Video content understanding via Vision Language Model (VLM)
-- Natural language search across video content
-- Automatic video summarization
-- Multi-modal retrieval (text, visual, semantic)
-- Integration with multiple vector and graph databases
-- Reranking for improved search accuracy
-- OpenAI-compatible APIs
+- Context-aware, multi-turn customer service conversations
+- Integration with NVIDIA NeMo Retriever and NVIDIA NIM for embeddings, reranking, and LLM inference
+- Structured data (CSV) and unstructured data (PDF) ingestion with Milvus vector store
+- Sample customer service agent user interface and API-based analytics server
+- LangGraph-based orchestrator with LangChain text retrievers
 
 ### Architecture Components
 
 | Component | Purpose |
 |-----------|---------|
-| VSS Engine | Main application - video processing and search UI |
-| NIM LLM | Llama 3.1 70B - text generation and summarization |
+| NIM LLM (Inference) | Llama 3.1 70B Instruct - response generation |
 | NeMo Embedding | Text embeddings for semantic search |
 | NeMo Rerank | Rerank search results for accuracy |
+| Agent Services | LangGraph-based orchestration and agent logic |
+| API Gateway | Request routing and API exposure |
+| AI Virtual Assistant UI | Customer service agent web interface |
+| Retriever (Canonical) | Unstructured data retrieval |
+| Retriever (Structured) | Structured data retrieval |
 | Milvus | Vector database for embeddings |
-| Neo4j | Graph database for relationships |
-| Elasticsearch | Full-text search |
-| ArangoDB | Document store |
-| MinIO | Object storage for videos |
-| etcd | Distributed KV store |
+| MinIO | Object storage for documents |
+| PostgreSQL | Structured data and checkpointer |
+| etcd | Metadata storage |
+| Redis / Redis Commander | Cache and cache management |
+| pgAdmin | PostgreSQL administration (optional) |
 
 ## Prerequisites
 
@@ -39,13 +43,10 @@ Before starting the deployment process, ensure you have the following:
 
 - **Oracle Cloud Infrastructure (OCI) Account** with access to GPU instances
 - **NVIDIA NGC Account** for an **NGC API Key** to pull container images. Sign up at [ngc.nvidia.com](https://ngc.nvidia.com/setup/api-key)
-- **Hugging Face Account** with access to `nvidia/Cosmos-Reason2-8B` model:
-  1. Go to https://huggingface.co/nvidia/Cosmos-Reason2-8B
-  2. **Click "Agree and access repository"** to accept the license (required)
-  3. Get your token from https://huggingface.co/settings/tokens (create one with "Read" access)
 - **OCI CLI** installed and configured/authenticated
 - **kubectl** Kubernetes command-line tool
 - **Helm 3.x** package manager for Kubernetes
+- **Git** (to clone the blueprint repository)
 
 ### IAM Policy Requirements
 
@@ -64,29 +65,24 @@ Allow group <GROUP_NAME> to use instance-configurations in compartment <COMPARTM
 
 | Configuration | H100 80GB | A100 80GB |
 |---------------|-----------|-----------|
-| Full Blueprint | 8 | 9 |
+| Full Blueprint (self-hosted NIMs) | 8 | 8 |
 
-**GPU Breakdown:**
-
-| Component | H100 GPUs | A100 GPUs |
-|-----------|-----------|-----------|
-| VSS VLM | 2 | 2 |
-| LLM (Llama 3.1 70B) | 4 | 5 |
-| Embedding | 1 | 1 |
-| Rerank | 1 | 1 |
-| **Total** | **8** | **9** |
-
-> **Note**: A100 requires 9 GPUs (5 for LLM vs 4 on H100) due to lower memory bandwidth.
+> **Note**: Pipeline operations can share GPUs with NIMs; 1x L40 or similar is recommended for Milvus. For optimal performance, use dedicated GPUs for the LLM NIM (8x H100 or 8x A100 for Llama 3.1 70B).
 
 **Additional Requirements:**
 - **Boot Volume**: Minimum 500 GB
-- **Block Storage**: ~350 GB for model caches (auto-provisioned via PVCs)
+
+**Cluster size (nodes):**
+
+| Nodes | Configuration |
+|-------|---------------|
+| **1** | Full Blueprint (8 GPUs) |
 
 ---
 
 ## Infrastructure Setup
 
-This section covers the steps to prepare your OCI infrastructure for running the VSS Blueprint.
+This section covers the steps to prepare your OCI infrastructure for running the AI Virtual Assistant Blueprint.
 
 ### Console Quick Create (Recommended)
 
@@ -97,7 +93,7 @@ The fastest way — auto-provisions networking.
 3. Configure:
    - Name: `gpu-cluster`
    - Kubernetes API endpoint: **Public endpoint**
-   - Shape: Select GPU shape based on [Hardware Requirements](#hardware-requirements)
+   - Shape: Select GPU shape based on [Hardware Requirements](#hardware-requirements) (e.g., 8x H100 or 8x A100)
    - Nodes: `1`
    - Boot volume: `500` GB
 4. Click **Create cluster** and wait 10-15 min
@@ -164,60 +160,86 @@ kubectl taint nodes --all nvidia.com/gpu:NoSchedule- 2>/dev/null || true
 
 # Verify GPU resources
 kubectl describe nodes | grep -A5 "Allocatable:" | grep gpu
-
-# Add NVIDIA Blueprint Helm repository
-export NGC_API_KEY="<your-ngc-api-key>"
-helm repo add nvidia-blueprint https://helm.ngc.nvidia.com/nvidia/blueprint \
-  --username='$oauthtoken' --password=$NGC_API_KEY
-helm repo update
 ```
 
 Expected Output:
 ```
 node/10.0.10.xx untainted
   nvidia.com/gpu:             8
-"nvidia-blueprint" has been added to your repositories
-Update Complete. Happy Helming!
+```
+
+---
+
+## Clone the Blueprint Repository
+
+The AI Virtual Assistant Helm chart is deployed from the blueprint repository (not the NGC Helm catalog). Clone the repository and use the chart in `deploy/helm`.
+
+```bash
+git clone https://github.com/NVIDIA-AI-Blueprints/ai-virtual-assistant.git
+cd ai-virtual-assistant/deploy/helm
 ```
 
 ---
 
 ## Deployment
 
-Deploy the VSS Blueprint:
+### 1. Create Namespace and Secrets
 
 ```bash
-export HF_TOKEN="<your-huggingface-token>"
+export NGC_API_KEY="<your-ngc-api-key>"
+kubectl create namespace aiva --dry-run=client -o yaml | kubectl apply -f -
 
-helm install vss nvidia-blueprint/nvidia-blueprint-vss \
-  --namespace vss --create-namespace \
-  --set imagePullSecret.password=$NGC_API_KEY \
-  --set ngcApiSecret.password=$NGC_API_KEY \
-  --set vss.env.HF_TOKEN=$HF_TOKEN \
-  --set vss.env.HUGGING_FACE_HUB_TOKEN=$HF_TOKEN \
-  --set arango-db.image.repository=docker.io/arangodb \
-  --set elasticsearch.image.repository=docker.elastic.co/elasticsearch/elasticsearch \
-  --set elasticsearch.image.tag=8.17.0 \
-  --set milvus.image.repository=docker.io/milvusdb/milvus \
-  --set milvus-minio.image.repository=docker.io/minio/minio \
-  --set minio.image.repository=docker.io/minio/minio \
-  --set neo4j.image.repository=docker.io/library/neo4j \
-  --set vss.initContainers.checkLlmUp.image.repository=docker.io/curlimages/curl \
-  --set nemo-rerank.podSecurityContext.fsGroup=1000 \
-  --set nim-llm.persistence.size=200Gi \
-  --set vss.service.type=LoadBalancer
+kubectl create secret docker-registry ngc-docker-reg-secret -n aiva \
+  --docker-server=nvcr.io \
+  --docker-username='$oauthtoken' \
+  --docker-password="$NGC_API_KEY" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl create secret generic ngc-secret -n aiva \
+  --from-literal=ngc-api-key="$NGC_API_KEY" \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 Expected Output:
 ```
-NAME: vss
-LAST DEPLOYED: Fri Jan 31 10:00:00 2026
-NAMESPACE: vss
+namespace/aiva created
+secret/ngc-docker-reg-secret created
+secret/ngc-secret created
+```
+
+### 2. Install the AI Virtual Assistant Helm Chart
+
+Run the following from the `ai-virtual-assistant/deploy/helm` directory (you should already be there after the [Clone the Blueprint Repository](#clone-the-blueprint-repository) step). The `docker.io/` prefixes are **required** on OKE because CRI-O enforces fully qualified image names.
+
+```bash
+helm upgrade --install aiva . --namespace aiva \
+  --set global.ngcImagePullSecretName=ngc-docker-reg-secret \
+  --set 'ranking-ms.applicationSpecs.ranking-deployment.containers.ranking-container.env[0].name=NGC_API_KEY' \
+  --set "ranking-ms.applicationSpecs.ranking-deployment.containers.ranking-container.env[0].value=$NGC_API_KEY" \
+  --set 'nemollm-inference.applicationSpecs.nemollm-infer-deployment.containers.nemollm-infer-container.env[0].name=NGC_API_KEY' \
+  --set "nemollm-inference.applicationSpecs.nemollm-infer-deployment.containers.nemollm-infer-container.env[0].value=$NGC_API_KEY" \
+  --set 'nemollm-embedding.applicationSpecs.embedding-deployment.containers.embedding-container.env[0].name=NGC_API_KEY' \
+  --set "nemollm-embedding.applicationSpecs.embedding-deployment.containers.embedding-container.env[0].value=$NGC_API_KEY" \
+  --set milvus.applicationSpecs.milvus-deployment.containers.milvus-container.image.repository=docker.io/milvusdb/milvus \
+  --set minio.applicationSpecs.minio-deployment.containers.minio-container.image.repository=docker.io/minio/minio \
+  --set postgres.applicationSpecs.postgres-deployment.containers.postgres-container.image.repository=docker.io/library/postgres \
+  --set cache-services.applicationSpecs.cache-services-deployment.containers.redis-container.image.repository=docker.io/library/redis \
+  --set cache-services.applicationSpecs.cache-services-deployment.containers.rediscommander-container.image.repository=docker.io/rediscommander/redis-commander \
+  --set pgadmin.applicationSpecs.pgadmin-deployment.containers.pgadmin-container.image.repository=docker.io/dpage/pgadmin4 \
+  --set aiva-ui.service.type=LoadBalancer
+```
+
+Expected Output:
+```
+Release "aiva" does not exist. Installing it now.
+NAME: aiva
+LAST DEPLOYED: <date>
+NAMESPACE: aiva
 STATUS: deployed
 REVISION: 1
 ```
 
-> **Note**: The `docker.io/` prefix is required on OKE because CRI-O enforces fully qualified image names.
+> **Note**: Use single quotes around `--set` keys that contain brackets (e.g., `'ranking-ms...env[0].name=...'`) to avoid shell expansion. Use double quotes for values that reference `$NGC_API_KEY`.
 
 ---
 
@@ -225,227 +247,176 @@ REVISION: 1
 
 ### Monitor Deployment Status
 
-Wait for pods to be ready (15-20 minutes for LLM download):
+Wait for pods to be ready (15-30 minutes for NIM model download and init dependencies):
 
 ```bash
-kubectl get pods -n vss -w
+kubectl get pods -n aiva -w
 ```
 
 Expected Output (initial state):
 ```
-NAME                                                      READY   STATUS              RESTARTS   AGE
-arango-db-arango-db-deployment-xxxxx                      0/1     ContainerCreating   0          2m
-elasticsearch-elasticsearch-deployment-xxxxx              0/1     ContainerCreating   0          2m
-nim-llm-0                                                 0/1     Init:0/1            0          2m
-vss-vss-deployment-xxxxx                                  0/1     Init:0/3            0          2m
+NAME                                                           READY   STATUS              RESTARTS   AGE
+agent-services-agent-services-deployment-xxxxx                 0/1     Init:0/1            0          2m
+aiva-aiva-ui-xxxxx                                             0/1     Init:0/1            0          2m
+analytics-services-analytics-deployment-xxxxx                  1/1     Running             0          2m
+...
 ```
 
-Expected Output (after 15-20 minutes):
+Expected Output (after 15-30 minutes):
 ```
-NAME                                                      READY   STATUS    RESTARTS   AGE
-arango-db-arango-db-deployment-xxxxx                      1/1     Running   0          20m
-elasticsearch-elasticsearch-deployment-xxxxx              1/1     Running   0          20m
-etcd-etcd-deployment-xxxxx                                1/1     Running   0          20m
-milvus-milvus-deployment-xxxxx                            1/1     Running   0          20m
-milvus-minio-milvus-minio-deployment-xxxxx                1/1     Running   0          20m
-minio-minio-deployment-xxxxx                              1/1     Running   0          20m
-nemo-embedding-embedding-deployment-xxxxx                 1/1     Running   0          20m
-nemo-rerank-ranking-deployment-xxxxx                      1/1     Running   0          20m
-neo4j-neo4j-deployment-xxxxx                              1/1     Running   0          20m
-nim-llm-0                                                 1/1     Running   0          20m
-vss-vss-deployment-xxxxx                                  1/1     Running   0          20m
+NAME                                                          READY   STATUS    RESTARTS   AGE
+agent-services-agent-services-deployment-xxxxx                1/1     Running   0          25m
+aiva-aiva-ui-xxxxx                                            1/1     Running   0          25m
+analytics-services-analytics-deployment-xxxxx                 1/1     Running   0          25m
+api-gateway-api-gateway-deployment-xxxxx                      1/1     Running   0          25m
+cache-services-cache-services-deployment-xxxxx                2/2     Running   0          25m
+etcd-etcd-deployment-xxxxx                                    1/1     Running   0          25m
+ingest-client-ingest-client-deployment-xxxxx                  1/1     Running   0          25m
+milvus-milvus-deployment-xxxxx                                1/1     Running   0          25m
+minio-minio-deployment-xxxxx                                  1/1     Running   0          25m
+nemollm-embedding-embedding-deployment-xxxxx                   1/1     Running   0          25m
+nemollm-inference-nemollm-infer-deployment-xxxxx               1/1     Running   0          25m
+pgadmin-pgadmin-deployment-xxxxx                               1/1     Running   0          25m
+postgres-postgres-deployment-xxxxx                             1/1     Running   0          25m
+ranking-ms-ranking-deployment-xxxxx                            1/1     Running   0          25m
+retriever-canonical-canonical-deployment-xxxxx                 1/1     Running   0          25m
+retriever-structured-structured-deployment-xxxxx               1/1     Running   0          25m
 ```
 
-### Get VSS Service URL
-
-Wait for the LoadBalancer to get an external IP (~1-2 minutes):
+### Get AI Virtual Assistant UI URL
 
 ```bash
-kubectl get svc vss-service -n vss -w
+echo "AI Virtual Assistant UI: http://$(kubectl get svc aiva-aiva-ui -n aiva -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):3001"
 ```
 
-Once you see an external IP:
-
-```bash
-EXTERNAL_IP=$(kubectl get svc vss-service -n vss -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-echo "VSS UI:  http://$EXTERNAL_IP:9000"
-echo "VSS API: http://$EXTERNAL_IP:8000"
+Expected Output:
+```
+AI Virtual Assistant UI: http://158.xxx.xxx.xxx:3001
 ```
 
-### Check LLM Download Progress
+### Expected Pods
 
-The LLM (70B model) takes the longest to download:
+After deployment completes, you should see these pods running:
 
 ```bash
-kubectl logs -n vss nim-llm-0 --tail=10
+kubectl get pods -n aiva
 ```
 
-Expected Output (downloading):
-```
-Downloading model files...
-Progress: 45%
-```
-
-Expected Output (ready):
-```
-INFO: Started server process
-INFO: Uvicorn running on http://0.0.0.0:8000
-```
+| Pod Name Pattern | Description |
+|-----------------|-------------|
+| `agent-services-agent-services-deployment-*` | LangGraph agent orchestration |
+| `aiva-aiva-ui-*` | Customer service agent web UI |
+| `analytics-services-analytics-deployment-*` | Analytics API |
+| `api-gateway-api-gateway-deployment-*` | API gateway |
+| `cache-services-cache-services-deployment-*` | Redis and Redis Commander |
+| `etcd-etcd-deployment-*` | etcd metadata store |
+| `ingest-client-ingest-client-deployment-*` | Ingestion client |
+| `milvus-milvus-deployment-*` | Milvus vector database |
+| `minio-minio-deployment-*` | MinIO object storage |
+| `nemollm-embedding-embedding-deployment-*` | NeMo embedding NIM |
+| `nemollm-inference-nemollm-infer-deployment-*` | NeMo LLM inference NIM |
+| `pgadmin-pgadmin-deployment-*` | pgAdmin (optional) |
+| `postgres-postgres-deployment-*` | PostgreSQL |
+| `ranking-ms-ranking-deployment-*` | Reranker NIM |
+| `retriever-canonical-canonical-deployment-*` | Unstructured retriever |
+| `retriever-structured-structured-deployment-*` | Structured retriever |
 
 ---
 
 ## Troubleshooting
 
-### ImageInspectError on Pods
-
-If you deployed without the recommended command and see `ImageInspectError`, run:
+### Pods Stuck in Pending
 
 ```bash
-helm upgrade vss nvidia-blueprint/nvidia-blueprint-vss -n vss --reuse-values \
-  --set arango-db.image.repository=docker.io/arangodb \
-  --set elasticsearch.image.repository=docker.elastic.co/elasticsearch/elasticsearch \
-  --set milvus.image.repository=docker.io/milvusdb/milvus \
-  --set milvus-minio.image.repository=docker.io/minio/minio \
-  --set minio.image.repository=docker.io/minio/minio \
-  --set neo4j.image.repository=docker.io/library/neo4j \
-  --set vss.initContainers.checkLlmUp.image.repository=docker.io/curlimages/curl
+# Check for GPU taints
+kubectl describe nodes | grep -i taint
 ```
 
-### nemo-rerank CrashLoopBackOff (Permission Denied)
-
-If nemo-rerank shows permission errors in logs:
-
-```bash
-helm upgrade vss nvidia-blueprint/nvidia-blueprint-vss -n vss --reuse-values \
-  --set nemo-rerank.podSecurityContext.fsGroup=1000
+Expected Output (should show no taints):
 ```
-
-### nim-llm CrashLoopBackOff (No Space Left)
-
-If nim-llm fails with "No space left on device":
-
-```bash
-# Expand PVC to 200 GB
-kubectl patch pvc -n vss model-store-nim-llm-0 -p '{"spec":{"resources":{"requests":{"storage":"200Gi"}}}}'
-
-# Restart pod to pick up new size
-kubectl delete pod -n vss nim-llm-0
+Taints:             <none>
 ```
-
-### VSS Pod Stuck in Init:2/3
-
-This is normal — VSS waits for the LLM to be healthy. Check LLM status:
-
-```bash
-kubectl logs -n vss nim-llm-0 --tail=10
-```
-
-Once the LLM shows "Uvicorn running", VSS will start automatically.
-
-### Pods Stuck in Pending (Insufficient GPU)
 
 ```bash
 # Check GPU availability
 kubectl describe nodes | grep -A5 "Allocated resources:" | grep gpu
 ```
 
-VSS requires all 8 GPUs (H100) or 9 GPUs (A100). Ensure no other workloads are using GPUs.
-
-### VSS Error: Failed to download Cosmos-Reason2-8B (401/403)
-
-If you see:
-
+Expected Output (example when GPUs are allocated):
 ```
-huggingface_hub.errors.GatedRepoError: 401 Client Error
-Cannot access gated repo for url https://huggingface.co/nvidia/Cosmos-Reason2-8B
+  nvidia.com/gpu                 8           8
 ```
 
-or:
+### ImageInspectError (Short Image Names)
 
-```
-403 Client Error: Forbidden for url https://huggingface.co/nvidia/Cosmos-Reason2-8B
-```
+On OKE, CRI-O enforces fully qualified image names. If you see `ImageInspectError` with messages like "short name mode is enforcing, but image name redis:7.0.13 returns ambiguous list", upgrade the release with the OKE image overrides from [Deployment](#deployment) step 2 (all `--set ...repository=docker.io/...` and the same NGC_API_KEY sets).
 
-1. Go to https://huggingface.co/nvidia/Cosmos-Reason2-8B
-2. Click **"Agree and access repository"** to accept the license
-3. Get your token from https://huggingface.co/settings/tokens
-4. Update the deployment:
+### Init Containers Waiting on Dependencies
+
+Agent-services and api-gateway init containers wait for backend services (retrievers, nemollm-inference). The LLM NIM (`nemollm-inference`) can take 10-20 minutes to become ready while the model loads. Check readiness:
 
 ```bash
-export HF_TOKEN="<your-huggingface-token>"
-
-kubectl set env deployment/vss-vss-deployment -n vss \
-  HF_TOKEN=$HF_TOKEN \
-  HUGGING_FACE_HUB_TOKEN=$HF_TOKEN
-
-# Wait for new pod
-kubectl rollout status deployment/vss-vss-deployment -n vss
+kubectl get pods -n aiva | grep nemollm-inference
+kubectl logs -n aiva -l app.kubernetes.io/name=nemollm-inference --tail=20
 ```
 
-### TensorRT Engine Warning
-
-You may see: `"Using an engine plan file across different models of devices"`. This is informational and can be ignored. The model will still work correctly, though initialization may take a few extra minutes.
-
-### Pod Stuck in FailedMount After Restart
-
-If you see `"An operation for the volume already exists"`, scale the deployment down, wait for volumes to detach, then scale back up:
+### NGC Authentication Errors (ImagePullBackOff)
 
 ```bash
-# Scale down to release volumes cleanly
-kubectl scale deployment -n vss <deployment-name> --replicas=0
-
-# Wait for volume detach
-sleep 60
-
-# Scale back up
-kubectl scale deployment -n vss <deployment-name> --replicas=1
+# Verify API key is set
+echo $NGC_API_KEY
 ```
 
-> **Tip**: Avoid using `kubectl delete pod --force` — let pods terminate gracefully to prevent this issue.
+```bash
+# Check secrets exist
+kubectl get secret -n aiva ngc-docker-reg-secret ngc-secret
+```
+
+Expected Output:
+```
+NAME                     TYPE                             DATA   AGE
+ngc-docker-reg-secret    kubernetes.io/dockerconfigjson   1      10m
+ngc-secret               Opaque                           1      10m
+```
 
 ---
 
 ## Cleanup
 
-To delete the VSS deployment and all associated resources:
+To delete the AI Virtual Assistant deployment and all associated resources:
 
 ```bash
 # Delete Helm release
-helm uninstall vss --namespace vss
+helm uninstall aiva --namespace aiva
 
 # Wait for pods to terminate
 echo "Waiting for pods to terminate..."
-kubectl wait --for=delete pod -n vss --all --timeout=120s 2>/dev/null || true
+kubectl wait --for=delete pod -n aiva --all --timeout=120s 2>/dev/null || true
 
 # Delete all persistent volume claims
-kubectl delete pvc -n vss --all
+kubectl delete pvc -n aiva --all
 
 # Wait for volumes to detach from nodes
 echo "Waiting 60s for OCI block volumes to detach..."
 sleep 60
 
 # Delete namespace
-kubectl delete namespace vss
+kubectl delete namespace aiva
 
 # Verify cleanup
-kubectl get all -n vss 2>/dev/null && echo "WARNING: Some resources remain" || echo "Cleanup complete"
+kubectl get all -n aiva 2>/dev/null && echo "WARNING: Some resources remain" || echo "Cleanup complete"
 ```
 
 Expected Output:
 ```
-release "vss" uninstalled
+release "aiva" uninstalled
 Waiting for pods to terminate...
-persistentvolumeclaim "model-store-nim-llm-0" deleted
-persistentvolumeclaim "nemo-embedding-nim-cache-pvc" deleted
-persistentvolumeclaim "nemo-rerank-nim-cache-pvc" deleted
-persistentvolumeclaim "vss-ngc-model-cache-pvc" deleted
-persistentvolumeclaim "etcd-vss-cache-pvc" deleted
+persistentvolumeclaim "..." deleted
+...
 Waiting 60s for OCI block volumes to detach...
-namespace "vss" deleted
+namespace "aiva" deleted
 Cleanup complete
 ```
-
-> **Note**: The 60s wait ensures volumes are fully detached before redeploying.
 
 ---
 
@@ -457,12 +428,12 @@ Ensure the following are complete:
 - [ ] GPU node pool is ready and healthy (see [Hardware Requirements](#hardware-requirements))
 - [ ] NAT Gateway configured for outbound internet access
 - [ ] NGC API key exported (`export NGC_API_KEY=...`)
-- [ ] Hugging Face license accepted for `nvidia/Cosmos-Reason2-8B`
-- [ ] Hugging Face token exported (`export HF_TOKEN=...`)
-- [ ] Helm repo added (`helm repo list` shows nvidia-blueprint)
-- [ ] Helm chart deployed
-- [ ] All 11 pods in Running state (`kubectl get pods -n vss`)
-- [ ] VSS service accessible
+- [ ] Blueprint repository cloned and `cd ai-virtual-assistant/deploy/helm`
+- [ ] Namespace `aiva` and secrets created
+- [ ] Helm chart deployed successfully (`helm list -n aiva`)
+- [ ] All pods in Running state (`kubectl get pods -n aiva`)
+- [ ] AI Virtual Assistant UI LoadBalancer has external IP
+- [ ] AI Virtual Assistant UI accessible at `http://<EXTERNAL-IP>:3001`
 
 ---
 
@@ -679,4 +650,4 @@ oci ce cluster create-kubeconfig --cluster-id $CLUSTER_ID --region $REGION \
   --file $HOME/.kube/config --token-version 2.0.0 --kube-endpoint PUBLIC_ENDPOINT
 ```
 
-Then continue with [Pre-Deployment Setup](#pre-deployment-setup).
+Then continue with [Pre-Deployment Setup](#pre-deployment-setup), then [Clone the Blueprint Repository](#clone-the-blueprint-repository), then [Deployment](#deployment).

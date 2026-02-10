@@ -96,7 +96,7 @@ In this workshop, we use a **shared LLM** configuration where AIQ uses the RAG B
 
 ### NVIDIA NIMs
 
-[NVIDIA NIMs](https://www.nvidia.com/en-us/ai/) are inference microservices that power both RAG and AIQ:
+[NVIDIA NIMs](https://developer.nvidia.com/nim) are inference microservices that power both RAG and AIQ:
 
 - **Nemotron Super 49B**: Large language model for text generation and reasoning
 - **NeMo Embedder**: Converts text to vector embeddings
@@ -112,7 +112,7 @@ To complete this workshop, you need:
 - **OCI CLI** installed and configured
 - **kubectl** command-line tool
 - **Helm 3.x** package manager
-- **NVIDIA NGC Account** for an NGC API Key - [Sign up here](https://ngc.nvidia.com/setup/api-key)
+- **NVIDIA NGC Account** for an NGC API Key — [Sign up here](https://ngc.nvidia.com/setup/api-key)
 - Sufficient OCI quota for GPU bare metal instances
 
 ### GPU Requirements
@@ -355,7 +355,7 @@ Now deploy AIQ configured to use RAG's LLM (shared LLM configuration).
    | `aiq-aira-backend-*` | aiq | AIQ backend service | 0 |
    | `aiq-aira-frontend-*` | aiq | AIQ web interface | 0 |
 
-   > **Note**: No LLM is deployed in the `aiq` namespace - it uses RAG's LLM via cross-namespace communication.
+   > **Note**: No LLM is deployed in the `aiq` namespace — it uses RAG's LLM via cross-namespace communication.
 
 ## Task 7. Verify AIQ Deployment
 
@@ -563,14 +563,14 @@ Clean up resources when done.
    kubectl delete namespace rag
    ```
 
-3. **Delete OKE cluster** (optional - via OCI Console):
+3. **Delete the OKE cluster** (optional — via OCI Console):
    
    Navigate to **OCI Console** → **Developer Services** → **Kubernetes Clusters** → Select your cluster → **Delete**
 
 ## Learn More
 
-- [AIQ Blueprint on OKE Guide](../blueprints/AIQ%20Blueprint%20on%20OKE%20Guide.md) — full deployment options, 2-node setup, Full RAG + Full AIQ
+- [AIQ Blueprint on OKE Guide](../blueprints/AIQ%20Blueprint%20on%20OKE%20Guide.md) — Full deployment options, 2-node setup, Full RAG + Full AIQ
 - [NVIDIA AIQ Blueprint](https://github.com/NVIDIA-AI-Blueprints/aiq)
 - [NVIDIA RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag)
-- [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/)
+- [NVIDIA NIMs](https://developer.nvidia.com/nim)
 - [Oracle Kubernetes Engine (OKE)](https://www.oracle.com/cloud/cloud-native/container-engine-kubernetes/)

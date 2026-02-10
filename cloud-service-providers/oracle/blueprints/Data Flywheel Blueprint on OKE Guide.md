@@ -6,7 +6,7 @@ This guide provides step-by-step instructions for deploying the NVIDIA Data Flyw
 
 ## Overview
 
-The NVIDIA Data Flywheel Blueprint provides a systematic, automated solution to refine and redeploy optimized models. It establishes a self-reinforcing data flywheel using production traffic logs and institutional knowledge to continuously improve model efficiency and accuracy.
+The NVIDIA Data Flywheel Blueprint provides a systematic, automated solution to refine and redeploy optimized models using [NVIDIA NIM](https://developer.nvidia.com/nim). It establishes a self-reinforcing data flywheel using production traffic logs and institutional knowledge to continuously improve model efficiency and accuracy.
 
 ### Key Features
 
@@ -62,11 +62,11 @@ Allow group <GROUP_NAME> to use instance-configurations in compartment <COMPARTM
 | With Remote LLM Judge | 2 | 2 |
 | With Self-hosted LLM Judge | 6 | 6 |
 
-This guide uses **Remote LLM Judge** configuration (2 GPUs minimum).
+This guide uses the **Remote LLM Judge** configuration (2 GPUs minimum).
 
 **Additional Requirements:**
-- **Boot Volume**: Minimum 500GB
-- **Block Storage**: ~100GB for databases (auto-provisioned via PVCs)
+- **Boot Volume**: Minimum 500 GB
+- **Block Storage**: ~100 GB for databases (auto-provisioned via PVCs)
 
 ---
 
@@ -76,7 +76,7 @@ This section covers the steps to prepare your OCI infrastructure for running the
 
 ### Console Quick Create (Recommended)
 
-The fastest way - auto-provisions networking.
+The fastest way — auto-provisions networking.
 
 1. Go to **OCI Console** → **Developer Services** → **Kubernetes Clusters (OKE)**
 2. Click **Create cluster** → Select **Quick create** → **Submit**
@@ -101,7 +101,7 @@ oci ce cluster create-kubeconfig --cluster-id $CLUSTER_ID --region $REGION \
 
 ### Pre-Deployment Setup
 
-> **Already have a cluster?** Start here. Created one above? Continue here.
+> **Already have a cluster?** Start here — whether you have an existing cluster or just created one above.
 
 #### 1. Verify Storage Size
 
@@ -111,7 +111,7 @@ Check that your node's storage matches your boot volume size:
 kubectl describe nodes | grep ephemeral-storage | head -1
 ```
 
-If you specified 500GB boot volume, you should see ~`512628992Ki` (~489GB). If you see ~`37206272Ki` (~35GB), the volume needs expanding - continue to step 2. Otherwise, skip to step 3.
+If you specified a 500 GB boot volume, you should see ~`512628992Ki` (~489 GB). If you see ~`37206272Ki` (~35 GB), the volume needs expanding; continue to step 2. Otherwise, skip to step 3.
 
 #### 2. Expand Boot Volume (if needed)
 
@@ -131,7 +131,7 @@ kubectl run restart-kubelet --rm -it --restart=Never --privileged \
   --overrides='{"spec":{"hostPID":true,"nodeName":"'$NODE_NAME'"}}' \
   --image=docker.io/library/oraclelinux:8 -- nsenter -t 1 -m -u -i -n systemctl restart kubelet
 
-# Verify (should now show ~512628992Ki for 500GB)
+# Verify (should now show ~512628992Ki for 500 GB)
 sleep 10 && kubectl describe nodes | grep ephemeral-storage | head -1
 ```
 
@@ -142,7 +142,7 @@ sudo /usr/libexec/oci-growfs -y
 sudo systemctl restart kubelet
 ```
 
-#### 3. Setup Cluster
+#### 3. Set Up Cluster
 
 ```bash
 # Remove GPU taints
@@ -257,7 +257,7 @@ kubectl patch svc df-api-service -n nv-nvidia-blueprint-data-flywheel \
   -p '{"spec":{"type":"LoadBalancer"}}'
 ```
 
-Wait for external IP (~1-2 min):
+Wait for external IP (~1-2 minutes):
 
 ```bash
 kubectl get svc df-api-service -n nv-nvidia-blueprint-data-flywheel -w
@@ -574,7 +574,7 @@ kubectl rollout restart deployment -n nv-nvidia-blueprint-data-flywheel
 
 ### Pods in CreateContainerConfigError
 
-This usually means secrets are missing or have wrong key names. Recreate them:
+This usually means secrets are missing or have the wrong key names. Recreate them:
 
 ```bash
 kubectl delete secret nvidia-api ngc-api hf-secret llm-judge-api emb-api \

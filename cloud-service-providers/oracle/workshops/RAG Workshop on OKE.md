@@ -42,7 +42,7 @@ By the end of this workshop, you will have hands-on experience with:
 
 ### GPUs in Oracle Kubernetes Engine (OKE)
 
-GPUs let you accelerate specific workloads running on your nodes such as machine learning and data processing. OKE provides a range of GPU shapes for node configuration, including bare metal instances with NVIDIA H100 and A100 GPUs.
+GPUs let you accelerate specific workloads running on your nodes, such as machine learning and data processing. OKE provides a range of GPU shapes for node configuration, including bare metal instances with NVIDIA H100 and A100 GPUs.
 
 | Shape | GPUs | GPU Memory |
 |-------|------|------------|
@@ -52,7 +52,7 @@ GPUs let you accelerate specific workloads running on your nodes such as machine
 
 ### NVIDIA NIMs
 
-[NVIDIA NIMs](https://www.nvidia.com/en-us/ai/) are a set of easy-to-use inference microservices for accelerating the deployment of foundation models on any cloud or data center. NIMs provide:
+[NVIDIA NIMs](https://developer.nvidia.com/nim) are a set of easy-to-use inference microservices for accelerating the deployment of foundation models on any cloud or data center. NIMs provide:
 
 - Pre-optimized containers for popular AI models
 - TensorRT acceleration for maximum performance
@@ -88,7 +88,7 @@ To complete this workshop, you need:
 - **OCI CLI** installed and configured
 - **kubectl** command-line tool
 - **Helm 3.x** package manager
-- **NVIDIA NGC Account** for an NGC API Key - [Sign up here](https://ngc.nvidia.com/setup/api-key)
+- **NVIDIA NGC Account** for an NGC API Key — [Sign up here](https://ngc.nvidia.com/setup/api-key)
 - Sufficient OCI quota for GPU bare metal instances
 
 ### GPU Requirements
@@ -98,7 +98,7 @@ To complete this workshop, you need:
 | Text Only (this workshop) | 4 | 5 |
 | Full Multimodal | 8 | 9 |
 
-> **Note**: This workshop uses the Text Only configuration (4 GPUs on H100, 5 GPUs on A100) which supports text extraction from PDFs. Use **1 node** — Text Only fits on a single 8-GPU node. The Full Multimodal configuration adds support for tables, charts, and images; see the [RAG Blueprint on OKE Guide](../blueprints/RAG%20Blueprint%20on%20OKE%20Guide.md) for node count and options.
+> **Note**: This workshop uses the Text Only configuration (4 GPUs on H100, 5 GPUs on A100), which supports text extraction from PDFs. Use **1 node** — Text Only fits on a single 8-GPU node. The Full Multimodal configuration adds support for tables, charts, and images; see the [RAG Blueprint on OKE Guide](../blueprints/RAG%20Blueprint%20on%20OKE%20Guide.md) for node count and options.
 
 ### IAM Policy Requirements
 
@@ -264,7 +264,7 @@ The NVIDIA RAG Blueprint bundles all the necessary components (LLM, Embedding, R
 
 ## Task 5. Monitor Deployment
 
-The deployment takes 10-15 minutes as the LLM model needs to be downloaded.
+The deployment takes 10-15 minutes, as the LLM needs to be downloaded.
 
 1. **Watch pod status**:
 
@@ -283,7 +283,7 @@ The deployment takes 10-15 minutes as the LLM model needs to be downloaded.
 
    Press `Ctrl+C` to exit the watch.
 
-2. **Check LLM model download progress** (this is the longest step):
+2. **Check LLM download progress** (this is the longest step):
 
    ```bash
    kubectl logs -n rag rag-nim-llm-0 --tail=20
@@ -419,7 +419,7 @@ helm upgrade rag nvidia-blueprint/nvidia-blueprint-rag -n rag --reuse-values \
 
 ### Ingestor-server CrashLoopBackOff
 
-Usually waiting for Milvus/MinIO to start. Check logs:
+The pod is usually waiting for Milvus/MinIO to start. Check logs:
 
 ```bash
 kubectl logs -n rag -l app=ingestor-server --tail=20
@@ -435,7 +435,7 @@ Check model download progress:
 kubectl logs -n rag rag-nim-llm-0 --tail=20
 ```
 
-The LLM downloads a ~100GB model. This can take 10-15 minutes depending on network speed.
+The LLM downloads a ~100 GB model. This can take 10-15 minutes depending on network speed.
 
 ### NGC Authentication Errors (ImagePullBackOff)
 
@@ -473,7 +473,7 @@ Check for events indicating issues with the OCI load balancer provisioning.
 
 ## Cleanup
 
-To avoid incurring further costs, clean up the resources when you're done.
+Clean up resources when done.
 
 1. **Delete the Helm release**:
 
@@ -500,7 +500,7 @@ To avoid incurring further costs, clean up the resources when you're done.
    kubectl delete namespace rag
    ```
 
-5. **Delete the OKE cluster** (optional - via OCI Console):
+5. **Delete the OKE cluster** (optional — via OCI Console):
    
    Navigate to **OCI Console** → **Developer Services** → **Kubernetes Clusters** → Select your cluster → **Delete**
 
@@ -508,7 +508,7 @@ To avoid incurring further costs, clean up the resources when you're done.
 
 - [RAG Blueprint on OKE Guide](../blueprints/RAG%20Blueprint%20on%20OKE%20Guide.md) — Full Multimodal, node count, CLI deployment
 - [NVIDIA RAG Blueprint](https://github.com/NVIDIA-AI-Blueprints/rag)
-- [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/)
+- [NVIDIA NIMs](https://developer.nvidia.com/nim)
 - [NVIDIA NeMo Retriever](https://developer.nvidia.com/nemo-microservices)
 - [Oracle Kubernetes Engine (OKE)](https://www.oracle.com/cloud/cloud-native/container-engine-kubernetes/)
 - [Milvus Vector Database](https://milvus.io/)

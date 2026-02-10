@@ -81,6 +81,14 @@ The VSS Blueprint consists of multiple integrated components:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### NVIDIA NIMs
+
+[NVIDIA NIMs](https://developer.nvidia.com/nim) are optimized inference microservices for foundation models. VSS uses multiple NIMs for video analysis:
+
+- **Llama 3.1 70B**: Large language model for summarization and question answering
+- **NeMo Embedding**: Converts text to vector embeddings for semantic search
+- **NeMo Reranker**: Improves search accuracy by reranking retrieved results
+
 ### Vision Language Model (VLM)
 
 The VSS Blueprint uses **Cosmos-Reason2-8B**, NVIDIA's Vision Language Model that:
@@ -88,7 +96,7 @@ The VSS Blueprint uses **Cosmos-Reason2-8B**, NVIDIA's Vision Language Model tha
 - Analyzes individual video frames
 - Generates natural language descriptions of visual content
 - Understands spatial relationships and actions
-- Requires HuggingFace access (gated model)
+- Requires Hugging Face access (gated model)
 
 ### Large Language Model (LLM)
 
@@ -120,8 +128,8 @@ To complete this workshop, you need:
 - **OCI CLI** installed and configured
 - **kubectl** command-line tool
 - **Helm 3.x** package manager
-- **NVIDIA NGC Account** - [Sign up here](https://ngc.nvidia.com/setup/api-key)
-- **HuggingFace Account** with access to `nvidia/Cosmos-Reason2-8B` - [Accept license here](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
+- **NVIDIA NGC Account** for an NGC API Key — [Sign up here](https://ngc.nvidia.com/setup/api-key)
+- **Hugging Face Account** with access to `nvidia/Cosmos-Reason2-8B` — [Accept license here](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
 
 ### GPU Requirements
 
@@ -141,9 +149,9 @@ To complete this workshop, you need:
 
 > **Important**: A100 requires 9 GPUs total, but OKE's `BM.GPU.A100-v2.8` only has 8 GPUs. You may need to use the `BM.GPU4.8` shape or adjust the configuration.
 
-### HuggingFace Access Required
+### Hugging Face Access Required
 
-The VSS Blueprint uses the `nvidia/Cosmos-Reason2-8B` model which requires accepting a license:
+The VSS Blueprint uses the `nvidia/Cosmos-Reason2-8B` model, which requires accepting a license:
 
 1. Go to [huggingface.co/nvidia/Cosmos-Reason2-8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
 2. Click **"Agree and access repository"**
@@ -224,7 +232,7 @@ Configure kubectl to access your cluster.
 
 ## Task 3. Configure API Keys
 
-Configure access to NVIDIA NGC and HuggingFace.
+Configure access to NVIDIA NGC and Hugging Face.
 
 1. **Export your API keys**:
 
@@ -235,9 +243,9 @@ Configure access to NVIDIA NGC and HuggingFace.
 
    > **Note**: 
    > - NGC API key: [ngc.nvidia.com/setup/api-key](https://ngc.nvidia.com/setup/api-key)
-   > - HuggingFace token: [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+   > - Hugging Face token: [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 
-2. **Verify HuggingFace access**:
+2. **Verify Hugging Face access**:
 
    Ensure you've accepted the license for `nvidia/Cosmos-Reason2-8B` at [huggingface.co/nvidia/Cosmos-Reason2-8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
 
@@ -316,7 +324,7 @@ Deploy the VSS Blueprint with all components.
 
 ## Task 5. Monitor Deployment
 
-The deployment takes 15-20 minutes as large models need to be downloaded.
+The deployment takes 15-20 minutes, as large models need to be downloaded.
 
 1. **Watch pod status**:
 
@@ -432,7 +440,7 @@ You've successfully deployed the NVIDIA Video Search and Summarization Blueprint
 
 - Created an OKE cluster with 8 H100 GPUs
 - Deployed a complex multi-component video AI system
-- Configured Vision Language Model with HuggingFace access
+- Configured Vision Language Model with Hugging Face access
 - Set up multiple databases for different search modalities
 - Accessed the VSS interface for video analysis
 
@@ -485,7 +493,7 @@ helm upgrade vss nvidia-blueprint/nvidia-blueprint-vss -n vss --reuse-values \
 If nim-llm fails with "No space left on device":
 
 ```bash
-# Expand PVC to 200GB
+# Expand PVC to 200 GB
 kubectl patch pvc -n vss model-store-nim-llm-0 -p '{"spec":{"resources":{"requests":{"storage":"200Gi"}}}}'
 
 # Restart pod to pick up new size
@@ -494,13 +502,13 @@ kubectl delete pod -n vss nim-llm-0
 
 ### VSS Pod Stuck in Init:2/3
 
-This is **normal** - VSS waits for the LLM to be healthy. Check LLM status:
+This is **normal** — VSS waits for the LLM to be healthy. Check LLM status:
 
 ```bash
 kubectl logs -n vss nim-llm-0 --tail=10
 ```
 
-Once LLM shows "Uvicorn running", VSS will start automatically. This can take 15-20 minutes.
+Once the LLM shows "Uvicorn running", VSS will start automatically. This can take 15-20 minutes.
 
 ### Pods Stuck in Pending (Insufficient GPU)
 
@@ -550,7 +558,7 @@ sleep 60
 kubectl scale deployment -n vss vss-vss-deployment --replicas=1
 ```
 
-> **Tip**: Avoid using `kubectl delete pod --force` - let pods terminate gracefully to prevent this issue.
+> **Tip**: Avoid using `kubectl delete pod --force` — let pods terminate gracefully to prevent this issue.
 
 ---
 
@@ -583,15 +591,16 @@ Clean up resources when done.
    kubectl delete namespace vss
    ```
 
-5. **Delete OKE cluster** (optional - via OCI Console):
+5. **Delete the OKE cluster** (optional — via OCI Console):
    
    Navigate to **OCI Console** → **Developer Services** → **Kubernetes Clusters** → Select your cluster → **Delete**
 
 ## Learn More
 
+- [VSS Blueprint on OKE Guide](../blueprints/VSS%20Blueprint%20on%20OKE%20Guide.md) — CLI deployment, troubleshooting, deployment checklist
 - [NVIDIA VSS Blueprint](https://github.com/NVIDIA-AI-Blueprints/video-search-and-summarization)
-- [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/)
-- [Cosmos-Reason2-8B on HuggingFace](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
+- [NVIDIA NIMs](https://developer.nvidia.com/nim)
+- [Cosmos-Reason2-8B on Hugging Face](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
 - [Oracle Kubernetes Engine (OKE)](https://www.oracle.com/cloud/cloud-native/container-engine-kubernetes/)
 - [Milvus Vector Database](https://milvus.io/)
 - [Neo4j Graph Database](https://neo4j.com/)
