@@ -8,7 +8,7 @@ This guide provides step-by-step instructions for deploying the NVIDIA RAG (Retr
 
 The NVIDIA RAG Blueprint serves as a reference solution for a foundational Retrieval Augmented Generation (RAG) pipeline. RAG is a cutting-edge approach in natural language processing that boosts the capabilities of large language models (LLM) by incorporating retrieval mechanisms, allowing models to access and utilize external data sources for more accurate and contextually relevant responses.
 
-This blueprint demonstrates how to set up a production-ready RAG solution using NVIDIA NIM, NeMo Retriever microservices, and Milvus as the vector store.
+This blueprint demonstrates how to set up a production-ready RAG solution using [NVIDIA NIM](https://developer.nvidia.com/nim), NeMo Retriever microservices, and Milvus as the vector store.
 
 ### Key Features
 
@@ -71,7 +71,7 @@ Allow group <GROUP_NAME> to use instance-configurations in compartment <COMPARTM
 > **Note**: Nemotron Super 49B requires 1 GPU on H100 but 2 GPUs on A100 due to FP8 vs FP16 quantization.
 
 **Additional Requirements:**
-- **Boot Volume**: Minimum 500GB
+- **Boot Volume**: Minimum 500 GB
 
 **Cluster size (nodes):**
 
@@ -88,7 +88,7 @@ This section covers the steps to prepare your OCI infrastructure for running the
 
 ### Console Quick Create (Recommended)
 
-The fastest way - auto-provisions networking.
+The fastest way — auto-provisions networking.
 
 1. Go to **OCI Console** → **Developer Services** → **Kubernetes Clusters (OKE)**
 2. Click **Create cluster** → Select **Quick create** → **Submit**
@@ -113,7 +113,7 @@ oci ce cluster create-kubeconfig --cluster-id $CLUSTER_ID --region $REGION \
 
 ### Pre-Deployment Setup
 
-> **Already have a cluster?** Start here. Created one above? Continue here.
+> **Already have a cluster?** Start here — whether you have an existing cluster or just created one above.
 
 #### 1. Verify Storage Size
 
@@ -123,7 +123,7 @@ Check that your node's storage matches your boot volume size:
 kubectl describe nodes | grep ephemeral-storage | head -1
 ```
 
-If you specified 500GB boot volume, you should see ~`512628992Ki` (~489GB). If you see ~`37206272Ki` (~35GB), the volume needs expanding - continue to step 2. Otherwise, skip to step 3.
+If you specified a 500 GB boot volume, you should see ~`512628992Ki` (~489 GB). If you see ~`37206272Ki` (~35 GB), the volume needs expanding; continue to step 2. Otherwise, skip to step 3.
 
 #### 2. Expand Boot Volume (if needed)
 
@@ -143,7 +143,7 @@ kubectl run restart-kubelet --rm -it --restart=Never --privileged \
   --overrides='{"spec":{"hostPID":true,"nodeName":"'$NODE_NAME'"}}' \
   --image=docker.io/library/oraclelinux:8 -- nsenter -t 1 -m -u -i -n systemctl restart kubelet
 
-# Verify (should now show ~512628992Ki for 500GB)
+# Verify (should now show ~512628992Ki for 500 GB)
 sleep 10 && kubectl describe nodes | grep ephemeral-storage | head -1
 ```
 
@@ -154,7 +154,7 @@ sudo /usr/libexec/oci-growfs -y
 sudo systemctl restart kubelet
 ```
 
-#### 3. Setup Cluster
+#### 3. Set Up Cluster
 
 ```bash
 # Remove GPU taints
@@ -210,7 +210,7 @@ REVISION: 1
 
 > **Note**: The `docker.io/` prefix is required on OKE because CRI-O enforces fully qualified image names.
 
-**For A100 (9 GPUs)** - add LLM GPU override:
+**For A100 (9 GPUs)** — add LLM GPU override:
 
 ```bash
   --set nim-llm.resources.limits."nvidia\.com/gpu"=2 \
@@ -246,7 +246,7 @@ STATUS: deployed
 REVISION: 1
 ```
 
-**For A100 (5 GPUs)** - add LLM GPU override:
+**For A100 (5 GPUs)** — add LLM GPU override:
 
 ```bash
   --set nim-llm.resources.limits."nvidia\.com/gpu"=2 \
@@ -353,7 +353,7 @@ REVISION: 1
 
 ### Monitor Deployment Status
 
-Wait for pods to be ready (10-15 minutes for LLM model download):
+Wait for pods to be ready (10-15 minutes for LLM download):
 
 ```bash
 kubectl get pods -n rag -w
@@ -398,7 +398,7 @@ kubectl get pods -n rag
 
 | Pod Name Pattern | Description |
 |-----------------|-------------|
-| `rag-nim-llm-0` | Nemotron LLM (takes longest to start - model download) |
+| `rag-nim-llm-0` | Nemotron LLM (takes the longest to start - model download) |
 | `rag-server-*` | RAG API server |
 | `ingestor-server-*` | Document ingestion |
 | `rag-frontend-*` | RAG Playground UI |
@@ -454,7 +454,7 @@ helm upgrade rag nvidia-blueprint/nvidia-blueprint-rag -n rag --reuse-values \
 
 ### Ingestor-server CrashLoopBackOff
 
-Usually waiting for Milvus/MinIO to start. Check logs:
+The pod is usually waiting for Milvus/MinIO to start. Check logs:
 
 ```bash
 kubectl logs -n rag -l app=ingestor-server --tail=20

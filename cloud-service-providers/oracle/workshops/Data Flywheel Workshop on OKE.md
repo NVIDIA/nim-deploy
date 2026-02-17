@@ -75,6 +75,10 @@ The Data Flywheel has flexible GPU requirements depending on configuration:
 
 This workshop uses the **Remote LLM Judge** configuration (2 GPUs minimum).
 
+### NVIDIA NIMs
+
+[NVIDIA NIMs](https://developer.nvidia.com/nim) are optimized inference microservices for foundation models. The Data Flywheel uses NIMs to serve the source and candidate models for evaluation, and the NIM Proxy routes inference requests to the appropriate model endpoint.
+
 ### Architecture Components
 
 ```
@@ -135,7 +139,7 @@ To complete this workshop, you need:
 - **OCI CLI** installed and configured
 - **kubectl** command-line tool
 - **Helm 3.x** package manager
-- **NVIDIA NGC Account** for an NGC API Key - [Sign up here](https://ngc.nvidia.com/setup/api-key)
+- **NVIDIA NGC Account** for an NGC API Key — [Sign up here](https://ngc.nvidia.com/setup/api-key)
 - Sufficient OCI quota for GPU instances
 
 ### GPU Requirements
@@ -169,7 +173,7 @@ Create an OKE cluster with GPU nodes.
    - **Name**: `flywheel-workshop`
    - **Kubernetes API endpoint**: Select **Public endpoint**
    - **Node type**: Select **Managed**
-   - **Shape**: Select a GPU shape with at least 2 GPUs (e.g., `BM.GPU.H100.8`, `VM.GPU.A10.2`)
+   - **Shape**: Select a GPU shape with at least 2 GPUs (e.g., `BM.GPU.H100.8` or `BM.GPU.A100-v2.8`)
    - **Number of nodes**: `1`
    - **Boot volume size**: `500` GB
 
@@ -269,7 +273,7 @@ The Data Flywheel requires several Kubernetes secrets before deployment.
      --from-literal=NGC_API_KEY="$NGC_API_KEY"
    ```
 
-4. **Create HuggingFace secret** (empty for this workshop):
+4. **Create Hugging Face secret** (empty for this workshop):
 
    ```bash
    kubectl create secret generic hf-secret -n nv-nvidia-blueprint-data-flywheel \
@@ -542,7 +546,7 @@ kubectl rollout restart deployment -n nv-nvidia-blueprint-data-flywheel
 
 ### Pods in CreateContainerConfigError
 
-This usually means secrets are missing or have wrong key names. Recreate them:
+This usually means secrets are missing or have the wrong key names. Recreate them:
 
 ```bash
 # Delete existing secrets
@@ -653,13 +657,15 @@ Clean up resources when done.
    kubectl delete clusterrolebinding -l app.kubernetes.io/instance=data-flywheel 2>/dev/null || true
    ```
 
-6. **Delete OKE cluster** (optional - via OCI Console):
+6. **Delete the OKE cluster** (optional — via OCI Console):
    
    Navigate to **OCI Console** → **Developer Services** → **Kubernetes Clusters** → Select your cluster → **Delete**
 
 ## Learn More
 
+- [Data Flywheel Blueprint on OKE Guide](../blueprints/Data%20Flywheel%20Blueprint%20on%20OKE%20Guide.md) — Self-hosted LLM judge, API usage, deployment checklist
 - [NVIDIA Data Flywheel Blueprint](https://github.com/NVIDIA-AI-Blueprints/data-flywheel)
+- [NVIDIA NIMs](https://developer.nvidia.com/nim)
 - [NVIDIA NeMo Customizer](https://developer.nvidia.com/nemo-microservices)
 - [MLflow](https://mlflow.org/)
 - [Oracle Kubernetes Engine (OKE)](https://www.oracle.com/cloud/cloud-native/container-engine-kubernetes/)
