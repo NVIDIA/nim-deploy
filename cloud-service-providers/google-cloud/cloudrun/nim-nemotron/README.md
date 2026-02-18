@@ -82,9 +82,11 @@ spec:
   template:
     metadata:
       annotations:
+        autoscaling.knative.dev/minScale: "1"
         autoscaling.knative.dev/maxScale: '2'
         run.googleapis.com/cpu-throttling: 'false'
         run.googleapis.com/gpu-zonal-redundancy-disabled: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
     spec:
       containers:
       - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/nemotron-3-nano:latest
@@ -101,10 +103,10 @@ spec:
             memory: "80Gi"
             nvidia.com/gpu: "1"
         startupProbe:
-          initialDelaySeconds: 100
-          timeoutSeconds: 240
-          periodSeconds: 240
-          failureThreshold: 10
+          initialDelaySeconds: 200
+          timeoutSeconds: 30
+          periodSeconds: 30
+          failureThreshold: 60
           httpGet:
             path: /v1/health/ready
             port: 8000
