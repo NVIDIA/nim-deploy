@@ -1,6 +1,6 @@
-# Deploying NIMs to Google Cloud Run
+# Deploying NIMs to Google Cloud Run using RTX PRO 6000
 
-This guide outlines the steps to deploy a NIM LLM to Google Cloud Run.
+This guide outlines the steps to deploy a NIM LLM to Google Cloud Run, using Nemotron V3 30B as an example.
 
 ---
 
@@ -23,7 +23,7 @@ This guide outlines the steps to deploy a NIM LLM to Google Cloud Run.
 ```shell
 export PROJECT_ID=<PASTE_PROJECT_ID_HERE>
 export REGION=<PASTE_REGION_HERE> # e.g. us-central1
-export NGC_API_KEY=<PASTE_API_KEY_HERE>
+export NGC_API_KEY='<PASTE_API_KEY_HERE>'
 export ARTIFACT_REGISTRY_NAME=<DEFINE_ARTIFACT_REGISTRY_NAME_HERE>
 export CLOUD_RUN_SERVICE_NAME=<DEFINE_CLOUD_RUN_SERVICE_NAME_HERE>
 ```
@@ -37,7 +37,7 @@ echo $NGC_API_KEY | docker login nvcr.io --username '$oauthtoken' --password-std
 ### 3. Pull Docker Image from NGC
 
 ```shell
-docker pull nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
+docker pull nvcr.io/nim/nvidia/nemotron-3-nano:latest
 ```
 
 ### 4. Authenticate to Google Cloud
@@ -64,10 +64,10 @@ gcloud auth configure-docker ${REGION}-docker.pkg.dev
 ### 7. Tag and Push Image to Artifact Registry
 
 ```shell
-docker tag nvcr.io/nim/meta/llama3-8b-instruct:1.0.0 \
-  ${REGION}-docker.pkg.dev/${PROJECT_ID}/$ARTIFACT_REGISTRY_NAME/llama3-8b-instruct:1.0.0
+docker tag nvcr.io/nim/nvidia/nemotron-3-nano:latest \
+  ${REGION}-docker.pkg.dev/${PROJECT_ID}/$ARTIFACT_REGISTRY_NAME/nemotron-3-nano:latest
 
-docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/$ARTIFACT_REGISTRY_NAME/llama3-8b-instruct:1.0.0
+docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/$ARTIFACT_REGISTRY_NAME/nemotron-3-nano:latest
 ```
 
 ### 8. Create `deployment.yaml` with Environment Variables
@@ -82,48 +82,52 @@ spec:
   template:
     metadata:
       annotations:
+        autoscaling.knative.dev/minScale: "1"
         autoscaling.knative.dev/maxScale: '2'
         run.googleapis.com/cpu-throttling: 'false'
         run.googleapis.com/gpu-zonal-redundancy-disabled: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
     spec:
       containers:
-      - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/llama3-8b-instruct:1.0.0
+      - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/nemotron-3-nano:latest
         env:
           - name: NGC_API_KEY
             value: ${NGC_API_KEY}
+            - name: NIM_MANIFEST_DOWNLOAD_RETRIES
+            value: "5"                             
         ports:
           - containerPort: 8000
         resources:
           limits:
-            cpu: "8"
-            memory: "32Gi"
+            cpu: "20"
+            memory: "80Gi"
             nvidia.com/gpu: "1"
         startupProbe:
-          initialDelaySeconds: 100
-          timeoutSeconds: 240
-          periodSeconds: 240
-          failureThreshold: 10
+          initialDelaySeconds: 200
+          timeoutSeconds: 30
+          periodSeconds: 30
+          failureThreshold: 60
           httpGet:
             path: /v1/health/ready
             port: 8000
       nodeSelector:
-        run.googleapis.com/accelerator: nvidia-l4
+        run.googleapis.com/accelerator: nvidia-rtx-pro-6000
 EOF
 ```
 
 ### 9. Deploy to Cloud Run
 
 ```shell
-gcloud run services replace deployment.yaml \
-  --region=${REGION} \
-  --project=${PROJECT_ID}
+gcloud beta run services replace deployment.yaml   --region=${REGION}   --project=${PROJECT_ID}
 ```
 
 ### 10. verify deployment was successful
 
 ```shell
-gcloud run services list --project ${PROJECT_ID} --region ${REGION}
+gcloud beta run services list --project ${PROJECT_ID} --region ${REGION}
 ```
+You can confirm the GPU used in Cloud Run by inspecting the logs :
+```telemetry_handler.py:123] RTX GPU detected: NVIDIA RTX PRO 6000 Blackwell Server Edition```
 
 ### 11. Test Deployment
 
@@ -140,18 +144,37 @@ curl -X POST ${TESTURL} \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
-  "messages": [
-    {
-      "content": "You are a polite and respectful chatbot helping people plan a vacation.",
-      "role": "system"
-    },
-    {
-      "content": "What should I do for a 4 week vacation in Europe?",
-      "role": "user"
-    }
-  ],
-  "model": "meta/llama3-8b-instruct",
-  "max_tokens": 256
+  "model": "nvidia/nemotron-3-nano",
+  "messages": [{"role":"user", "content":"Which number is larger, 9.11 or 9.8?"}],
+  "max_tokens": 64
+}'
+```
+
+You may also try : 
+
+```shell
+# Send test request
+curl -X POST ${TESTURL} \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+  "model": "nvidia/nemotron-3-nano",
+  "messages": [{"role":"user", "content":"Explain the importance of Blackwell GPUs for LLM inference in one sentence."}],
+  "max_tokens": 64
+}'
+```
+
+```shell
+# Send test request
+curl -X POST ${TESTURL} \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+  "model": "nvidia/nemotron-3-nano",
+  "messages": [{"role":"user", "content":"Explain the importance of Blackwell GPUs for LLM inference in ten sentences."}],
+  "max_tokens": 1024
 }'
 ```
 
@@ -167,8 +190,8 @@ gcloud artifacts repositories delete ${ARTIFACT_REGISTRY_NAME} \
     --project=${PROJECT_ID}
 
 # Remove local Docker images
-docker rmi nvcr.io/nim/meta/llama3-8b-instruct:1.0.0
-docker rmi ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/llama3-8b-instruct:1.0.0
+docker rmi nvcr.io/nim/nvidia/nemotron-3-nano:latest
+docker rmi ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/nemotron-3-nano:latest
 
 # Logout from NGC registry
 docker logout nvcr.io
