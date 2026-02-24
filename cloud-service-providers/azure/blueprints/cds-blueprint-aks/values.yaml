@@ -1,0 +1,76 @@
+replicaCount: 1
+
+imagePullSecret: "ngc-docker-reg-secret"
+
+nodeSelector: ""
+
+tolerations:
+  key: "nvidia.com/gpu"
+
+global:
+  milvus: milvus
+  ingress:
+    enabled: false
+    host: "localhost"
+    scheme: "http"
+  namespace: "default"
+  configMap:
+    name: "cvs-config"
+    keys:
+      dbHost: "dep"
+
+milvus:
+  name: "milvus"
+  namespace: "default"
+  db: "default"
+  port: 19530
+
+storageSpec:
+  name: "storage"
+  port: 8080
+
+secret:
+  storage:
+    name: "storage"
+    key: "api_key"
+
+env:
+  MAX_DOCS_PER_UPLOAD: "100"
+  GUNICORN_PORT: "11000"
+  GUNICORN_TIMEOUT: "300"
+  GUNICORN_WORKERS: "5"
+  FASTAPI_ROOT_PATH: "/api"
+  NVIDIA_API_KEY: "PLACEHOLDER"
+  COSMOS_EMBED_NIM_URI: "cosmos-embed.default.svc.cluster.local:8000"
+
+resources:
+  requests:
+    visualSearchCpu: "500m"
+    cdnCpu: "250m"
+    reactUiCpu: "100m"
+
+cosmosEmbed:
+  name: "cosmos-embed"
+  image:
+    repository: "nvcr.io/nim/nvidia/cosmos-embed1"
+    tag: "1.0.0"
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+
+visualSearch:
+  name: "visual-search"
+  image:
+    repository: "nvcr.io/nvidia/blueprint/cosmos-dataset-search"
+    tag: "1.0.0"
+  port: 8888
+  containerPort: 8888
+
+visualSearchReactUi:
+  name: "visual-search-react-ui"
+  image:
+    repository: "nvcr.io/nvidia/blueprint/cosmos-cds-ui"
+    tag: "1.0.0"
+  port: 8080
+  containerPort: 8080
