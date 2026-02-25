@@ -81,21 +81,25 @@ echo ""
 echo "  DOWNLOAD + UPLOAD (on-cluster)"
 UPLOAD_START=$(date +%s)
 
-UPLOAD_RESPONSE=$(kubectl exec "$VSS_POD" -c vss -- bash -c "
-  TMPFILE=\$(mktemp /tmp/vss_cluster_XXXXXX)
-  trap 'rm -f \$TMPFILE' EXIT
+UPLOAD_RESPONSE=$(kubectl exec "$VSS_POD" -c vss \
+  --env "VIDEO_URL=$VIDEO_URL" \
+  --env "FILENAME=$FILENAME" \
+  --env "VSS_INTERNAL=$VSS_INTERNAL" \
+  -- bash -c '
+  TMPFILE=$(mktemp /tmp/vss_cluster_XXXXXX)
+  trap "rm -f $TMPFILE" EXIT
 
-  echo '  Downloading...' >&2
-  curl -sL '$VIDEO_URL' -o \$TMPFILE
-  SIZE=\$(stat -c%s \$TMPFILE 2>/dev/null || stat -f%z \$TMPFILE 2>/dev/null)
-  echo \"  Downloaded: \$(( SIZE / 1048576 )) MB\" >&2
+  echo "  Downloading..." >&2
+  curl -sL "$VIDEO_URL" -o $TMPFILE
+  SIZE=$(stat -c%s $TMPFILE 2>/dev/null || stat -f%z $TMPFILE 2>/dev/null)
+  echo "  Downloaded: $(( SIZE / 1048576 )) MB" >&2
 
-  echo '  Uploading to VSS...' >&2
-  curl -s -X POST '$VSS_INTERNAL/files' \
-    -F \"file=@\$TMPFILE;filename=$FILENAME\" \
-    -F 'purpose=vision' \
-    -F 'media_type=video'
-")
+  echo "  Uploading to VSS..." >&2
+  curl -s -X POST "$VSS_INTERNAL/files" \
+    -F "file=@$TMPFILE;filename=$FILENAME" \
+    -F "purpose=vision" \
+    -F "media_type=video"
+')
 
 UPLOAD_END=$(date +%s)
 UPLOAD_TIME=$(( UPLOAD_END - UPLOAD_START ))

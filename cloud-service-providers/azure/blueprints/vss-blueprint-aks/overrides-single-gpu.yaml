@@ -67,7 +67,7 @@ vss:
             - -c
             - until nc -z -w 2 milvus-milvus-deployment-milvus-service 19530; do echo
               waiting for milvus; sleep 2; done
-          image: busybox:1.28
+          image: busybox:1.37
           imagePullPolicy: IfNotPresent
           name: check-milvus-up
         - command:
@@ -75,7 +75,7 @@ vss:
             - -c
             - until nc -z -w 2 neo-4-j-service 7687; do echo waiting for neo4j; sleep
               2; done
-          image: busybox:1.28
+          image: busybox:1.37
           imagePullPolicy: IfNotPresent
           name: check-neo4j-up
         - args:
@@ -84,7 +84,7 @@ vss:
           command:
             - sh
             - -c
-          image: curlimages/curl:latest
+          image: curlimages/curl:8.12.0
           imagePullPolicy: IfNotPresent
           name: check-nemo-embed-up
         - args:
@@ -93,7 +93,7 @@ vss:
           command:
             - sh
             - -c
-          image: curlimages/curl:latest
+          image: curlimages/curl:8.12.0
           imagePullPolicy: IfNotPresent
           name: check-nemo-rerank-up
         - args:
@@ -102,7 +102,8 @@ vss:
           command:
             - sh
             - -c
-          image: curlimages/curl:latest
+          image: curlimages/curl:8.12.0
+          imagePullPolicy: IfNotPresent
           name: check-llm-up
   llmModel: meta/llama-3.1-8b-instruct
   llmModelChat: meta/llama-3.1-8b-instruct
@@ -134,6 +135,8 @@ vss:
             base_url: http://nemo-embedding-embedding-deployment-embedding-service:8000/v1
           type: embeddings
 
+# Both embedding and rerank use the fp16-onnx-onnx profile (same hash).
+# This is the correct profile for single-GPU shared deployment.
 nemo-embedding:
   nodeSelector:
     agentpool: gpupool
@@ -162,7 +165,7 @@ nemo-rerank:
   applicationSpecs:
     ranking-deployment:
       securityContext:
-        fsGroup: 1000
+        fsGroup: 1000  # match runAsUser so PVC mount is writable
       containers:
         ranking-container:
           env:

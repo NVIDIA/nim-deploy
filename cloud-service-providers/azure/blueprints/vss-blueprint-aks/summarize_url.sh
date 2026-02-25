@@ -51,7 +51,9 @@ else
   done
 fi
 
-TMPFILE=$(mktemp /tmp/vss_XXXXXX.mp4)
+TMPFILE=$(mktemp /tmp/vss_XXXXXX)
+mv "$TMPFILE" "${TMPFILE}.mp4"
+TMPFILE="${TMPFILE}.mp4"
 cleanup() {
   rm -f "$TMPFILE"
   if [ -n "$PF_PID" ]; then

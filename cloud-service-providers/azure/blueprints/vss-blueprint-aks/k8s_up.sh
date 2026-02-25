@@ -103,6 +103,14 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
   ELAPSED=$((ELAPSED + INTERVAL))
 done
 
+if [ $ELAPSED -ge $TIMEOUT ]; then
+  echo ""
+  echo "ERROR: Timed out after ${TIMEOUT}s waiting for pods to become ready."
+  echo "Check pod status: kubectl get pods"
+  echo "Check logs:       kubectl logs <pod-name>"
+  exit 1
+fi
+
 echo ""
 echo "Deployment complete."
 echo ""

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eo pipefail
+
 if [ -z "$NGC_API_KEY" ]; then
   echo "Error: NGC_API_KEY is not set"
   exit 1
@@ -17,6 +19,12 @@ kubectl create secret docker-registry ngc-docker-reg-secret \
   --docker-username='$oauthtoken' \
   --docker-password="$NGC_API_KEY" \
   --dry-run=client -o yaml | kubectl apply -f -
+
+# WARNING: These credentials match the Helm chart's internal defaults.
+# The chart's Neo4j, ArangoDB, and MinIO sub-charts expect these exact
+# values. Changing them here requires matching overrides in the Helm
+# values for every sub-chart that references these secrets.
+# For production, override all sub-chart credential configurations.
 
 kubectl create secret generic graph-db-creds-secret \
   --from-literal=username=neo4j --from-literal=password=password \

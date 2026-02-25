@@ -18,6 +18,11 @@ All models share one GPU using low-memory modes:
 - [NGC API Key](https://ngc.nvidia.com)
 - [Hugging Face Token](https://huggingface.co/settings/tokens) — accept [Cosmos-Reason2-8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B) terms
 
+Check your H100 quota:
+```bash
+az vm list-usage --location eastus2 -o table | grep NC40
+```
+
 ## Setup
 
 ### 1. Create AKS cluster
@@ -68,6 +73,8 @@ the GPU Operator, and deploys the Helm chart. First run takes 15-30 minutes
 ```bash
 kubectl port-forward svc/vss-service 8100:8000 &
 kubectl port-forward svc/vss-service 9100:9100 &
+
+curl http://localhost:8100/health/ready   # should return 200
 ```
 
 | Service | URL |
@@ -116,8 +123,15 @@ az aks nodepool scale -g rg-vss-aks --cluster-name aks-vss -n gpupool --node-cou
 
 ```bash
 ./teardown/shutdown_sequence.sh
+```
 
-# Or delete everything
+This removes the Helm release only. Secrets and PVCs are left intact
+(they may be shared with other workloads, and PVCs retain model cache
+for faster re-deploy). The script prints manual cleanup commands if
+you want a full removal.
+
+To delete the entire resource group:
+```bash
 az group delete -n rg-vss-aks --yes
 ```
 
@@ -136,3 +150,4 @@ See [VSS Helm Deployment](https://docs.nvidia.com/vss/latest/content/vss_dep_hel
 - The overrides file includes `fsGroup: 1000` for nemo-rerank to fix PVC permission issues.
 - GPU Operator on AKS: fresh clusters on K8s 1.33+ require `toolkit.enabled=true`.
 - Names in `overrides-single-gpu.yaml` must match your cluster setup (`agentpool: gpupool`, `ngc-docker-reg-secret`).
+- All resources are deployed into the current kubectl namespace context (default: `default`). Use a dedicated cluster or namespace to avoid conflicts with other workloads.
