@@ -72,9 +72,9 @@ the GPU Operator, and deploys the Helm chart. First run takes 15-30 minutes
 
 ```bash
 kubectl port-forward svc/vss-service 8100:8000 &
-kubectl port-forward svc/vss-service 9100:9100 &
+kubectl port-forward svc/vss-service 9100:9000 &
 
-curl http://localhost:8100/health/ready   # should return 200
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/health/ready   # should print 200
 ```
 
 | Service | URL |

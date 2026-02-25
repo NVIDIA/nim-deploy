@@ -51,7 +51,8 @@ done
 # Deploy VSS via Helm
 echo "Installing VSS blueprint..."
 helm upgrade --install vss-blueprint "$SCRIPT_DIR/nvidia-blueprint-vss-2.4.1.tgz" \
-  -f "$SCRIPT_DIR/overrides-single-gpu.yaml"
+  -f "$SCRIPT_DIR/overrides-single-gpu.yaml" \
+  --disable-openapi-validation
 
 # Health check — wait for all pods to be ready
 echo "Waiting for all pods to be ready (this can take 15-30 minutes on first run)..."
@@ -64,7 +65,7 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
   echo "  [$(date +%H:%M:%S)] Pod status:"
   kubectl get pods --no-headers 2>/dev/null | while read -r line; do
     echo "    $line"
-  done
+  done || true
   echo ""
 
   PODS_TABLE="$(kubectl get pods --no-headers 2>/dev/null | sed '/^No resources found/d')"
@@ -116,12 +117,12 @@ echo "Deployment complete."
 echo ""
 echo "  Access VSS:"
 echo "    kubectl port-forward svc/vss-service 8100:8000 &"
-echo "    kubectl port-forward svc/vss-service 9100:9100 &"
+echo "    kubectl port-forward svc/vss-service 9100:9000 &"
 echo ""
 echo "    API: http://localhost:8100"
 echo "    UI:  http://localhost:9100"
 echo ""
 echo "  Test:"
-echo "    curl http://localhost:8100/health/ready"
+echo "    curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8100/health/ready"
 echo "    ./summarize_url.sh \"https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4\""
 echo ""
