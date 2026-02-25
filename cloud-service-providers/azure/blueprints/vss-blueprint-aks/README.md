@@ -150,4 +150,6 @@ See [VSS Helm Deployment](https://docs.nvidia.com/vss/latest/content/vss_dep_hel
 - The overrides file includes `fsGroup: 1000` for nemo-rerank to fix PVC permission issues.
 - GPU Operator on AKS: fresh clusters on K8s 1.33+ require `toolkit.enabled=true`.
 - Names in `overrides-single-gpu.yaml` must match your cluster setup (`agentpool: gpupool`, `ngc-docker-reg-secret`).
+- Internal service passwords in `secrets.sh` match the Helm chart defaults — override for production.
 - All resources are deployed into the current kubectl namespace context (default: `default`). Use a dedicated cluster or namespace to avoid conflicts with other workloads.
+- Tested on AKS with Kubernetes 1.33. If the default AKS version changes, you can pin it with `--kubernetes-version 1.33` in the `az aks create` command.

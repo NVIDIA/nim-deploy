@@ -81,11 +81,9 @@ echo ""
 echo "  DOWNLOAD + UPLOAD (on-cluster)"
 UPLOAD_START=$(date +%s)
 
-UPLOAD_RESPONSE=$(kubectl exec "$VSS_POD" -c vss \
-  --env "VIDEO_URL=$VIDEO_URL" \
-  --env "FILENAME=$FILENAME" \
-  --env "VSS_INTERNAL=$VSS_INTERNAL" \
-  -- bash -c '
+UPLOAD_RESPONSE=$(kubectl exec "$VSS_POD" -c vss -- \
+  env "VIDEO_URL=$VIDEO_URL" "FILENAME=$FILENAME" "VSS_INTERNAL=$VSS_INTERNAL" \
+  bash -c '
   TMPFILE=$(mktemp /tmp/vss_cluster_XXXXXX)
   trap "rm -f $TMPFILE" EXIT
 
