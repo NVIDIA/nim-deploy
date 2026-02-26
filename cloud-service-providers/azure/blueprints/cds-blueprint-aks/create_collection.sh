@@ -36,5 +36,4 @@ fi
 echo "  ID: $COLLECTION_ID"
 echo ""
 echo "Next: ingest videos"
-echo "  ./ingest_custom_videos.sh $COLLECTION_ID /path/to/video.mp4"
-echo "  ./ingest_custom_videos.sh $COLLECTION_ID https://example.com/video.mp4"
+echo "  ./ingest_custom_videos.sh $COLLECTION_ID <video-url-or-path>"

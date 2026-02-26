@@ -24,7 +24,6 @@ helm upgrade --install cosmos-embed ./triton-cosmos-embed \
   --values cosmos-embed-override.yaml \
   --timeout 45m
 
-echo "Running in production environment, using fixed image tag from values.yaml"
 helm upgrade --install visual-search visual-search \
   --values values.yaml \
   --set "env.NVIDIA_API_KEY=$NGC_API_KEY"
@@ -171,11 +170,12 @@ done
 echo ""
 echo "Deployment completed successfully."
 echo ""
-echo "  UI:   http://${INGRESS_IP}"
+echo "  UI:   http://${INGRESS_IP}/cosmos-dataset-search"
 echo "  API:  http://${INGRESS_IP}/api/health"
 echo "  Docs: http://${INGRESS_IP}/api/docs"
 echo ""
 echo "  Storage: ${BLOB_BASE_URL}/cds-videos/"
 echo ""
-echo "Next: ingest videos"
-echo "  ./ingest_custom_videos.sh <collection-id> /path/to/video.mp4"
+echo "Next: create a collection and ingest videos"
+echo "  ./create_collection.sh my-videos"
+echo "  ./ingest_custom_videos.sh <collection-id> <video-url-or-path>"

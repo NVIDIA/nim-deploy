@@ -10,27 +10,42 @@ NVIDIA Cosmos Dataset Search blueprint on Azure Kubernetes Service with a single
 
 ## Setup
 
-### 1. Create AKS cluster
+### 1. Set environment variables
+
+```bash
+export NGC_API_KEY="<your-key>"
+export RESOURCE_GROUP="rg-cds-aks"
+export LOCATION="eastus2"                                   # any region with H100 quota
+```
+
+For a **first deploy**, generate a storage account name:
+
+```bash
+# Skip if re-deploying with an existing storage account (.storage-config exists)
+export STORAGE_ACCOUNT_NAME="cdsstorage$(date +%s | tail -c 8)"
+```
+
+### 2. Create AKS cluster
 
 ```bash
 az account set --subscription "<your-subscription>"
-az group create --name rg-cds-aks --location eastus2
+az group create --name $RESOURCE_GROUP --location $LOCATION
 
 az aks create \
-  --resource-group rg-cds-aks --name aks-cds --location eastus2 \
+  --resource-group $RESOURCE_GROUP --name aks-cds --location $LOCATION \
   --node-count 1 --node-vm-size Standard_D8s_v5 \
   --generate-ssh-keys --network-plugin azure --enable-managed-identity
 
 az aks nodepool add \
-  --resource-group rg-cds-aks --cluster-name aks-cds \
+  --resource-group $RESOURCE_GROUP --cluster-name aks-cds \
   --name gpupool --node-count 1 \
   --node-vm-size Standard_NC40ads_H100_v5 \
   --labels hardware=gpu --node-osdisk-size 512
 
-az aks get-credentials --resource-group rg-cds-aks --name aks-cds --overwrite-existing
+az aks get-credentials --resource-group $RESOURCE_GROUP --name aks-cds --overwrite-existing
 ```
 
-### 2. Install GPU Operator
+### 3. Install GPU Operator
 
 ```bash
 helm repo add nvidia https://helm.ngc.nvidia.com/nvidia --force-update
@@ -42,20 +57,6 @@ helm install gpu-operator nvidia/gpu-operator \
 # Verify (~2-3 min)
 kubectl get nodes -o json | jq '.items[].status.allocatable["nvidia.com/gpu"]'
 ```
-
-### 3. Set environment variables
-
-```bash
-export NGC_API_KEY="<your-key>"
-export RESOURCE_GROUP="rg-cds-aks"
-export LOCATION="eastus2"
-export STORAGE_ACCOUNT_NAME="cdsstorage$(date +%s | tail -c 8)"
-```
-
-> **Re-deploying?** If `.storage-config` exists from a prior run, `storage_up.sh`
-> will reuse the same storage account automatically. Do **not** re-export
-> `STORAGE_ACCOUNT_NAME` with a new value — Milvus etcd metadata points to
-> the original account.
 
 ### 4. Deploy CDS
 
@@ -76,31 +77,66 @@ update configuration.
 
 ### 5. Access
 
+`k8s_up.sh` prints the ingress IP when it finishes. You can also retrieve it with:
+
+```bash
+kubectl get ingress simple-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
 | Service | URL |
 |---------|-----|
 | **UI** | `http://<ingress-ip>/cosmos-dataset-search` |
 | **API** | `http://<ingress-ip>/api/health` |
 | **API docs** | `http://<ingress-ip>/api/docs` |
 
-## Usage
+## Ingest videos
+
+Public URLs are passed directly to the CDS API. Local files are uploaded
+to Azure Blob Storage first.
 
 ```bash
 ./create_collection.sh my-videos
+# prints:  ID: <collection-id>
 
-./ingest_custom_videos.sh <collection-id> "https://example.com/video.mp4"
-./ingest_custom_videos.sh <collection-id> /path/to/local/video.mp4
+COLLECTION_ID="<collection-id from above>"
 
-./search.sh <collection-id> "explosion"
+./ingest_custom_videos.sh $COLLECTION_ID "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+./ingest_custom_videos.sh $COLLECTION_ID "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+./ingest_custom_videos.sh $COLLECTION_ID "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
+
+# Local files work too
+./ingest_custom_videos.sh $COLLECTION_ID /path/to/local/video.mp4
+```
+
+## Search
+
+```bash
+INGRESS_IP=$(kubectl get ingress simple-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "http://$INGRESS_IP/cosmos-dataset-search"
+```
+
+Open that URL to search interactively, or use the CLI:
+
+```bash
+./search.sh $COLLECTION_ID "fire"
+./search.sh $COLLECTION_ID "escape"
+./search.sh $COLLECTION_ID "car"
+```
+
+To delete a collection:
+
+```bash
+./delete_collection.sh $COLLECTION_ID
 ```
 
 ## Cost control
 
 ```bash
 # Stop GPU billing (keep cluster)
-az aks nodepool scale -g rg-cds-aks --cluster-name aks-cds -n gpupool --node-count 0
+az aks nodepool scale -g $RESOURCE_GROUP --cluster-name aks-cds -n gpupool --node-count 0
 
 # Scale back up
-az aks nodepool scale -g rg-cds-aks --cluster-name aks-cds -n gpupool --node-count 1
+az aks nodepool scale -g $RESOURCE_GROUP --cluster-name aks-cds -n gpupool --node-count 1
 ```
 
 ## Teardown
@@ -109,7 +145,7 @@ az aks nodepool scale -g rg-cds-aks --cluster-name aks-cds -n gpupool --node-cou
 ./teardown/shutdown_sequence.sh
 
 # Or delete the entire resource group
-az group delete -n rg-cds-aks --yes
+az group delete -n $RESOURCE_GROUP --yes
 ```
 
 ## Production scaling
