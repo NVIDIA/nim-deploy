@@ -14,8 +14,9 @@ NVIDIA Cosmos Dataset Search blueprint on Azure Kubernetes Service with a single
 
 ```bash
 export NGC_API_KEY="<your-key>"
-export RESOURCE_GROUP="rg-cds-aks"
-export LOCATION="eastus2"                                   # any region with GPU quota
+export RESOURCE_GROUP="<your-resource-group>"
+export LOCATION="<Azure region (e.g.: eastus2)>"            # any region with GPU quota
+export AKS_CLUSTER_NAME="<your-cluster-name>"
 export GPU_VM_SIZE="Standard_NC40ads_H100_v5"               # 80 GB+ VRAM recommended; tested with H100
 ```
 
@@ -33,17 +34,17 @@ az account set --subscription "<your-subscription>"
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
 az aks create \
-  --resource-group $RESOURCE_GROUP --name aks-cds --location $LOCATION \
+  --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION \
   --node-count 1 --node-vm-size Standard_D8s_v5 \
   --generate-ssh-keys --network-plugin azure --enable-managed-identity
 
 az aks nodepool add \
-  --resource-group $RESOURCE_GROUP --cluster-name aks-cds \
+  --resource-group $RESOURCE_GROUP --cluster-name $AKS_CLUSTER_NAME \
   --name gpupool --node-count 1 \
   --node-vm-size $GPU_VM_SIZE \
   --labels hardware=gpu --node-osdisk-size 512
 
-az aks get-credentials --resource-group $RESOURCE_GROUP --name aks-cds --overwrite-existing
+az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --overwrite-existing
 ```
 
 ### 3. Install GPU Operator
@@ -141,10 +142,10 @@ To delete a collection:
 
 ```bash
 # Stop GPU billing (keep cluster)
-az aks nodepool scale -g $RESOURCE_GROUP --cluster-name aks-cds -n gpupool --node-count 0
+az aks nodepool scale -g $RESOURCE_GROUP --cluster-name $AKS_CLUSTER_NAME -n gpupool --node-count 0
 
 # Scale back up
-az aks nodepool scale -g $RESOURCE_GROUP --cluster-name aks-cds -n gpupool --node-count 1
+az aks nodepool scale -g $RESOURCE_GROUP --cluster-name $AKS_CLUSTER_NAME -n gpupool --node-count 1
 ```
 
 ## Teardown

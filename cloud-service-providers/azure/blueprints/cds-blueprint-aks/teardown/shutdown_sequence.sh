@@ -7,13 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 pushd "${SCRIPT_DIR}" > /dev/null || exit
 trap 'popd > /dev/null' EXIT
 
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-cds-aks}"
-
-# Check required environment variables
-if [ -z "$RESOURCE_GROUP" ]; then
-  echo "Error: RESOURCE_GROUP is not set"
-  exit 1
-fi
+RESOURCE_GROUP="${RESOURCE_GROUP:?RESOURCE_GROUP is not set}"
 
 # Skip confirmation with -y
 if [ "$1" != "-y" ]; then
