@@ -16,44 +16,48 @@ All models share one GPU using low-memory modes:
 - Azure CLI (logged in), kubectl, helm, python3, curl
 - Azure subscription with H100 quota (`Standard_NC40ads_H100_v5`)
 - [NGC API Key](https://ngc.nvidia.com)
-- [Hugging Face Token](https://huggingface.co/settings/tokens) — accept [Cosmos-Reason2-8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B) terms
-
-Check your H100 quota:
-```bash
-az vm list-usage --location eastus2 -o table | grep NC40
-```
+- [Hugging Face Token](https://huggingface.co/settings/tokens) — accept the license for [Llama 3.1 8B Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct) and [Cosmos-Reason2-8B](https://huggingface.co/nvidia/Cosmos-Reason2-8B)
 
 ## Setup
 
-### 1. Create AKS cluster
-
-```bash
-az account set --subscription "<your-subscription>"
-az group create --name rg-vss-aks --location eastus2
-
-az aks create \
-  --resource-group rg-vss-aks --name aks-vss --location eastus2 \
-  --node-count 1 --node-vm-size Standard_D8s_v5 \
-  --generate-ssh-keys --network-plugin azure --enable-managed-identity
-
-az aks nodepool add \
-  --resource-group rg-vss-aks --cluster-name aks-vss \
-  --name gpupool --node-count 1 \
-  --node-vm-size Standard_NC40ads_H100_v5 \
-  --labels hardware=gpu --node-osdisk-size 512
-
-az aks get-credentials --resource-group rg-vss-aks --name aks-vss --overwrite-existing
-```
-
-> **Do not** add taints to the GPU node pool. Pods with `nvidia.com/gpu: 0`
-> (GPU sharing) won't auto-tolerate them.
-
-### 2. Set environment variables
+### 1. Set environment variables
 
 ```bash
 export NGC_API_KEY="<your-key>"
 export HF_TOKEN="<your-token>"
+export RESOURCE_GROUP="<your-resource-group>"
+export LOCATION="<Azure region (e.g.: eastus2)>"
+export AKS_CLUSTER_NAME="<your-cluster-name>"
+export GPU_VM_SIZE="Standard_NC40ads_H100_v5"               # 80 GB+ VRAM recommended; tested with H100
 ```
+
+Check your GPU quota:
+```bash
+az vm list-usage --location $LOCATION -o table | grep NC40
+```
+
+### 2. Create AKS cluster
+
+```bash
+az account set --subscription "<your-subscription>"
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+az aks create \
+  --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --location $LOCATION \
+  --node-count 1 --node-vm-size Standard_D8s_v5 \
+  --generate-ssh-keys --network-plugin azure --enable-managed-identity
+
+az aks nodepool add \
+  --resource-group $RESOURCE_GROUP --cluster-name $AKS_CLUSTER_NAME \
+  --name gpupool --node-count 1 \
+  --node-vm-size $GPU_VM_SIZE \
+  --labels hardware=gpu --node-osdisk-size 512
+
+az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER_NAME --overwrite-existing
+```
+
+> **Do not** add taints to the GPU node pool. Pods with `nvidia.com/gpu: 0`
+> (GPU sharing) won't auto-tolerate them.
 
 ### 3. Deploy VSS
 
@@ -84,6 +88,17 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/health/ready   # 
 
 ## Usage
 
+### Summarize a video (on-cluster, recommended)
+
+```bash
+./summarize_url_cluster.sh "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+```
+
+The video is downloaded directly inside the cluster pod and uploaded to VSS
+internally — video bytes never leave the AKS network. Only the small JSON
+request/response travels through the local port-forward, making this much
+faster for large files.
+
 ### Summarize a video (local download)
 
 ```bash
@@ -91,15 +106,6 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8100/health/ready   # 
 ```
 
 Downloads the video locally, uploads through port-forward. Results saved to `summaries/`.
-
-### Summarize a video (on-cluster, faster for large files)
-
-```bash
-./summarize_url_cluster.sh "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-```
-
-Downloads and uploads entirely inside the cluster via `kubectl exec`.
-Only the small JSON request/response goes through port-forward.
 
 ### Customizing prompts
 
@@ -113,10 +119,10 @@ The `/summarize` API accepts three prompts (see `summarize_url.sh`):
 
 ```bash
 # Stop GPU billing (keep cluster)
-az aks nodepool scale -g rg-vss-aks --cluster-name aks-vss -n gpupool --node-count 0
+az aks nodepool scale -g $RESOURCE_GROUP --cluster-name $AKS_CLUSTER_NAME -n gpupool --node-count 0
 
 # Scale back up (~5-10 min, PVCs persist so model cache is retained)
-az aks nodepool scale -g rg-vss-aks --cluster-name aks-vss -n gpupool --node-count 1
+az aks nodepool scale -g $RESOURCE_GROUP --cluster-name $AKS_CLUSTER_NAME -n gpupool --node-count 1
 ```
 
 ## Teardown
@@ -132,7 +138,7 @@ you want a full removal.
 
 To delete the entire resource group:
 ```bash
-az group delete -n rg-vss-aks --yes
+az group delete -n $RESOURCE_GROUP --yes
 ```
 
 ## Production scaling
