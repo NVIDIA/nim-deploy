@@ -1,12 +1,12 @@
 # CDS on AKS (Single GPU)
 
-NVIDIA Cosmos Dataset Search blueprint on Azure Kubernetes Service with a single H100 GPU.
+NVIDIA Cosmos Dataset Search blueprint on Azure Kubernetes Service with a single GPU.
 
 ## Prerequisites
 
 - Azure CLI (logged in), kubectl, helm, jq, openssl, python3
-- Azure subscription with H100 quota (`Standard_NC40ads_H100_v5`)
-- NGC API Key (from [NGC](https://ngc.nvidia.com/))
+- Azure subscription with GPU VM quota (80 GB+ VRAM recommended)
+- NGC API Key with access to the [Cosmos Dataset Search blueprint](https://build.nvidia.com/nvidia/cosmos-dataset-search) — accept the license, then generate a key from the same org
 
 ## Setup
 
@@ -15,7 +15,8 @@ NVIDIA Cosmos Dataset Search blueprint on Azure Kubernetes Service with a single
 ```bash
 export NGC_API_KEY="<your-key>"
 export RESOURCE_GROUP="rg-cds-aks"
-export LOCATION="eastus2"                                   # any region with H100 quota
+export LOCATION="eastus2"                                   # any region with GPU quota
+export GPU_VM_SIZE="Standard_NC40ads_H100_v5"               # 80 GB+ VRAM recommended; tested with H100
 ```
 
 For a **first deploy**, generate a storage account name:
@@ -39,7 +40,7 @@ az aks create \
 az aks nodepool add \
   --resource-group $RESOURCE_GROUP --cluster-name aks-cds \
   --name gpupool --node-count 1 \
-  --node-vm-size Standard_NC40ads_H100_v5 \
+  --node-vm-size $GPU_VM_SIZE \
   --labels hardware=gpu --node-osdisk-size 512
 
 az aks get-credentials --resource-group $RESOURCE_GROUP --name aks-cds --overwrite-existing
@@ -54,7 +55,7 @@ helm install gpu-operator nvidia/gpu-operator \
   --set driver.enabled=false \
   --set toolkit.enabled=true
 
-# Verify (~2-3 min)
+# Verify (~2-3 min) — expect "1" for GPU node, null for system node
 kubectl get nodes -o json | jq '.items[].status.allocatable["nvidia.com/gpu"]'
 ```
 
@@ -100,12 +101,19 @@ to Azure Blob Storage first.
 
 COLLECTION_ID="<collection-id from above>"
 
+# ingest via URL
+./ingest_custom_videos.sh $COLLECTION_ID <video-url>
+
+# ingest from local files
+./ingest_custom_videos.sh $COLLECTION_ID /path/to/local/video.mp4
+```
+
+Here are some sample videos to try:
+
+```bash
 ./ingest_custom_videos.sh $COLLECTION_ID "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
 ./ingest_custom_videos.sh $COLLECTION_ID "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
 ./ingest_custom_videos.sh $COLLECTION_ID "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
-
-# Local files work too
-./ingest_custom_videos.sh $COLLECTION_ID /path/to/local/video.mp4
 ```
 
 ## Search
