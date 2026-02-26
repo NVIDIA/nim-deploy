@@ -3,7 +3,6 @@
 # GPU sharing: nvidia.com/gpu: 0 bypasses the K8s device plugin so the
 # scheduler does not claim a whole GPU.  NVIDIA_VISIBLE_DEVICES=0 tells the
 # NVIDIA container runtime to expose physical GPU 0 directly.
-# This is the same technique used in the VSS single-GPU deployment.
 
 replicaCount: 1
 
