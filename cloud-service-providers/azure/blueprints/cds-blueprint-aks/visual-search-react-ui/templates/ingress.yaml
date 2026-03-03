@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+#
+# NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+# property and proprietary rights in and to this material, related
+# documentation and any modifications thereto. Any use, reproduction,
+# disclosure or distribution of this material and related documentation
+# without an express license agreement from NVIDIA CORPORATION or
+# its affiliates is strictly prohibited.
+
+{{- if .Values.global.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+  {{- range $key, $value := .Values.global.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  name: {{ .Values.visualSearchReactUi.name }}
+spec:
+{{- if .Values.global.ingress.ingressClassName }}
+  ingressClassName: {{ .Values.global.ingress.ingressClassName }}
+{{- end }}
+  rules:
+  - host: "{{ .Values.ingress.prefix }}.{{ .Values.global.ingress.host }}"
+    http:
+      paths:
+        - backend:
+            service:
+              name: {{ .Values.visualSearchReactUi.name }}
+              port:
+                number: {{ .Values.visualSearchReactUi.port }}
+          path: /
+          pathType: {{ .Values.global.ingress.pathType }}
+  {{- if .Values.global.ingress.tls }}
+  tls:
+{{ toYaml .Values.global.ingress.tls | indent 4 }}
+  {{- end -}}
+{{- end -}}

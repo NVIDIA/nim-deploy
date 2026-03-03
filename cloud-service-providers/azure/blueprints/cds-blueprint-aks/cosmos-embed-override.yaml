@@ -1,0 +1,88 @@
+# Cosmos-embed NIM — Single GPU Override for AKS
+#
+# GPU sharing: nvidia.com/gpu: 0 bypasses the K8s device plugin so the
+# scheduler does not claim a whole GPU.  NVIDIA_VISIBLE_DEVICES=0 tells the
+# NVIDIA container runtime to expose physical GPU 0 directly.
+
+replicaCount: 1
+
+image:
+  repository: nvcr.io/nim/nvidia/cosmos-embed1
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ngc-docker-reg-secret
+
+# Land on the AKS GPU node pool
+nodeSelector:
+  agentpool: gpupool
+
+# No taints on the GPU pool, so no tolerations needed.
+# If you add taints later, uncomment and adjust:
+# tolerations:
+#   - key: nvidia.com/gpu
+#     operator: Exists
+#     effect: NoSchedule
+
+# --- GPU sharing ---------------------------------------------------------
+resources:
+  limits:
+    nvidia.com/gpu: 0       # bypass device plugin — share GPU
+  requests: {}
+
+envVars:
+  NVIDIA_VISIBLE_DEVICES: "0"
+  USE_CUDA_IPC: "1"
+  ENABLE_CUDA_MPS: "1"
+
+# --- NIM settings ---------------------------------------------------------
+nim:
+  httpPort: 8000
+  nimCache: /opt/nim/.cache
+  ngcAPISecret: ngc-api-key-secret
+  modelName: "nvidia/cosmos-embed1"
+  logLevel: INFO
+
+# Override service name so visual-search can find it at cosmos-embed:8000
+service:
+  type: ClusterIP
+  httpPort: 8000
+  name: cosmos-embed
+
+# Model cache PVC — uses AKS default storage class (managed-csi)
+persistence:
+  enabled: true
+  size: 50Gi
+  accessMode: ReadWriteOnce
+
+# Extra tmpfs for performance
+extraVolumes:
+  tmp-ram:
+    emptyDir:
+      medium: Memory
+      sizeLimit: 8Gi
+
+extraVolumeMounts:
+  tmp-ram:
+    mountPath: /tmp/ram
+
+# --- Health probes --------------------------------------------------------
+startupProbe:
+  enabled: true
+  path: /v1/health/ready
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 180      # up to 30 min for first model download
+
+readinessProbe:
+  enabled: true
+  path: /v1/health/ready
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+livenessProbe:
+  enabled: true
+  path: /v1/health/live
+  initialDelaySeconds: 60
+  periodSeconds: 30

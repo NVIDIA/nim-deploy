@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.visualSearchReactUi.name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.visualSearchReactUi.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.visualSearchReactUi.name }}
+    spec:
+      containers:
+      - name: {{ .Values.visualSearchReactUi.name }}
+        image: {{ .Values.visualSearchReactUi.image.repository }}:{{ .Values.visualSearchReactUi.image.tag }}
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requests.reactUiCpu }}
+        ports:
+          - containerPort: {{ .Values.visualSearchReactUi.containerPort }}
+        env:
+        - name: CDS_API_URL
+          value: {{ .Values.global.ingress.scheme | default "http" }}://{{ .Values.global.ingress.host }}/api/v1
+        - name: CDS_CDN_URL
+          value: ""
+        - name: CDS_UI_URL
+          value: {{ .Values.global.ingress.scheme | default "http" }}://{{ .Values.global.ingress.host }}/cosmos-dataset-search
+        - name: PORT
+          value: '{{ .Values.visualSearchReactUi.containerPort }}'
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.visualSearchReactUi.containerPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.visualSearchReactUi.containerPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecret }}

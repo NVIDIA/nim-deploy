@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: LicenseRef-NvidiaProprietary
+#
+# NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+# property and proprietary rights in and to this material, related
+# documentation and any modifications thereto. Any use, reproduction,
+# disclosure or distribution of this material and related documentation
+# without an express license agreement from NVIDIA CORPORATION or
+# its affiliates is strictly prohibited.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.visualSearch.name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.visualSearch.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.visualSearch.name }}
+    spec:
+      serviceAccountName: s3-access-sa
+      initContainers:
+      - name: wait-for-milvus
+        image: busybox
+        command:
+        - sh
+        - -c
+        - >-
+          until nc -z -v -w30 {{ .Values.milvus.name }}.{{ .Values.milvus.namespace }}.svc.cluster.local {{ .Values.milvus.port }};
+          do sleep 5; done
+      containers:
+      - name: {{ .Values.visualSearch.name }}
+        image: {{ .Values.visualSearch.image.repository }}:{{ .Values.visualSearch.image.tag }}
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: {{ .Values.resources.requests.visualSearchCpu }}
+        ports:
+        - containerPort: {{ .Values.visualSearch.containerPort }}
+        env:
+        - name: MAX_DOCS_PER_UPLOAD
+          value: {{ .Values.env.MAX_DOCS_PER_UPLOAD | quote }}
+        - name: GUNICORN_PORT
+          value: {{ .Values.env.GUNICORN_PORT | quote }}
+        - name: GUNICORN_TIMEOUT
+          value: {{ .Values.env.GUNICORN_TIMEOUT | quote }}
+        - name: GUNICORN_WORKERS
+          value: {{ .Values.env.GUNICORN_WORKERS | quote }}
+        - name: MILVUS_DOCUMENT_STORE_URI
+          value: http://{{ .Values.milvus.name }}.{{ .Values.milvus.namespace }}.svc.cluster.local:{{ .Values.milvus.port }}
+        - name: MILVUS_DB
+          value: {{ .Values.milvus.db | quote }}
+        - name: FASTAPI_ROOT_PATH
+          value: {{ .Values.env.FASTAPI_ROOT_PATH | quote }}
+        - name: NVIDIA_API_KEY
+          value: {{ .Values.env.NVIDIA_API_KEY | quote }}
+        - name: SECRETS_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret-encryption-key
+              key: SECRETS_ENCRYPTION_KEY
+        - name: COSMOS_EMBED_NIM_URI
+          value: {{ .Values.cosmosEmbed.name }}.{{ .Values.global.namespace }}.svc.cluster.local:{{ index .Values.cosmosEmbed.ports 0 "port" }}
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecret }}

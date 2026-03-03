@@ -1,0 +1,102 @@
+# Milvus Standalone — Single GPU on AKS with Azure Blob Storage
+#
+# Runs Milvus as a single pod (no distributed coordinators/nodes) with:
+#   - GPU CAGRA indexing sharing the H100 with cosmos-embed
+#   - Azure Blob Storage for vector data (no in-cluster storage needed)
+#   - Embedded etcd for metadata
+#
+# GPU sharing: nvidia.com/gpu: 0 + NVIDIA_VISIBLE_DEVICES=0.
+# Milvus auto-detects remaining GPU memory after cosmos-embed has loaded.
+#
+# STORAGE_ACCOUNT_NAME and STORAGE_KEY are injected by k8s_up.sh
+# via --set flags at install time.
+
+image:
+  all:
+    repository: milvusdb/milvus
+    tag: "v2.4.4-gpu"
+
+# ---- Standalone mode (disable distributed) --------------------------------
+cluster:
+  enabled: false
+
+standalone:
+  messageQueue: rocksmq
+  replicas: 1
+  nodeSelector:
+    agentpool: gpupool
+  resources:
+    limits:
+      cpu: "8"
+      memory: 16Gi
+      nvidia.com/gpu: 0
+    requests:
+      cpu: "4"
+      memory: 8Gi
+  extraEnv:
+    - name: NVIDIA_VISIBLE_DEVICES
+      value: "0"
+    - name: KNOWHERE_ENABLE_GPU
+      value: "true"
+  disk:
+    enabled: true
+    size:
+      enabled: false
+
+# ---- Azure Blob Storage ---------------------------------------------------
+minio:
+  enabled: false
+
+externalS3:
+  enabled: true
+  host: core.windows.net
+  port: 443
+  bucketName: "cds-milvus"
+  cloudProvider: azure
+  useSSL: true
+  accessKey: "PLACEHOLDER"
+  secretKey: "PLACEHOLDER"
+
+# ---- Embedded etcd ---------------------------------------------------------
+etcd:
+  replicaCount: 1
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+# ---- Disable message queues (standalone uses RocksMQ) ----------------------
+pulsar:
+  enabled: false
+pulsarv3:
+  enabled: false
+kafka:
+  enabled: false
+
+# ---- GPU memory + performance tuning ---------------------------------------
+extraConfigFiles:
+  user.yaml: |+
+    gpu:
+      initMemSize: 0
+      maxMemSize: 0
+    common:
+      simdType: auto
+    indexNode:
+      scheduler:
+        buildParallel: 4
+    queryNode:
+      enableDisk: true
+      mmap:
+        vectorField: true
+        vectorIndex: true
+        scalarField: true
+        scalarIndex: true
+        growingMmapEnabled: true
+    segment:
+      maxSize: 2Gi
