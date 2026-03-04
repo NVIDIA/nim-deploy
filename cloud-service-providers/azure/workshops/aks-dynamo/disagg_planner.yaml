@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hf-token-secret
+type: Opaque
+stringData:
+  HF_TOKEN: <YOUR HUGGINGFACE TOKEN>
+
+---
+
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: vllm-disagg-planner
+
+spec:
+  services:
+    Frontend:
+      componentType: frontend
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.8.0
+    Planner:
+      componentType: planner
+      replicas: 1
+      extraPodMetadata:
+        annotations:
+          prometheus.io/path: /metrics
+          prometheus.io/port: "9085"
+          prometheus.io/scrape: "true"
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.8.0
+          workingDir: /workspace/components/src/dynamo/planner
+          command:
+          - python3
+          - -m
+          - planner_sla
+          args:
+            - --environment=kubernetes
+            - --backend=vllm
+            - --adjustment-interval=60
+            - --profile-results-dir=/workspace/tests/planner/profiling_results/H200_TP1P_TP1D
+            - --ttft=100
+            - --itl=10
+            - --load-predictor=constant
+            - --no-correction
+    VllmDecodeWorker:
+      envFromSecret: hf-token-secret
+      componentType: worker
+      subComponentType: decode
+      replicas: 1
+      resources:
+        limits:
+          gpu: "1"
+      extraPodMetadata:
+        annotations:
+          prometheus.io/path: /metrics
+          prometheus.io/port: "9090"
+          prometheus.io/scrape: "true"
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.8.0
+          workingDir: /workspace/examples/backends/vllm
+          command:
+            - python3
+          args:
+            - -m
+            - dynamo.vllm
+            - --model
+            - nvidia/Llama-3.1-8B-Instruct-FP8
+            - --migration-limit=3
+            - --max-model-len=8192
+    VllmPrefillWorker:
+      envFromSecret: hf-token-secret
+      componentType: worker
+      subComponentType: prefill
+      replicas: 1
+      resources:
+        limits:
+          gpu: "1"
+      extraPodMetadata:
+        annotations:
+          prometheus.io/path: /metrics
+          prometheus.io/port: "9090"
+          prometheus.io/scrape: "true"
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.8.0
+          workingDir: /workspace/examples/backends/vllm
+          command:
+            - python3
+          args:
+            - -m
+            - dynamo.vllm
+            - --model
+            - nvidia/Llama-3.1-8B-Instruct-FP8
+            - --migration-limit=3
+            - --max-model-len=8192
