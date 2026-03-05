@@ -20,18 +20,20 @@ While AKS clusters can be provisioned via the Azure CLI or SDKs, this example us
 To leverage NVIDIA Dynamo's disaggregated inference capabilities, you must provision a node pool with high-performance GPUs.
 
 1. <b>Create a GPU Node Pool:</b> Follow the <a href="https://learn.microsoft.com/en-us/azure/aks/use-nvidia-gpu">official AKS documentation</a> to add an Ubuntu-based GPU node pool.
-<img src="images/image.png" height="200">
-<img src="images/image-1.png" height="200">
-<img src="images/image-2.png" height="200">
+<img src="images/image.png" height="200" border=1>
+<img src="images/image-1.png" height="200" border=1>
+<img src="images/image-2.png" height="200" border=1>
 2. <b>Select an Advanced SKU:</b> For effective disaggregated serving, create a pool with at least <b>two (2) nodes</b>. Select a SKU with multiple GPUs per VM, such as Standard_NC80adis_H100_v5.
-<img src="images/image-3.png" height="100">
-<img src="images/image-4.png" height="100">
+
+<img src="images/image-3.png" height="200" border=1>
+<img src="images/image-4.png" height="400" border=1>
+
 3. <b>Install the GPU Operator:</b> Ensure the NVIDIA GPU Operator is installed to manage GPU resources and drivers.
 4. <b>Verify Capacity:</b> Use the following command to ensure your nodes are ready and GPUs are detectable:
 ```bash
 kubectl describe node <aks-gpunp-***>
 ```
-<img src="images/image-5.png" height="200">
+<img src="images/image-5.png" height="200" border=1>
 
 
 
@@ -40,11 +42,11 @@ Azure Managed Prometheus provides a fully managed environment for collecting and
 
 1. Navigate to the <b>Monitor</b> configuration page within your AKS cluster resource.
 
-<img src="images/image-7.png" height="200">
+<img src="images/image-7.png" height="200" border=1>
 
 2. Select <b>Enable Managed Prometheus</b> and link it to an Azure Monitor Workspace.
 
-<img src="images/image-8.png" height="200">
+<img src="images/image-8.png" height="200" border=1>
 
 ## Step 4: Install and Configure NVIDIA Dynamo
 
