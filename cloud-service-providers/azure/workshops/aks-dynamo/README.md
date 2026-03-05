@@ -196,7 +196,7 @@ Test the port forward by navigating to <a href="http://localhost:8000/health">ht
 
 For this example, we use the `aiperf` tool to apply load test to our Dynamo cluster.
 
-(Optiona if not already installed) Install the `airperf` tool using `pip`
+(Optional if not already installed) Install the `airperf` tool using `pip`
 
 ```
 pip install aiperf
