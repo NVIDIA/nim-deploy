@@ -1,0 +1,118 @@
+kind: ConfigMap
+apiVersion: v1
+data:
+  schema-version:
+    #string.used by agent to parse config. supported versions are {v1, v2}. Configs with other schema versions will be rejected by the agent.
+    v1
+  config-version:
+    #string.used by customer to keep track of this config file's version in their source control/repository (max allowed 10 chars, other chars will be truncated)
+    ver1
+  prometheus-collector-settings: |-
+    cluster_alias = ""
+    https_config = true
+  default-scrape-settings-enabled: |-
+    kubelet = true
+    coredns = false
+    cadvisor = true
+    kubeproxy = false
+    apiserver = false
+    kubestate = true
+    nodeexporter = true
+    windowsexporter = false
+    windowskubeproxy = false
+    kappiebasic = true
+    networkobservabilityRetina = true
+    networkobservabilityHubble = true
+    networkobservabilityCilium = true
+    prometheuscollectorhealth = false
+    controlplane-apiserver = true
+    controlplane-cluster-autoscaler = false
+    controlplane-node-auto-provisioning = false
+    controlplane-kube-scheduler = false
+    controlplane-kube-controller-manager = false
+    controlplane-etcd = true
+    acstor-capacity-provisioner = true
+    acstor-metrics-exporter = true
+    local-csi-driver = true
+    ztunnel = false
+    istio-cni = false
+    waypoint-proxy = false
+    dcgmexporter = false
+  # Regex for which namespaces to scrape through pod annotation based scraping.
+  # This is none by default.
+  # Ex: Use 'namespace1|namespace2' to scrape the pods in the namespaces 'namespace1' and 'namespace2'.
+  pod-annotation-based-scraping: |-
+    podannotationnamespaceregex = "dynamo-cloud"
+  default-targets-metrics-keep-list: |-
+    kubelet = ""
+    coredns = ""
+    cadvisor = ""
+    kubeproxy = ""
+    apiserver = ""
+    kubestate = ""
+    nodeexporter = ""
+    windowsexporter = ""
+    windowskubeproxy = ""
+    podannotations = ""
+    kappiebasic = ""
+    networkobservabilityRetina = ""
+    networkobservabilityHubble = ""
+    networkobservabilityCilium = ""
+    controlplane-apiserver = ""
+    controlplane-cluster-autoscaler = ""
+    controlplane-node-auto-provisioning = ""
+    controlplane-kube-scheduler = ""
+    controlplane-kube-controller-manager = ""
+    controlplane-etcd = ""
+    acstor-capacity-provisioner = ""
+    acstor-metrics-exporter = ""
+    local-csi-driver = ""
+    ztunnel = ""
+    istio-cni = ""
+    waypoint-proxy = ""
+    dcgmexporter = ""
+    minimalingestionprofile = true
+  default-targets-scrape-interval-settings: |-
+    kubelet = "30s"
+    coredns = "30s"
+    cadvisor = "30s"
+    kubeproxy = "30s"
+    apiserver = "30s"
+    kubestate = "30s"
+    nodeexporter = "30s"
+    windowsexporter = "30s"
+    windowskubeproxy = "30s"
+    kappiebasic = "30s"
+    networkobservabilityRetina = "30s"
+    networkobservabilityHubble = "30s"
+    networkobservabilityCilium = "30s"
+    prometheuscollectorhealth = "30s"
+    acstor-capacity-provisioner = "30s"
+    acstor-metrics-exporter = "30s"
+    local-csi-driver = "30s"
+    ztunnel = "30s"
+    istio-cni = "30s"
+    waypoint-proxy = "30s"
+    dcgmexporter = "30s"
+    podannotations = "30s"
+  debug-mode: |-
+    enabled = false
+  # Note that below section (ksm-config) is a yaml configuration, the settings override the configuration provided by optional parameters during 
+  # onboarding for kube-state-metrics, only uncomment and use them if the collection needs to be customized.
+  # Default settings - https://github.com/Azure/prometheus-collector/blob/e40947f3eaee8843021c90bd8645ce7875ad1fcf/otelcollector/deploy/addon-chart/azure-monitor-metrics-addon/values-template.yaml#L2
+  # https://learn.microsoft.com/en-us/azure/azure-monitor/containers/kubernetes-monitoring-enable?tabs=cli#optional-parameters
+  # OSS documentation for kube-state-metrics resources and the metrics - https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics
+  # ksm-config: |-
+  #   resources: 
+  #     secrets: {}
+  #     configmaps: {}
+  #   labels_allow_list: # object name and label names
+  #     pods: 
+  #     - app8
+  #   annotations_allow_list: # object name and annotation names
+  #     namespaces:
+  #     - kube-system
+  #     - default
+metadata:
+  name: ama-metrics-settings-configmap
+  namespace: kube-system
