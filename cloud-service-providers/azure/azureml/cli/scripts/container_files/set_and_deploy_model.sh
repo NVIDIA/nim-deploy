@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 set -x
 
 # Check all env variables

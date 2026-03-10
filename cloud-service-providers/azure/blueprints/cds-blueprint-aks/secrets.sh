@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Ensure NGC_API_KEY is set
 if [ -z "$NGC_API_KEY" ]; then

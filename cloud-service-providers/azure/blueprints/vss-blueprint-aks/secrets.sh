@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -euo pipefail
 
 if [ -z "$NGC_API_KEY" ]; then
   echo "Error: NGC_API_KEY is not set"

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # S3 to RAG Batch Ingestion Script
 # Downloads files from S3 and uploads them to RAG ingestor using NVIDIA's batch_ingestion.py

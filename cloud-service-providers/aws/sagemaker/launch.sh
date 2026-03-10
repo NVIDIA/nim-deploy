@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 # Function to print usage
 usage() {

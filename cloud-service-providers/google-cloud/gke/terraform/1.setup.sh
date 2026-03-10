@@ -14,7 +14,7 @@
 
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 cd infra/1-bootstrap
 terraform init

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Graceful teardown for CDS on AKS.
 # Mirrors the EKS teardown/shutdown_sequence.sh structure.

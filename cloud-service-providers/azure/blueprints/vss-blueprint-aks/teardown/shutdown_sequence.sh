@@ -4,7 +4,7 @@
 # Only removes the VSS Helm release. Shared resources (secrets, PVCs)
 # are left intact to avoid breaking other workloads on the same cluster.
 
-set -eo pipefail
+set -euo pipefail
 
 if [ "$1" != "-y" ]; then
   read -p "Uninstall the vss-blueprint Helm release? Press enter to continue."

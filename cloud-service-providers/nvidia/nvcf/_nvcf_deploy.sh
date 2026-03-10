@@ -1,3 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+
 # Deploy the Cloud Function onto L40 GPU with min/max instance set to 1/1
 export FUNCTION_ID=`ngc cloud-function function list --name-pattern ${NIM_CONTAINER_NAME}_${NIM_CONTAINER_TAG} --format_type json | jq -r '.[0].id'`
 export FUNCTION_VERSION=`ngc cloud-function function list --name-pattern ${NIM_CONTAINER_NAME}_${NIM_CONTAINER_TAG} --format_type json | jq -r '.[0].versionId'`

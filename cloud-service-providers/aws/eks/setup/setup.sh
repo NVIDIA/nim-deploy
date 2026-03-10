@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Get CloudFormation stack outputs
 echo "Fetching CloudFormation stack outputs..."
 region=$(aws configure get region)

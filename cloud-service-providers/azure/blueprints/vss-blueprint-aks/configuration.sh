@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ## Video Search and Summarization (VSS) — AKS Deployment Configuration Validation
 

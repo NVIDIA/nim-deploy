@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shfmt -i 2 -ci -w
-set -Eo pipefail
+set -Euo pipefail
 
 trap exit SIGINT SIGTERM
 

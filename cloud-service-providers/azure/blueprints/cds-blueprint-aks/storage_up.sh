@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -euo pipefail
 
 # Azure Blob Storage setup for CDS (analogous to s3_up.sh in the EKS blueprint).
 # Creates an Azure Storage Account with two containers:

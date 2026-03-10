@@ -1,3 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
 source ${SCRIPT_DIR}/secrets.env

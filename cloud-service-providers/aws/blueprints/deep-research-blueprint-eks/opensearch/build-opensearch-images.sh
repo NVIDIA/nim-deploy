@@ -4,7 +4,7 @@
 
 # Simple script to build and push OpenSearch-enabled RAG Docker images to ECR
 
-set -e
+set -euo pipefail
 
 # Required environment variables
 REGION=${REGION:-us-east-1}

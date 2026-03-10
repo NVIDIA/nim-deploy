@@ -7,7 +7,7 @@
 # Original source: https://developer.nvidia.com/blog/enabling-horizontal-autoscaling-of-enterprise-rag-components-on-kubernetes/
 # Modified by: Diego Casati, Microsoft Corp.
 
-set -Eo pipefail
+set -Euo pipefail
 
 export RAG_SERVICE="rag-server:8081" #rag-server:port
 export NIM_MODEL="nvidia/llama-3.3-nemotron-super-49b-v1.5" 

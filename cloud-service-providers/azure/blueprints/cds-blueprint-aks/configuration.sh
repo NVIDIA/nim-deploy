@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 ## Cosmos Dataset Search (CDS) — AKS Deployment Configuration Validation
 
