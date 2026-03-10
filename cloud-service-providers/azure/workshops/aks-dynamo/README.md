@@ -2,6 +2,10 @@
 
 This guide provides a comprehensive walkthrough for setting up NVIDIA Dynamo for disaggregated inference serving on Azure Kubernetes Service (AKS). You will learn how to configure GPU-accelerated node pools, integrate Azure Managed Prometheus for observability, and deploy the Dynamo platform to achieve optimized scaling and performance.
 
+**What this guide covers.** This guide focuses on disaggregated inference serving with the **Dynamo Planner**: provisioning an AKS cluster with GPU node pools, wiring Prometheus for metrics, and deploying the Dynamo platform so the planner can make scaling and placement decisions. It does **not** cover KV cache routing or KVBM (KV cache block manager); those features are outside the scope of this walkthrough.
+
+**Why disaggregated serving?** Disaggregated serving separates the compute that runs the model (prefill, decode) from the orchestration and scheduling layer. That lets you scale GPUs and request handling independently, use the right-sized resources for each job, and improve utilization and cost efficiency compared to running everything on a single, fixed cluster.
+
 ## Prerequisites
 
 - An active <b>Azure Subscription</b> with sufficient quota for GPU-enabled VMs.
