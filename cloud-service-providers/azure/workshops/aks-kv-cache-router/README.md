@@ -87,7 +87,36 @@ KV Cache routing is enabled by switching on the `router-mode` configuration in t
 ### 4a: Modify the Deployment YAML
 Download the base <a href="https://github.com/ai-dynamo/dynamo/blob/main/recipes/qwen3-32b/vllm/agg-round-robin/deploy.yaml">deploy.yaml</a> from the NVIDIA Dynamo GitHub or use the pre-modified version in this repository <a href="deploy_kvrouter.yaml">deploy_kvrouter.yaml</a>.
 
+
+5. **Create Cloud Namespace**:
+```bash
+# Create a namespace
+export CLOUD_NAMESPACE=<namespace name for cloud resource, for example 'dynamo-cloud'>
+kubectl create namespace $CLOUD_NAMESPACE
+```
+
 **Mandatory:** Update the HF_TOKEN environment variable with your actual HuggingFace token.
+
+6. **Create dynamo-cloud Namespace**:
+```bash
+kubectl create secret generic hf-token-secret \
+  --from-literal=HF_TOKEN="your-token" \
+  -n ${CLOUD_NAMESPACE}
+```
+
+7. **Create Model Cache Storage Account**
+
+The model cache directory (backed by persistent storage) must be created so that the model is downloaded once and reused across pod restarts and redeployments. Without it, each new pod would download the model from Hugging Face again, increasing startup time and bandwidth usage.
+
+```
+kubectl apply -f model-cache/cache.yaml -n ${CLOUD_NAMESPACE}
+```
+
+
+8. **Download the Model**
+```bash
+kubectl apply -f model-cache/model-download.yaml -n ${CLOUD_NAMESPACE}
+```
 
 **PVCs:** The included `deploy_kvrouter.yaml` sets `create: true` for the `model-cache` and `compilation-cache` PVCs so the Dynamo operator creates them automatically. If you see "Top-level PVC does not exist and create is not enabled", either use this version (with `create: true`) or create those PVCs manually in the same namespace before applying the deployment.
 
@@ -110,9 +139,6 @@ Next we show configuration sections used by Azure Managed Prometheus to scapre D
 ## Step 4b: Apply the custom Dynamo Planner Deployment YAML:
 
 ```
-# Create a namespace
-export CLOUD_NAMESPACE=<namespace name for cloud resource, for example 'dynamo-cloud'>
-kubectl create namespace $CLOUD_NAMESPACE
 
 # Apply the Deployment configuration
 kubectl apply -f ./deploy_kvrouter.yaml -n $CLOUD_NAMESPACE
