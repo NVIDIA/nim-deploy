@@ -92,9 +92,7 @@ spec:
       - image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_NAME}/nemotron-3-nano:latest
         env:
           - name: NGC_API_KEY
-            value: ${NGC_API_KEY}
-            - name: NIM_MANIFEST_DOWNLOAD_RETRIES
-            value: "5"                             
+            value: ${NGC_API_KEY}                        
         ports:
           - containerPort: 8000
         resources:
