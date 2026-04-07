@@ -258,9 +258,29 @@ Check health:
 
 ### Step 6b: Run AIPerf with the Mooncake trace
 
-**Mooncake trace dataset.** The load test can use the [Mooncake](https://github.com/kvcache-ai/Mooncake/) open-source traces (JSONL: timestamps, `input_length`, `output_length`, remapped block `hash_ids`). The FAST'25 traces (for example **`FAST25-release/traces/toolagent_trace.jsonl`**) pair with **`--custom-dataset-type mooncake_trace`** in **NVIDIA AIPerf** to stress realistic cache reuse.
+**What this dataset is.** The workshop load test uses traces published with [Mooncake](https://github.com/kvcache-ai/Mooncake/)—the serving stack behind **Kimi** (Moonshot AI). For the [FAST'25 paper](https://www.usenix.org/conference/fast25/presentation/qin), the project released **`FAST25-release/traces/`**, including **`toolagent_trace.jsonl`**: one JSON object per line describing a **synthetic replay** of real production **shape** (lengths, timing, and **which KV blocks** would have been shared), not the original user text. Prompts are **not** in the file; block identities are **remapped** to opaque integers (`hash_ids`).
 
-**When Mooncake is a good fit.** Traces come from real Kimi (Moonshot) traffic patterns, so timing and reuse are useful for **KV routing** and **disaggregation** experiments. They are **anonymized** (no original prompts) and represent **one** workload slice; complement with your own traces for capacity and SLO planning.
+**Note (naming):** You may hear informal shorthand like “Moonrake”; **this guide means the Mooncake FAST’25 JSONL traces** and AIPerf’s **`mooncake_trace`** loader.
+
+**Why we use it here.** KV cache routing matters most when many live requests **start the same way**—same instructions, same tool definitions, same retrieved document, same long scaffold—so a worker that already processed that **prefix** can serve the next request with less **prefill** work and lower **time to first token**. Random or wholly unique prompts do not exercise that behavior. The Mooncake **tool/agent**-style trace captures **realistic timing** and **realistic overlap** from a large production-shaped workload, so AIPerf stresses **router decisions** and **TTFT** in a way that lines up with what you graph in [Step 5](#step-5-configure-azure-managed-prometheus-integration). [Step 6c](#step-6c-sample-aiperf-results--kv-routing-on-vs-off-8-gpu) compares routing on vs. off on this trace because it is intentionally **cache-friendly**, not a worst-case stream of unrelated long prompts.
+
+**When KV routing helps (plain English).** “Prefix reuse” simply means **the beginning of the prompt is shared** across requests. The model would compute the same early tokens (and their **KV cache**) again unless a **router** sends follow-on traffic to a worker that **already holds** that cache.
+
+- **Same system prompt for everyone** — You ship one long system message (safety policy, tone, formatting rules, locale) in front of every user turn. Thousands of short user questions hit the cluster; without routing, round-robin spreads them across GPUs and **each GPU recomputes the identical multi-thousand-token head** before it ever reads the user’s question.
+
+- **RAG with a hot document** — Many users ask different questions but the **same** retrieved passages (runbook, contract section, product spec) are pasted at the top of the prompt. The **shared chunk** is the prefix; routing can keep those requests on workers that already encoded that text.
+
+- **Coding assistants and tool-using agents** — A session repeats a **large fixed scaffold**: IDE rules, repository map, API descriptions, tool JSON, environment preamble. Each turn only **appends** a small user message or tool result. Parallel users often share the same **tool and instruction block** even when their follow-up text differs.
+
+- **Support bots and templated workflows** — The first screen of context is the same product disclaimers, **FAQ**, escalation logic, and CRM fields; only the customer’s latest message changes. High traffic amplifies the waste if every replica prefills that template from scratch.
+
+- **Batch evaluation and A/B harnesses** — Benchmark rows look like **identical evaluation instructions + different test item**. The harness text is a long shared prefix repeated across the batch; routing amortizes that work across requests.
+
+**When it helps less.** If prompts are mostly **unique from token one** (arbitrary open-ended chat with no shared template), or traffic is so sparse that **cache is cold** on every worker, routing has little prefix to exploit. KV routing is a **workload-shaped** win: it shows up when **overlap** is real in production.
+
+**Trace file (for AIPerf).** `toolagent_trace.jsonl` is **JSONL**: one request per line with **`timestamp`** (schedule, ms), **`input_length`**, **`output_length`**, and abstract **`hash_ids`** that encode **which parts of the prompt overlap** between requests—without storing real user text. Use **`--custom-dataset-type mooncake_trace`** and **`--fixed-schedule`** so replay follows that timing; see the [Mooncake traces](https://github.com/kvcache-ai/Mooncake/tree/main/FAST25-release/traces) for the raw files.
+
+**Caveats.** The trace is **one** anonymized slice of one product workload; counts shift if you change model or tokenizer. Use it to compare **routing on vs. off** and to reason about **TTFT** under reuse, then validate against **your** traffic.
 
 Install **AIPerf** if needed:
 
@@ -318,7 +338,7 @@ Mean TTFT is roughly **6.4× faster** (~**84%** lower) with routing on; **p99** 
 
 **Workload shape (both runs).** Average **input length** ~**7.4k** tokens, average **output length** ~**173** tokens.
 
-AIPerf screenshots (**routing off**, then **on**):
+AIPerf screenshots (**routing off**, then **on**). The **Time to First Token** row is tinted amber, the **avg** cell is outlined in cyan with a small **avg TTFT** label—see [`scripts/highlight_aiperf_images.py`](scripts/highlight_aiperf_images.py) if you replace the source PNGs and need to reapply the overlays (requires [Pillow](https://pypi.org/project/pillow/)).
 
 <img src="images/aiperf-kv-router-disabled.png" height="400" border="1">
 
@@ -327,6 +347,13 @@ AIPerf screenshots (**routing off**, then **on**):
 Results depend on **model**, **GPU SKU**, **concurrency**, and **trace**. For apples-to-apples comparisons, keep the same **AIPerf** flags, trace file, and **`--random-seed`**.
 
 ---
+
+## Notes for reviewers and contributors
+
+- **Workshop layout:** This content lives under `cloud-service-providers/azure/workshops/aks-kv-cache-router/`, following the same pattern as other Azure workshops (for example [`aiq-rag-blueprint`](../aiq-rag-blueprint/)).
+- **Operator install order:** Apply **Dynamo CRDs**, then install the **Dynamo platform** chart (operator, etcd, NATS) and wait until those pods are **Running** before `kubectl apply` of `DynamoGraphDeployment`. **Step 3.5** is written to match the [Dynamo Kubernetes installation guide](https://docs.nvidia.com/dynamo/latest/kubernetes/installation_guide.html); if upstream changes the required sequence, update that step and any version notes together.
+- **Secrets:** Use the manifest placeholder or `kubectl create secret` for `HF_TOKEN` only. Do **not** commit real tokens or other credentials in YAML or documentation.
+- **`.gitignore`:** A local virtualenv for image tooling (for example `.venv_img/` when using [`scripts/highlight_aiperf_images.py`](scripts/highlight_aiperf_images.py)) is excluded at the `nim-deploy` repo root via `cloud-service-providers/azure/workshops/aks-kv-cache-router/.venv_img/` in [`.gitignore`](../../../../.gitignore).
 
 ## See also
 
