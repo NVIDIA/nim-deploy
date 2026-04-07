@@ -1,227 +1,277 @@
-# Configuring NVIDIA Dynamo on Azure Kubernetes Service (AKS) with Managed Prometheus
+# NVIDIA Dynamo on AKS with KV cache routing and Azure Managed Prometheus
 
-This guide provides a comprehensive walkthrough for setting up NVIDIA Dynamo for disaggregated inference serving on Azure Kubernetes Service (AKS). You will learn how to configure GPU-accelerated node pools, integrate Azure Managed Prometheus for observability, and deploy the Dynamo platform to achieve optimized scaling and performance.
+This guide walks through deploying **NVIDIA Dynamo** on **Azure Kubernetes Service (AKS)** for disaggregated LLM inference, enabling **KV cache routing** on the Dynamo frontend and wiring **Azure Managed Prometheus** to scrape Dynamo metrics (including time to first token, TTFT).
+
+## What you will do
+
+- Create or use an AKS cluster with a **multi-GPU** node pool suitable for Dynamo.
+- Enable **Azure Managed Prometheus** on the cluster.
+- Install the **Dynamo Kubernetes operator** (CRDs + platform Helm chart) *before* applying a `DynamoGraphDeployment`.
+- Deploy the sample **`deploy_kvrouter.yaml`** (Qwen3-32B FP8) with **`--router-mode kv`** on the frontend.
+- Extend Prometheus scraping so Dynamo metrics appear in **Azure Monitor**.
+- Optionally run **NVIDIA AIPerf** with the **Mooncake** trace to compare latency and throughput with routing on vs. off.
 
 ## Prerequisites
 
-- An active <b>Azure Subscription</b> with sufficient quota for GPU-enabled VMs.
-- <b>Azure CLI</b> installed and configured.
-- <b>Helm</b> and <b>kubectl</b> installed locally.
-- A <b>HuggingFace Token</b> (HF_TOKEN) with access to the models you intend to deploy (e.g., Llama-3.1).
+- An active **Azure subscription** with quota for GPU-enabled VMs.
+- **Azure CLI** installed and signed in (`az login`).
+- **Helm 3** and **kubectl** configured to talk to your cluster.
+- A **Hugging Face** token (**`HF_TOKEN`**) with access to the models you deploy (this workshop uses **Qwen/Qwen3-32B**).
 
-## Step 1: Create an AKS Cluster
-While AKS clusters can be provisioned via the Azure CLI or SDKs, this example uses the Azure Portal for a guided experience.
+## Table of contents
 
-1. <b>Navigate</b> to the Azure Portal and search for Kubernetes services.
-2. <b>Click Create</b> and select <b>Kubernetes cluster</b>.
-3. <b>Complete the configuration:</b> Follow the wizard to define your resource group, region, and cluster name. Standard networking and security defaults are sufficient for this walkthrough.
+1. [Create an AKS cluster](#step-1-create-an-aks-cluster)
+2. [GPU-accelerated node pools](#step-2-configure-gpu-accelerated-node-pools)
+3. [Enable Azure Managed Prometheus](#step-3-enable-azure-managed-prometheus)
+4. [Install the Dynamo Kubernetes operator](#step-35-install-the-dynamo-kubernetes-operator)
+5. [Deploy Dynamo with KV cache routing](#step-4-deploy-dynamo-with-kv-cache-routing)
+6. [Prometheus scrape configuration for Dynamo](#step-5-configure-azure-managed-prometheus-integration)
+7. [Load testing and benchmark results](#step-6-load-testing-and-benchmark-results)
 
-## Step 2: Configure GPU-Accelerated Node Pools
-To leverage NVIDIA Dynamo's disaggregated inference capabilities, you must provision a node pool with high-performance GPUs.
+---
 
-1. <b>Create a GPU Node Pool:</b> Follow the <a href="https://learn.microsoft.com/en-us/azure/aks/use-nvidia-gpu">official AKS documentation</a> to add an Ubuntu-based GPU node pool.
-<img src="images/image.png" height="200" border=1>
-<img src="images/image-1.png" height="200" border=1>
-<img src="images/image-2.png" height="200" border=1>
-2. <b>Select an Advanced SKU:</b> For effective disaggregated serving, create a pool with at least <b>two (2) nodes</b>. Select a SKU with multiple GPUs per VM, such as Standard_NC80adis_H100_v5.
+## Step 1: Create an AKS cluster
 
-<img src="images/image-3.png" height="200" border=1>
-<img src="images/image-4.png" height="400" border=1>
+Clusters can be created with Azure CLI, Bicep, or Terraform; this example assumes the **Azure portal** for a guided flow.
 
-3. <b>Install the GPU Operator:</b> Ensure the NVIDIA GPU Operator is installed to manage GPU resources and drivers.
-4. <b>Verify Capacity:</b> Use the following command to ensure your nodes are ready and GPUs are detectable:
+1. In the [Azure portal](https://portal.azure.com), search for **Kubernetes services**.
+2. Select **Create** → **Kubernetes cluster**.
+3. Complete the wizard (resource group, region, cluster name). Default networking and security settings are sufficient for this workshop.
+
+---
+
+## Step 2: Configure GPU-accelerated node pools
+
+Dynamo disaggregated serving needs nodes with **NVIDIA GPUs** and a supported driver/GPU stack.
+
+1. **Add a GPU node pool** — Follow [Use NVIDIA GPUs on AKS](https://learn.microsoft.com/en-us/azure/aks/use-nvidia-gpu) to add an Ubuntu-based GPU node pool.
+
+<img src="images/image.png" height="200" border="1">
+<img src="images/image-1.png" height="200" border="1">
+<img src="images/image-2.png" height="200" border="1">
+
+2. **Choose an appropriate SKU** — For disaggregated serving, use **at least two nodes** in the pool when you scale out. Pick a VM size with **multiple GPUs per node** if you plan multi-GPU workers (for example **Standard_NC80adis_H100_v5**).
+
+<img src="images/image-3.png" height="200" border="1">
+<img src="images/image-4.png" height="400" border="1">
+
+3. **Install the NVIDIA GPU Operator** (if not already installed) so GPU resources and drivers are managed consistently on the nodes.
+
+4. **Verify GPUs** — Replace the placeholder with your node name:
+
 ```bash
-kubectl describe node <aks-gpunp-***>
+kubectl describe node <aks-gpunp-node-name>
 ```
-<img src="images/image-5.png" height="200" border=1>
 
+Confirm GPU capacity and that the node is **Ready**.
 
+<img src="images/image-5.png" height="200" border="1">
+
+---
 
 ## Step 3: Enable Azure Managed Prometheus
-Azure Managed Prometheus provides a fully managed environment for collecting and analyzing metrics.
 
-1. Navigate to the <b>Monitor</b> configuration page within your AKS cluster resource.
+[Azure Managed Prometheus](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/prometheus-metrics-overview) collects and stores Prometheus metrics without you running Prometheus yourself.
 
-<img src="images/image-7.png" height="200" border=1>
+1. Open your AKS resource in the portal → **Monitor** (or **Insights** / monitoring settings, depending on portal layout).
 
-2. Select <b>Enable Managed Prometheus</b> and link it to an Azure Monitor Workspace.
+<img src="images/image-7.png" height="200" border="1">
 
-<img src="images/image-8.png" height="200" border=1>
+2. **Enable Azure Monitor managed service for Prometheus** and associate an **Azure Monitor workspace**.
 
-## Step 3.5: Install Dynamo Kubernetes Operator
+<img src="images/image-8.png" height="200" border="1">
 
-The DynamoGraphDeployment resource is managed by the Dynamo operator. You must install the Dynamo platform (CRDs + operator) **before** applying the deployment YAML; otherwise you will see errors such as "no endpoints available for service dynamo-platform-dynamo-operator-webhook-service".
+---
 
-1. **Set environment and version** (use a Dynamo release that matches your deployment images, e.g. 0.8.0):
+## Step 3.5: Install the Dynamo Kubernetes operator
+
+`DynamoGraphDeployment` objects are reconciled by the **Dynamo operator**. Install **CRDs + platform** *before* `kubectl apply` of the deployment manifest, or you may see errors such as:
+
+`no endpoints available for service dynamo-platform-dynamo-operator-webhook-service`
+
+That happens when the **validating webhook** has no running backend (operator pod not up).
+
+1. **Set namespace and chart versions** — Use chart versions that match the **Dynamo / runtime images** you intend to run. The sample [`deploy_kvrouter.yaml`](deploy_kvrouter.yaml) pins **`nvcr.io/nvidia/ai-dynamo/vllm-runtime:0.8.0`**; align your Helm chart release with that line of images, or update both charts and image tags together. Example:
+
 ```bash
 export NAMESPACE=dynamo-system
-export RELEASE_VERSION_PLATFORM=0.9.0-post1
-export RELEASE_VERSION_CRD=0.9.0
+export RELEASE_VERSION_PLATFORM=1.0.0   # adjust to match NGC chart + your images (previously tested: 0.9.0-post1)
+export RELEASE_VERSION_CRD=1.0.0        # adjust to pair with platform (previously tested: 0.9.0)
 ```
 
-2. **Install CRDs** (skip if CRDs are already installed on the cluster):
+2. **Install CRDs** (skip if already installed):
+
 ```bash
 helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-crds-${RELEASE_VERSION_CRD}.tgz
 helm install dynamo-crds dynamo-crds-${RELEASE_VERSION_CRD}.tgz --namespace default
 ```
 
 3. **Install Dynamo platform** (operator, etcd, NATS):
+
 ```bash
 helm fetch https://helm.ngc.nvidia.com/nvidia/ai-dynamo/charts/dynamo-platform-${RELEASE_VERSION_PLATFORM}.tgz
-helm install dynamo-platform dynamo-platform-${RELEASE_VERSION_PLATFORM}.tgz --namespace ${NAMESPACE} --create-namespace
+helm install dynamo-platform dynamo-platform-${RELEASE_VERSION_PLATFORM}.tgz \
+  --namespace ${NAMESPACE} --create-namespace
 ```
 
-4. **Verify operator and webhook are running:**
+4. **Verify** the operator and dependencies:
+
 ```bash
 kubectl get pods -n dynamo-system
 ```
-You should see `dynamo-platform-dynamo-operator-controller-manager-*`, `dynamo-platform-etcd-0`, and `dynamo-platform-nats-0` in Running state. If the operator pod is not Running, the validating webhook will have no endpoints and `kubectl apply` of DynamoGraphDeployment will fail with an InternalError.
 
-(Optional) To send Dynamo operator metrics to Azure Managed Prometheus, add to the helm install:  
-`--set dynamo-operator.dynamo.metrics.prometheusEndpoint=<your-prometheus-url>`  
-See the Dynamo [installation guide](https://docs.nvidia.com/dynamo/latest/kubernetes/installation_guide.html) for details.
+You should see **`dynamo-platform-dynamo-operator-controller-manager-*`**, **`dynamo-platform-etcd-0`**, and **`dynamo-platform-nats-0`** in **Running** state. If the operator is not running, webhook validation fails and `kubectl apply` for `DynamoGraphDeployment` returns an **InternalError**.
 
-## Step 4: Install Dynamo Deployment with KV Cache Routing Enabled
-KV Cache routing is enabled by switching on the `router-mode` configuration in the Frontend portion of the Dynamo deployment YAML.  For this walkthrough, deployment configuration is based on the aggregated round-robin example <a href="https://github.com/ai-dynamo/dynamo/blob/main/recipes/qwen3-32b/vllm/agg-round-robin/deploy.yaml">deploy.yaml</a>
+**Optional:** To scrape operator metrics into Managed Prometheus, add to `helm install`, for example:
 
-### 4a: Modify the Deployment YAML
-Download the base <a href="https://github.com/ai-dynamo/dynamo/blob/main/recipes/qwen3-32b/vllm/agg-round-robin/deploy.yaml">deploy.yaml</a> from the NVIDIA Dynamo GitHub or use the pre-modified version in this repository <a href="deploy_kvrouter.yaml">deploy_kvrouter.yaml</a>.
+`--set dynamo-operator.dynamo.metrics.prometheusEndpoint=<your-prometheus-url>`
 
+See the Dynamo [Kubernetes installation guide](https://docs.nvidia.com/dynamo/latest/kubernetes/installation_guide.html).
 
-5. **Create Cloud Namespace**:
+---
+
+## Step 4: Deploy Dynamo with KV cache routing
+
+KV cache routing is enabled on the **Frontend** service by passing **`--router-mode`** **`kv`** (see [`deploy_kvrouter.yaml`](deploy_kvrouter.yaml)). The sample is derived from the upstream [aggregated round-robin Qwen3-32B recipe](https://github.com/ai-dynamo/dynamo/blob/main/recipes/qwen3-32b/vllm/agg-round-robin/deploy.yaml).
+
+### 4a: Namespace, Hugging Face secret, and model cache
+
+1. **Create a namespace** for the Dynamo “cloud” deployment (name is arbitrary; examples use `dynamo-cloud`):
+
 ```bash
-# Create a namespace
-export CLOUD_NAMESPACE=<namespace name for cloud resource, for example 'dynamo-cloud'>
-kubectl create namespace $CLOUD_NAMESPACE
+export CLOUD_NAMESPACE=dynamo-cloud   # or your preferred name
+kubectl create namespace "${CLOUD_NAMESPACE}"
 ```
 
-**Mandatory:** Update the HF_TOKEN environment variable with your actual HuggingFace token.
+2. **Provide `HF_TOKEN`** — Either:
+   - Edit the **`hf-token-secret`** `Secret` in [`deploy_kvrouter.yaml`](deploy_kvrouter.yaml) and set `HF_TOKEN`, **or**
+   - Create the secret from the CLI (do not commit real tokens to git):
 
-6. **Create dynamo-cloud Namespace**:
 ```bash
 kubectl create secret generic hf-token-secret \
-  --from-literal=HF_TOKEN="your-token" \
-  -n ${CLOUD_NAMESPACE}
+  --from-literal=HF_TOKEN="your-token-here" \
+  -n "${CLOUD_NAMESPACE}"
 ```
 
-7. **Create Model Cache Storage Account**
+If you use the CLI secret, ensure the deployment references the same secret name as in the manifest.
 
-The model cache directory (backed by persistent storage) must be created so that the model is downloaded once and reused across pod restarts and redeployments. Without it, each new pod would download the model from Hugging Face again, increasing startup time and bandwidth usage.
+Edit the token in the manifest or portal as needed (example placement):
 
-```
-kubectl apply -f model-cache/cache.yaml -n ${CLOUD_NAMESPACE}
-```
+<img src="images/image-14.png" height="200" border="1">
 
+3. **Model cache PVC** — Apply the model cache storage so the model is downloaded once and reused across restarts:
 
-8. **Download the Model**
 ```bash
-kubectl apply -f model-cache/model-download.yaml -n ${CLOUD_NAMESPACE}
+kubectl apply -f model-cache/cache.yaml -n "${CLOUD_NAMESPACE}"
 ```
 
-**PVCs:** The included `deploy_kvrouter.yaml` sets `create: true` for the `model-cache` and `compilation-cache` PVCs so the Dynamo operator creates them automatically. If you see "Top-level PVC does not exist and create is not enabled", either use this version (with `create: true`) or create those PVCs manually in the same namespace before applying the deployment.
+4. **Download the model** into the cache (one-time job):
 
-Ports: Ensure the container ports in the YAML match your service configurations to allow Azure Managed Prometheus to scrape metrics correctly.
-
-Dynamo Frontend is the component responsible for monitoring KV Cache utilization and routing requests to appropriate worker nodes during inference.  To enable Dynamo KV Cache Routing, we must first customize the base deployment yaml.
-
-The included <a href="deploy_kvrouter.yaml">deploy_kvrouter.yaml</a> offers a simple pre-configured example of inference using the FP8 quantized Qwen/Qwen3-32B model.  This model is chosen to allow for smaller SKUs, such as Standard_NC40ads_H100_v5.  For production applications and larger models, larger SKUs may need to be used to fit a larger model.  
-
-Please modify the HF_TOKEN value to include your HuggingFace token:
-
-<img src="images/image-14.png" height="200" border=1>
-
-Next we show configuration sections used by Azure Managed Prometheus to scapre Dynamo Prometheus metrics and propogate them to Azure Minitoring Workspace dashboards.  Port configurations must match container ports for each of the services.  For this basic walkthrough, leave these configurations as-is unless working on an advanced installation with custom container port configation
-
-<img src="images/image-15.png" height="200" border=1>
-<img src="images/image-16.png" height="200" border=1>
-<img src="images/image-17.png" height="200" border=1>
-
-## Step 4b: Apply the custom Dynamo Planner Deployment YAML:
-
+```bash
+kubectl apply -f model-cache/model-download.yaml -n "${CLOUD_NAMESPACE}"
 ```
 
-# Apply the Deployment configuration
-kubectl apply -f ./deploy_kvrouter.yaml -n $CLOUD_NAMESPACE
+Wait for the download job to complete before relying on fast worker startup.
+
+**PVC creation via operator:** [`deploy_kvrouter.yaml`](deploy_kvrouter.yaml) sets `create: true` for **`model-cache`** and **`compilation-cache`**. If you see *“Top-level PVC does not exist and create is not enabled”*, either keep `create: true` or create those PVCs manually in **`${CLOUD_NAMESPACE}`** before applying the deployment.
+
+**Metrics ports:** Keep container ports and **`prometheus.io/*`** annotations in the YAML consistent so **Azure Managed Prometheus** can scrape the frontend and workers.
+
+**About the sample model:** **`deploy_kvrouter.yaml`** runs **FP8**-quantized **Qwen/Qwen3-32B**, which fits smaller SKUs (for example **Standard_NC40ads_H100_v5**) for experimentation. Production sizing depends on model size, concurrency, and SLOs—choose larger SKUs and replica counts accordingly.
+
+**Prometheus annotations in the manifest** — The following screenshots highlight scrape-related settings; ports must match the pods’ metric endpoints.
+
+<img src="images/image-15.png" height="200" border="1">
+<img src="images/image-16.png" height="200" border="1">
+<img src="images/image-17.png" height="200" border="1">
+
+### 4b: Apply the DynamoGraphDeployment
+
+```bash
+kubectl apply -f ./deploy_kvrouter.yaml -n "${CLOUD_NAMESPACE}"
 ```
 
-## Step 4c: Verify Dynamo Planner deployment:
+### 4c: Verify the deployment
 
-<img src="images/image-18.png" height="100" border=1>
-<img src="images/image-19.png" height="100" border=1>
+Confirm frontend and worker pods become **Running** and services are created as expected.
 
-### Troubleshooting: Webhook / "no endpoints available"
+<img src="images/image-18.png" height="100" border="1">
+<img src="images/image-19.png" height="100" border="1">
 
-If `kubectl apply -f ./deploy_kvrouter.yaml` fails with **InternalError** and a message like **"no endpoints available for service dynamo-platform-dynamo-operator-webhook-service"**, the Dynamo operator is not running or not installed. The API server calls this webhook to validate DynamoGraphDeployments; if no operator pod is backing the service, the request fails.
+#### Troubleshooting: webhook “no endpoints available”
 
-**Fix:** Complete [Step 3.5: Install Dynamo Kubernetes Operator](#step-35-install-dynamo-kubernetes-operator) above, then run `kubectl get pods -n dynamo-system` and ensure `dynamo-platform-dynamo-operator-controller-manager-*` is Running. Re-apply the deployment afterward.
+If `kubectl apply -f ./deploy_kvrouter.yaml` fails with **InternalError** and **“no endpoints available for service dynamo-platform-dynamo-operator-webhook-service”**, the operator is not installed or not healthy.
 
-# Step 5: Configure Azure Manage Prometheus integration
+**Fix:** Complete [Step 3.5: Install the Dynamo Kubernetes operator](#step-35-install-the-dynamo-kubernetes-operator), run `kubectl get pods -n dynamo-system`, ensure **`dynamo-platform-dynamo-operator-controller-manager-*`** is **Running**, then apply again.
 
-Azure Managed Prometheus is a useful service that allows for application metrics collection and visualization within Azure environment.  However, by default, Azure Managed Prometheus is rather concervative and only collects a set of default metrics available in AKS.  
+---
 
-To enable Dynamo metrics collections, such as Time to First Token (TTFL), etc. we need to follow <a href="https://learn.microsoft.com/en-us/azure/azure-monitor/containers/prometheus-metrics-scrape-configuration">Customize collection of Prometheus metrics from your Kubernetes cluster using ConfigMap</a> instructions and enable custom metrics collection on the dynamo-cloud namespece created in the previous step.  
+## Step 5: Configure Azure Managed Prometheus integration
 
-For simplicity, we include a pre-configured ConfigMap file in this repository <a href="ama-metrics-prometheus-config.yaml">./ama-metrics-prometheus-config.yaml</a> with the salient section highlighted below:
+By default, scraping on AKS can be **conservative** and may not include all application metrics. To scrape **Dynamo** endpoints (TTFT and other Prometheus metrics), customize collection using a **ConfigMap**, as described in [Customize Prometheus metric collection for AKS](https://learn.microsoft.com/en-us/azure/azure-monitor/containers/prometheus-metrics-scrape-configuration).
 
-<img src="images/image-20.png" height="100" border=1>
+Target the **same namespace** where Dynamo runs (**`CLOUD_NAMESPACE`**, e.g. `dynamo-cloud`).
 
-## Step 5a: Apply the custom ConfigMap to the cluster:
+This repo includes [`ama-metrics-prometheus-config.yaml`](ama-metrics-prometheus-config.yaml). It sets **`podannotationnamespaceregex`** to **`dynamo-cloud`** so pods with `prometheus.io/scrape` annotations in that namespace are discovered. If you used a different **`CLOUD_NAMESPACE`**, update that regex (or add `|your-namespace`) before applying. The salient section is illustrated below.
 
-```
+<img src="images/image-20.png" height="100" border="1">
+
+### Step 5a: Apply the ConfigMap
+
+```bash
 kubectl apply -f ./ama-metrics-prometheus-config.yaml
 ```
 
-## Step 5b: Verify Azure Managed Prometheus metrics collection is active:
+### Step 5b: Verify scraping
 
-Locate any AKS Managed Prometheus metrics pod in the kube-system namespace:
+Locate the **Azure Monitor / managed Prometheus** agent metrics pods (often in **`kube-system`**), port-forward if needed, and open the local Prometheus UI to query Dynamo metrics.
 
-<img src="images/image-22.png" height="100" border=1>
-<img src="images/image-23.png" height="100" border=1>
+<img src="images/image-22.png" height="100" border="1">
+<img src="images/image-23.png" height="100" border="1">
+<img src="images/image-24.png" height="100" border="1">
 
-Set up port-forwarding:
+[http://localhost:9090](http://localhost:9090)
 
-<img src="images/image-24.png" height="100" border=1>
+<img src="images/image-25.png" height="100" border="1">
 
-Navigate to <a href="http://localhost:9090">http://localhost:9090</a>:
+---
 
-<img src="images/image-25.png" height="100" border=1>
+## Step 6: Load testing and benchmark results
 
-## Step 6: Testing KV Cache Routing optimized serving 
+With the KV-aware frontend in place, you can:
 
-Now that the Dynamo KV Cache Router front end has been configured, we are able to observe the benefits of KV cache routing in action.  The following steps show how to 
+1. **Generate load** against the Dynamo HTTP API (for example via port-forward).
+2. **Watch TTFT and related metrics** in Azure Monitor dashboards as workers scale and cache behavior changes.
 
-1. apply load to our cluster, 
-2. observe real-time TTFT metric improvements in Azure Monitoring Workspace
+### Step 6a: Port-forward to the frontend
 
-### Step 6a: Enable port-forwarding 
+Forward a local port to the **Dynamo frontend** `Service` (port **8000** in the sample).
 
-We first need to open a port on the frontend service:
+<img src="images/image-26.png" height="200" border="1">
+<img src="images/image-27.png" height="200" border="1">
 
-<img src="images/image-26.png" height="200" border=1>
-<img src="images/image-27.png" height="200" border=1>
+Check health:
 
-Test the port forward by navigating to <a href="http://localhost:8000/health">http://localhost:8000/health</a>
+[http://localhost:8000/health](http://localhost:8000/health)
 
-<img src="images/image-28.png" height="100" border=1>
+<img src="images/image-28.png" height="100" border="1">
 
-### Step 6b: Apply the Load Test:
+### Step 6b: Run AIPerf with the Mooncake trace
 
-**Mooncake trace dataset.** The load test uses the [Mooncake](https://github.com/kvcache-ai/Mooncake/) open-source trace dataset. Mooncake is the KVCache-centric serving platform for Kimi (Moonshot AI). The project publishes real request traces in JSONL format, with fields such as `timestamp`, `input_length`, `output_length`, and remapped block `hash_ids`. Traces are anonymized for privacy while preserving utility for simulated evaluation (e.g., cache-hit behavior). The FAST'25 release traces (e.g., `FAST25-release/traces/toolagent_trace.jsonl`) are used with `--custom-dataset-type mooncake_trace` in aiperf to drive realistic load against your Dynamo cluster.
+**Mooncake trace dataset.** The load test can use the [Mooncake](https://github.com/kvcache-ai/Mooncake/) open-source traces (JSONL: timestamps, `input_length`, `output_length`, remapped block `hash_ids`). The FAST'25 traces (for example **`FAST25-release/traces/toolagent_trace.jsonl`**) pair with **`--custom-dataset-type mooncake_trace`** in **NVIDIA AIPerf** to stress realistic cache reuse.
 
-**Similarities and differences vs. a realistic dataset.** The Mooncake traces are derived from real traffic on the Kimi LLM service, so request timing, input/output lengths, and block reuse patterns (`hash_ids`) reflect production behavior—including tool-agent-style workloads in the FAST'25 toolagent trace. That makes the dataset useful for evaluating KV cache routing and disaggregation under realistic load and cache-hit scenarios. On the other hand, the traces are anonymized and use remapped block IDs rather than actual prompt content, so you cannot reproduce exact user sessions or prompt distributions. The trace is also a single workload type (e.g., toolagent) over a fixed window; your own production mix (e.g., chat, RAG, code, varying time-of-day or geography) may differ. For benchmarking Dynamo and observing TTFT/cache effects, Mooncake is a strong stand-in; for capacity or SLO planning, complement it with traces or synthetic load that match your expected traffic.
+**When Mooncake is a good fit.** Traces come from real Kimi (Moonshot) traffic patterns, so timing and reuse are useful for **KV routing** and **disaggregation** experiments. They are **anonymized** (no original prompts) and represent **one** workload slice; complement with your own traces for capacity and SLO planning.
 
-For this example, we use the `aiperf` tool to apply load test to our Dynamo cluster.
+Install **AIPerf** if needed:
 
-(Optional if not already installed) Install the `airperf` tool using `pip`
-
-```
+```bash
 pip install aiperf
 ```
 
-Now run the following command to send test load to the AKS service on port 8000:
+Clone or download the Mooncake trace repository so the **`--input-file`** path exists locally. With port-forward to **localhost:8000**, run (adjust **`--artifact-dir`** per run so results do not overwrite):
 
-```
-# set longer timeout allow for larger test window
+```bash
+# Long timeout supports long-running trace replay
 
 aiperf profile \
   -m "Qwen/Qwen3-32B" \
@@ -235,21 +285,51 @@ aiperf profile \
   --workers-max 200 \
   --request-timeout-seconds 10000 \
   --record-processors 8 \
-  --artifact-dir /tmp/aiperf_router_off_16 \
+  --artifact-dir /tmp/aiperf_run \
   --goodput "time_to_first_token:5000 inter_token_latency:100"
 ```
 
-Once the load test starts running, Dynamo Planner will analyze various metrics and scale cluster worker pods to optimize performance:
+While load runs, observe scaling and TTFT in Azure Monitor (examples below).
 
-<img src="images/image-29.png" height="100" border=1>
+<img src="images/image-31.png" height="200" border="1">
+<img src="images/image-32.png" height="200" border="1">
 
-Users may observe the effect of the Disaggregate scaling in terms of important metrics such as Time to First Token in the AKS Monitoring Dashboards:
+TTFT may rise during cold start, then improve as workers and cache state stabilize:
 
+<img src="images/image-30.png" height="300" border="1">
 
-<img src="images/image-31.png" height="200" border=1>
-<img src="images/image-32.png" height="200" border=1>
+### Step 6c: Sample AIPerf results — KV routing on vs. off (8× GPU)
 
-The resulting graph shows TTFT metrics climb and then rapidly decline, which reflects the effects of the Disaggregate scaling:
+The tables below summarize **NVIDIA AIPerf** on the same **Mooncake FAST'25 toolagent** trace against **Qwen/Qwen3-32B** on an **eight-GPU** cluster. The only deliberate change between runs was **Dynamo KV cache routing** (**`--router-mode kv`** on vs. off). Each run processed **23,119** requests.
 
-<img src="images/image-30.png" height="300" border=1>
+**TTFT (time to first token)** — routing **disabled** vs. **enabled**:
 
+| TTFT statistic | Routing disabled | Routing enabled |
+| :-- | --: | --: |
+| **Average** | ~12.2 s (~12,156 ms) | ~1.9 s (~1,900 ms) |
+| **p50** | ~4.2 s | ~1.4 s |
+| **p99** | ~70 s | ~8.2 s |
+
+Mean TTFT is roughly **6.4× faster** (~**84%** lower) with routing on; **p99** improves by about an order of magnitude—consistent with KV reuse avoiding full prefills on cold workers for many requests.
+
+**Throughput and goodput.** Aggregate **output token throughput** stays similar (**~1,113** vs. **~1,128** tokens/s) and **request throughput** is close (**~6.4** vs. **~6.5** req/s), so routing improves **latency and SLO hit rate** more than raw cluster capacity for this trace. **Goodput** (requests/s meeting the configured TTFT and inter-token latency thresholds) rises from about **2.5** to **3.6** req/s.
+
+**End-to-end request latency.** Mean **request latency** is lower with routing enabled (**~13.2 s** vs. **~27.4 s**); **p50** **~6.2 s** vs. **~16.4 s**. Distributions stay skewed by long outputs and queueing—**max** latency is driven by outliers, not the typical request.
+
+**Workload shape (both runs).** Average **input length** ~**7.4k** tokens, average **output length** ~**173** tokens.
+
+AIPerf screenshots (**routing off**, then **on**):
+
+<img src="images/aiperf-kv-router-disabled.png" height="400" border="1">
+
+<img src="images/aiperf-kv-router-enabled.png" height="400" border="1">
+
+Results depend on **model**, **GPU SKU**, **concurrency**, and **trace**. For apples-to-apples comparisons, keep the same **AIPerf** flags, trace file, and **`--random-seed`**.
+
+---
+
+## See also
+
+- [NVIDIA Dynamo documentation](https://docs.nvidia.com/dynamo/latest/index.html)
+- [Dynamo on GitHub](https://github.com/ai-dynamo/dynamo)
+- [Azure AKS GPU documentation](https://learn.microsoft.com/en-us/azure/aks/use-nvidia-gpu)

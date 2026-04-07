@@ -36,3 +36,4 @@ __pycache__
 *.envrc
 cloud-service-providers/azure/workshops/aiq-rag-blueprint/*.pdf
 cloud-service-providers/azure/workshops/aiq-rag-blueprint/cluster.config
+cloud-service-providers/azure/workshops/aks-kv-cache-router/.venv_img/
