@@ -1,0 +1,283 @@
+# OpenClaw gateway on Kubernetes (port 18789).
+#
+# Flow:
+#   1. Init container copies ConfigMap into emptyDir (writable); ConfigMap subPath would block OpenClaw renames (EBUSY).
+#   2. ConfigMap supplies openclaw.json; Azure AI Foundry should use api "azure-openai-responses" (not "openai-responses").
+#      Generic openai-responses can produce Responses payloads Azure rejects (400 schema / empty item type). Requires recent OpenClaw (e.g. 2026.4.x).
+#   3. Secret `openclaw-credentials`:
+#      - OPENCLAW_MODEL_API_KEY: Azure AI Foundry key for that baseUrl (REPLACE_ME → 401 from provider).
+#      - OPENCLAW_GATEWAY_TOKEN: stable random string (e.g. openssl rand -hex 32) so Control UI WebSocket auth
+#        matches gateway.auth.token. If omitted, OpenClaw may auto-generate a token on disk while the UI still
+#        has an old value → token_missing / token_mismatch in logs.
+#
+# Build/push the image first, e.g.:
+#   docker build -t <registry>/openclaw:2026.4.8 .
+#   docker push <registry>/openclaw:2026.4.8
+#
+# Foundry endpoint (no secrets): ConfigMap `openclaw-foundry-endpoint`, key OPENCLAW_FOUNDRY_BASE_URL.
+#   kubectl create configmap openclaw-foundry-endpoint -n nemoclaw --dry-run=client -o yaml \
+#     --from-literal=OPENCLAW_FOUNDRY_BASE_URL='https://<resource>.services.ai.azure.com/api/projects/<project>/openai/v1' \
+#     | kubectl apply -f -
+# Or edit the ConfigMap object in this file before apply (replace YOUR_FOUNDRY_* placeholders).
+#
+# Before apply (prefer creating the Secret out-of-band; avoid re-applying placeholder secrets from YAML):
+#   GW=$(openssl rand -hex 32)
+#   kubectl create secret generic openclaw-credentials -n nemoclaw \
+#     --from-literal=OPENCLAW_MODEL_API_KEY='YOUR_FOUNDRY_KEY' \
+#     --from-literal=OPENCLAW_GATEWAY_TOKEN="$GW"
+# Paste the same GW token in Control UI settings if the dashboard URL does not include ?token=...
+#
+# Apply:
+#   kubectl apply -f openclaw-k8s.yaml
+#
+# Namespace: resources use `nemoclaw` so Services and Pods match (LB has no endpoints if namespaces differ).
+#
+# LoadBalancer / in-cluster traffic: OpenClaw must bind LAN (0.0.0.0), not loopback, or kube-proxy gets connection refused.
+#   See OPENCLAW_GATEWAY_BIND + gateway.bind in ConfigMap.
+#
+# Access:
+#   kubectl port-forward pod/openclaw 18789:18789 -n nemoclaw
+#   Or apply openclaw-ingress.yaml for openclaw-http LoadBalancer; check: kubectl get endpoints openclaw-http -n nemoclaw
+#
+# Control UI over http://<public-ip> needs controlUi.dangerouslyDisableDeviceAuth (no secure context / WebAuthn).
+# For production, terminate TLS (Ingress/App Gateway) and set allowedOrigins to your https:// origin instead.
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+  namespace: nemoclaw
+  labels:
+    app: openclaw
+data:
+  openclaw.json: |
+    {
+      "gateway": {
+        "mode": "local",
+        "bind": "lan",
+        "auth": {
+          "token": "${OPENCLAW_GATEWAY_TOKEN}"
+        },
+        "controlUi": {
+          "allowInsecureAuth": true,
+          "dangerouslyDisableDeviceAuth": true,
+          "allowedOrigins": ["*"]
+        }
+      },
+      "models": {
+        "mode": "merge",
+        "providers": {
+          "microsoft-foundry": {
+            "baseUrl": "${OPENCLAW_FOUNDRY_BASE_URL}",
+            "api": "azure-openai-responses",
+            "authHeader": false,
+            "apiKey": "${OPENCLAW_MODEL_API_KEY}",
+            "headers": {
+              "api-key": "${OPENCLAW_MODEL_API_KEY}"
+            },
+            "models": [
+              {
+                "id": "gpt-5.3-chat",
+                "name": "Microsoft Foundry gpt-5.3-chat",
+                "contextWindow": 400000,
+                "maxTokens": 16384,
+                "input": ["text", "image"],
+                "reasoning": true,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0
+                },
+                "compat": {
+                  "supportsStore": false
+                }
+              }
+            ]
+          }
+        }
+      },
+      "agents": {
+        "defaults": {
+          "model": {
+            "primary": "${OPENCLAW_AGENT_PRIMARY_MODEL}"
+          },
+          "workspace": "/home/node/.openclaw/workspace",
+          "models": {
+            "microsoft-foundry/gpt-5.3-chat": {}
+          }
+        }
+      },
+      "auth": {
+        "order": {
+          "microsoft-foundry": ["microsoft-foundry:default"]
+        },
+        "profiles": {
+          "microsoft-foundry:default": {
+            "provider": "microsoft-foundry",
+            "mode": "api_key"
+          }
+        }
+      },
+      "plugins": {
+        "entries": {
+          "microsoft-foundry": {
+            "enabled": true
+          }
+        }
+      }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-foundry-endpoint
+  namespace: nemoclaw
+  labels:
+    app: openclaw
+data:
+  # Azure AI Foundry OpenAI v1 base URL (set your resource + project; not a credential).
+  OPENCLAW_FOUNDRY_BASE_URL: "https://YOUR_FOUNDRY_RESOURCE_NAME.services.ai.azure.com/api/projects/YOUR_FOUNDRY_PROJECT_NAME/openai/v1"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openclaw-credentials
+  namespace: nemoclaw
+  labels:
+    app: openclaw
+type: Opaque
+stringData:
+  # Replace with real keys before apply, or create the Secret via CLI and delete this Secret object from the file.
+  OPENCLAW_MODEL_API_KEY: "REPLACE_ME_WITH_YOUR_FOUNDRY_KEY"
+  # Must match what you paste in Control UI (same value as gateway.auth.token after env expansion).
+  OPENCLAW_GATEWAY_TOKEN: "REPLACE_ME_RUN_openssl_rand_hex_32"
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: openclaw
+  namespace: nemoclaw
+  labels:
+    app: openclaw
+spec:
+  restartPolicy: Always
+  initContainers:
+    - name: seed-openclaw-config
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+          mkdir -p /openclaw-home
+          cp /config/openclaw.json /openclaw-home/openclaw.json
+          chmod 644 /openclaw-home/openclaw.json
+      volumeMounts:
+        - name: openclaw-config
+          mountPath: /config
+          readOnly: true
+        - name: openclaw-home
+          mountPath: /openclaw-home
+  containers:
+    - name: openclaw
+      image: ghcr.io/openclaw/openclaw
+      imagePullPolicy: IfNotPresent
+      ports:
+        - name: gateway
+          containerPort: 18789
+          protocol: TCP
+
+      env:
+        # --- Config file path (default matches mount below) ---
+        - name: OPENCLAW_CONFIG_PATH
+          value: /home/node/.openclaw/openclaw.json
+
+        # Optional: separate state directory (OpenClaw honors when set).
+        # - name: OPENCLAW_STATE_DIR
+        #   value: /home/node/.openclaw-data
+
+        # Skip `openclaw setup` / `openclaw onboard` in entrypoint (config is pre-provisioned).
+        - name: OPENCLAW_SKIP_ONBOARD
+          value: "1"
+
+        # --- Microsoft Foundry (must match models.providers.microsoft-foundry + agents.defaults) ---
+        - name: OPENCLAW_FOUNDRY_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: openclaw-foundry-endpoint
+              key: OPENCLAW_FOUNDRY_BASE_URL
+        # Primary must be <providerKey>/<modelId> — use microsoft-foundry for Foundry, not default/ (wrong API + 401).
+        - name: OPENCLAW_AGENT_PRIMARY_MODEL
+          value: "microsoft-foundry/gpt-5.3-chat"
+
+        # --- Gateway process (`openclaw gateway run`, wired in docker-entrypoint.sh) ---
+        # Required for Service/LB: listen on 0.0.0.0 (loopback default rejects pod IP traffic).
+        - name: OPENCLAW_GATEWAY_BIND
+          value: "lan"
+        - name: OPENCLAW_GATEWAY_PORT
+          value: "18789"
+        - name: OPENCLAW_GATEWAY_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-credentials
+              key: OPENCLAW_GATEWAY_TOKEN
+
+        # --- Secrets: API key (required) ---
+        - name: OPENCLAW_MODEL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openclaw-credentials
+              key: OPENCLAW_MODEL_API_KEY
+
+        # --- Extra provider envs: reference in your own ConfigMap as "${OPENAI_API_KEY}", etc. ---
+        # - name: OPENAI_API_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: openclaw-credentials
+        #       key: OPENAI_API_KEY
+        # - name: ANTHROPIC_API_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: openclaw-credentials
+        #       key: ANTHROPIC_API_KEY
+
+      volumeMounts:
+        - name: openclaw-home
+          mountPath: /home/node/.openclaw
+
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          memory: "2Gi"
+
+  volumes:
+    - name: openclaw-home
+      emptyDir: {}
+    - name: openclaw-config
+      configMap:
+        name: openclaw-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw
+  namespace: nemoclaw
+  labels:
+    app: openclaw
+spec:
+  type: ClusterIP
+  selector:
+    app: openclaw
+  ports:
+    - name: gateway
+      port: 18789
+      targetPort: gateway
+      protocol: TCP

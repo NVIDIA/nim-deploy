@@ -1,0 +1,34 @@
+# Public LoadBalancer for OpenClaw (port 18789 on pods → port 80 on LB).
+#
+# Prerequisites (same namespace as Pod + ClusterIP Service — default here: nemoclaw):
+#   - Pod `openclaw` labels include app=openclaw
+#   - Gateway must bind LAN: OPENCLAW_GATEWAY_BIND=lan (see openclaw-k8s.yaml). Loopback bind → no endpoints work.
+#
+# Debug empty LB:
+#   kubectl get endpoints openclaw-http -n nemoclaw -o wide
+#   kubectl get pods -n nemoclaw -l app=openclaw
+# If Endpoints shows no addresses, fix namespace/selector or pod Ready state.
+#
+# Apply:
+#   kubectl apply -f openclaw-ingress.yaml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-http
+  namespace: nemoclaw
+  labels:
+    app: openclaw
+  # annotations:
+  #   service.beta.kubernetes.io/azure-load-balancer-resource-group: "<MC_...>"
+  #   service.beta.kubernetes.io/azure-pip-name: "<pip-name>"
+spec:
+  type: LoadBalancer
+  selector:
+    app: openclaw
+  ports:
+    - name: http
+      port: 80
+      targetPort: 18789
+      protocol: TCP
