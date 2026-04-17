@@ -1,0 +1,178 @@
+# NemoClaw on Kubernetes
+# Uses official installer with Docker-in-Docker for sandbox isolation.
+#
+# Prerequisites:
+#   kubectl create namespace nemoclaw
+# Replace YOUR_ACR_NAME, CHAT_UI_URL, NEMOCLAW_ENDPOINT_URL, and NEMOCLAW_MODEL below.
+# For the Azure OpenAI key, copy nemoclaw-secrets.example.yaml to nemoclaw-secrets.yaml,
+# fill in azure-openai-api-key, and kubectl apply -f nemoclaw-secrets.yaml -n nemoclaw
+# (optional secret: if omitted, COMPATIBLE_API_KEY defaults to dummy in the startup script).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nemoclaw
+  namespace: nemoclaw
+  labels:
+    app: nemoclaw
+    # Matches nemoclaw-http Service selector so LoadBalancer hits only this pod.
+    nemoclaw.io/instance: nemoclaw
+spec:
+  containers:
+    # Docker daemon (DinD)
+    - name: dind
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      command: ["dockerd", "--host=unix:///var/run/docker.sock"]
+      volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
+        - name: docker-socket
+          mountPath: /var/run
+        - name: docker-config
+          mountPath: /etc/docker
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "2"
+
+    # Workspace - runs official NemoClaw installer
+    - name: workspace
+      #image: node:22
+      image: anslutskynemoclawclusterregistry.azurecr.io/nemoclaw-dind-src:latest
+      command:
+        - bash
+        - -c
+        - |
+          set -e
+
+          # Install packages
+          echo "[1/4] Installing packages..."
+          apt-get update -qq
+          apt-get install -y -qq docker.io socat curl >/dev/null 2>&1
+
+          # Start socat proxy for K8s DNS bridge
+          echo "[2/4] Starting socat proxy..."
+          socat TCP-LISTEN:8000,fork,reuseaddr TCP:$DYNAMO_HOST &
+          # Add hosts entry so validation can reach socat via host.openshell.internal
+          echo "127.0.0.1 host.openshell.internal" >> /etc/hosts
+          sleep 1
+
+          # Wait for Docker
+          echo "[3/4] Waiting for Docker daemon..."
+          for i in $(seq 1 30); do
+            if docker info >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker info >/dev/null 2>&1 || { echo "Docker not ready"; exit 1; }
+          echo "Docker ready"
+
+          # Default to a dummy compatible API key for unauthenticated endpoints
+          # such as Dynamo/vLLM while still allowing a Secret-backed override.
+          export COMPATIBLE_API_KEY="${COMPATIBLE_API_KEY:-dummy}"
+
+          export NEMOCLAW_REPO_ROOT=/nemoclaw-src
+
+          # Run official NemoClaw installer
+          echo "[4/4] Running NemoClaw installer..."
+          umask 077
+          # curl --proto '=https' --tlsv1.2 --fail --show-error --silent \
+          #   --location \
+          #   --output /tmp/nemoclaw-install.sh \
+          #   https://www.nvidia.com/nemoclaw.sh
+          #chmod 700 /tmp/nemoclaw-install.sh
+          #bash /tmp/nemoclaw-install.sh
+          bash /nemoclaw-src/scripts/install.sh --non-interactive --yes-i-accept-third-party-software
+          #rm -f /tmp/nemoclaw-install.sh
+
+          # Keep running after onboard
+          echo "Onboard complete. Container staying alive!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+          exec sleep infinity
+      env:
+        # Non-loopback CHAT_UI_URL → openshell forward listens on 0.0.0.0:18789 (required for the
+        # LoadBalancer Service; loopback would bind 127.0.0.1 only and the Service would fail).
+        #
+        # The sandbox build also derives gateway.controlUi.allowedOrigins from this URL. The
+        # browser Origin must match that origin exactly. If you open the Control UI at
+        # http://<LoadBalancer-external-IP>/ but CHAT_UI_URL is an in-cluster name, the gateway
+        # rejects requests with "origin not allowed ... allowedOrigins".
+        #
+        # Set to the same origin users type in the address bar (no path, no trailing slash).
+        # External IP: kubectl get svc nemoclaw-http -n nemoclaw -o jsonpath='{.status.loadBalancer.ingress[0].ip}{"\n"}'
+        # On Azure you may get .hostname instead of .ip — use that host in the URL.
+        # - name: CHAT_UI_URL
+        #   # Same origin users open in the browser (LB IP or hostname from kubectl get svc nemoclaw-http).
+        #   value: "http://YOUR_NEMOCLAW_HTTP_LOAD_BALANCER_HOST"
+        - name: DOCKER_HOST
+          value: unix:///var/run/docker.sock
+        # Dynamo endpoint (raw host:port for socat) - UPDATE THIS FOR YOUR CLUSTER
+        - name: DYNAMO_HOST
+          value: "nemotron-super-fp8-sglang-disagg-frontend.dynamo-system.svc.cluster.local:8000"
+        # NemoClaw config (uses host.openshell.internal via socat)
+        - name: NEMOCLAW_NON_INTERACTIVE
+          value: "1"
+        - name: NEMOCLAW_PROVIDER
+          value: "custom"
+        - name: NEMOCLAW_ENDPOINT_URL
+          value: "http://host.openshell.internal:8000/v1"
+        # - name: NEMOCLAW_ENDPOINT_URL
+        #   value: "https://YOUR_AZURE_OPENAI_RESOURCE.openai.azure.com/openai/v1/"
+        # - name: COMPATIBLE_API_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: nemoclaw-workshop-credentials
+        #       key: azure-openai-api-key
+        #       optional: true
+        - name: NEMOCLAW_MODEL
+          value: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8"
+        - name: NEMOCLAW_SANDBOX_NAME
+          value: "my-assistant"
+        # Copy Docker2 openclaw-sandbox.yaml into the cloned NemoClaw tree before onboard (curl egress).
+        - name: NEMOCLAW_WORKSHOP_POLICY_SRC
+          value: "/nemoclaw-src/nemoclaw-blueprint/policies/openclaw-sandbox.yaml"
+        - name: NEMOCLAW_POLICY_MODE
+          value: "suggested"
+        - name: NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE
+          value: "1"
+        # - name: NEMOCLAW_INFERENCE_API
+        #   value: "azure-openai-responses"
+        # - name: NEMOCLAW_PREFERRED_API
+        #   value: "azure-openai-responses"
+        - name: NEMOCLAW_FROM_DOCKERFILE
+          value: "/nemoclaw-src/Dockerfile"
+      volumeMounts:
+        - name: docker-socket
+          mountPath: /var/run
+        - name: docker-config
+          mountPath: /etc/docker
+      resources:
+        requests:
+          memory: "4Gi"
+          cpu: "2"
+      ports:
+        # Dashboard forward on the workspace container; must use non-loopback CHAT_UI_URL in env.
+        - containerPort: 18789
+          name: dashboard
+          protocol: TCP
+
+  initContainers:
+    # Configure Docker daemon for cgroup v2
+    - name: init-docker-config
+      image: busybox
+      command: ["sh", "-c", "echo '{\"default-cgroupns-mode\":\"host\"}' > /etc/docker/daemon.json"]
+      volumeMounts:
+        - name: docker-config
+          mountPath: /etc/docker
+
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-socket
+      emptyDir: {}
+    - name: docker-config
+      emptyDir: {}
+
+  restartPolicy: Never

@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# One-shot Job: download the model into the shared PVC using the same cache layout
+# as vLLM workers (HF_HOME parent directory contains ./hub/...).
+#
+# Prerequisites in the same namespace:
+#   - PVC from pvc-shared-hf-cache.yaml
+#   - Secret hf-token-secret with key HF_TOKEN (same namespace as the Job)
+#
+# Run after the PVC is Bound:
+#   kubectl apply -f model-download-job.yaml -n <namespace>
+#   kubectl logs -f job/nemotron-model-pull -n <namespace>
+#
+# Re-run after deleting the Job if you need to refresh weights (bump job metadata.name).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nemotron-model-pull
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 172800
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      containers:
+        - name: download
+          image: python:3.12-slim-bookworm
+          env:
+            # python:slim has no passwd entry for UID 1000; without HOME, pip tries /.local and fails.
+            - name: HOME
+              value: /tmp
+            - name: HF_HOME
+              value: /mnt/hf
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /mnt/hf
+          resources:
+            requests:
+              cpu: "2"
+              memory: 8Gi
+            limits:
+              cpu: "8"
+              memory: 32Gi
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              pip install --no-cache-dir "huggingface_hub>=0.26.0"
+              python - <<'PY'
+              from huggingface_hub import snapshot_download
+
+              repo_id = "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8"
+              snapshot_download(repo_id=repo_id, repo_type="model")
+              print("snapshot_download completed for", repo_id)
+              PY
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: nemotron-shared-hf-cache

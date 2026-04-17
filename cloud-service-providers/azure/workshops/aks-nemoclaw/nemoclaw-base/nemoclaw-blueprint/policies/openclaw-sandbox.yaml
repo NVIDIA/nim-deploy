@@ -1,0 +1,260 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Default policy for the OpenClaw sandbox.
+# Principle: deny by default, allow only what's needed for core functionality.
+# Dynamic updates (network_policies, inference) can be applied post-creation
+# via `openshell policy set`. Static fields are effectively creation-locked.
+#
+# Docker2: this file replaces nemoclaw-blueprint/policies/openclaw-sandbox.yaml
+# after prepare-context.sh copies the blueprint from NemoClaw. It adds
+# docker2_wide_egress — permissive HTTP/HTTPS egress to the public internet
+# for any binary (see warning below).
+#
+# To add endpoints: update this file and re-run `nemoclaw onboard`
+# or apply dynamically via `openshell policy set`.
+
+version: 1
+
+filesystem_policy:
+  include_workdir: false
+  read_only:
+    - /usr
+    - /lib
+    - /proc
+    - /dev/urandom
+    - /app
+    - /etc
+    - /var/log
+    - /sandbox/.openclaw            # Immutable gateway config — prevents agent
+                                    # from tampering with auth tokens or CORS.
+                                    # Writable state (agents, plugins) lives in
+                                    # /sandbox/.openclaw-data via symlinks.
+                                    # Ref: https://github.com/NVIDIA/NemoClaw/issues/514
+  read_write:
+    - /sandbox
+    - /tmp
+    - /dev/null
+    - /sandbox/.openclaw-data       # Writable agent/plugin state (symlinked from .openclaw)
+
+landlock:
+  compatibility: best_effort
+
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+
+network_policies:
+  claude_code:
+    name: claude_code
+    endpoints:
+      - host: api.anthropic.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/messages" }
+          - allow: { method: POST, path: "/v1/messages/batches" }
+          - allow: { method: GET, path: "/v1/messages/batches/**" }
+          - allow: { method: POST, path: "/v1/complete" }
+      - host: statsig.anthropic.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/**" }
+      - host: sentry.io
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/api/*/envelope/**" }
+          - allow: { method: POST, path: "/api/*/store/**" }
+    binaries:
+      - { path: /usr/local/bin/claude }
+
+  nvidia:
+    name: nvidia
+    endpoints:
+      - host: integrate.api.nvidia.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/chat/completions" }
+          - allow: { method: POST, path: "/v1/completions" }
+          - allow: { method: POST, path: "/v1/embeddings" }
+          - allow: { method: GET, path: "/v1/models" }
+          - allow: { method: GET, path: "/v1/models/**" }
+      - host: inference-api.nvidia.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/chat/completions" }
+          - allow: { method: POST, path: "/v1/completions" }
+          - allow: { method: POST, path: "/v1/embeddings" }
+          - allow: { method: GET, path: "/v1/models" }
+          - allow: { method: GET, path: "/v1/models/**" }
+    binaries:
+      - { path: /usr/local/bin/claude }
+      - { path: /usr/local/bin/openclaw }
+
+  github:
+    name: github
+    endpoints:
+      - host: github.com
+        port: 443
+        access: full
+      - host: api.github.com
+        port: 443
+        access: full
+    binaries:
+      - { path: /usr/bin/gh }
+      - { path: /usr/bin/git }
+
+  # ── OpenClaw "phone home" ────────────────────────────────────────────
+  # Minimum viable set for OpenClaw to authenticate, discover plugins,
+  # and reach ClawHub. Restricted to openclaw and node (skill flows run on Node).
+  # Docs access is read-only (GET). ClawHub and openclaw.ai are
+  # restricted to GET+POST (auth flows, plugin discovery).
+
+  clawhub:
+    name: clawhub
+    endpoints:
+      - host: clawhub.ai
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+          - allow: { method: POST, path: "/**" }
+    binaries:
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/node }
+
+  openclaw_api:
+    name: openclaw_api
+    endpoints:
+      - host: openclaw.ai
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+          - allow: { method: POST, path: "/**" }
+    binaries:
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/node }
+
+  openclaw_docs:
+    name: openclaw_docs
+    endpoints:
+      - host: docs.openclaw.ai
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+    binaries:
+      - { path: /usr/local/bin/openclaw }
+
+  # npm registry — needed for `openclaw plugins install` and `npm install`.
+  # Read-only: agents only fetch packages, never publish.
+  npm_registry:
+    name: npm_registry
+    endpoints:
+      - host: registry.npmjs.org
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+    binaries:
+      - { path: /usr/local/bin/openclaw }
+      - { path: /usr/local/bin/npm }
+      - { path: /usr/local/bin/node }
+
+  # ── Messaging — pre-allowed for OpenClaw agent notifications ────
+  # Restricted to node processes to prevent arbitrary data exfiltration
+  # via curl, wget, python, etc. (See: #272)
+  telegram:
+    name: telegram
+    endpoints:
+      - host: api.telegram.org
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/bot*/**" }
+          - allow: { method: POST, path: "/bot*/**" }
+          - allow: { method: GET, path: "/file/bot*/**" }
+    binaries:
+      - { path: /usr/local/bin/node }
+
+  discord:
+    name: discord
+    endpoints:
+      - host: discord.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+          - allow: { method: POST, path: "/**" }
+      # WebSocket gateway — must use access: full (CONNECT tunnel) instead
+      # of protocol: rest. The proxy's HTTP idle timeout (~2 min) kills
+      # long-lived WebSocket connections; a CONNECT tunnel avoids
+      # HTTP-level timeouts entirely. Matches presets/discord.yaml. See #409.
+      - host: gateway.discord.gg
+        port: 443
+        access: full
+      - host: cdn.discordapp.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+    binaries:
+      - { path: /usr/local/bin/node }
+
+  # ── Docker2: broad HTTP/HTTPS egress to the public internet ─────────────
+  # WARNING: Allows CONNECT to any public IPv4/IPv6 on ports 80 and 443 for
+  # any executable, plus explicit *.services.ai.azure.com. This disables
+  # meaningful egress isolation — use only in trusted dev environments.
+  docker2_wide_egress:
+    name: docker2_wide_egress
+    endpoints:
+      # Explicit host: replace YOUR_FOUNDRY_RESOURCE_NAME with your Foundry resource (or rely on *.services.ai.azure.com below).
+      - host: "YOUR_FOUNDRY_RESOURCE_NAME.services.ai.azure.com"
+        port: 443
+        access: full
+      - host: "*.services.ai.azure.com"
+        port: 443
+        access: full
+      # Hostless: any hostname on 80/443 whose resolved IPs are public (allowlist
+      # is full IPv4/IPv6 space; loopback/link-local still blocked by OpenShell).
+      - port: 80
+        allowed_ips:
+          - "0.0.0.0/0"
+          - "::/0"
+        access: full
+      - port: 443
+        allowed_ips:
+          - "0.0.0.0/0"
+          - "::/0"
+        access: full
+    binaries:
+      - { path: "/**" }

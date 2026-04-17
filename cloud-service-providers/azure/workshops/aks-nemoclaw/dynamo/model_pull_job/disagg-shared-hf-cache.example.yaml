@@ -1,0 +1,121 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Example DynamoGraphDeployment: disaggregated vLLM using a pre-populated shared HF cache.
+# Use the same pattern on every other DynamoGraphDeployment / vLLM graph that should read
+# the same weights (reference the same PVC name in spec.pvcs and volumeMounts).
+#
+# NemotronH + vLLM + NIXL disagg is not supported upstream (hybrid KV specs cannot unify when
+# the hybrid KV cache manager is disabled by the KV connector). For Nemotron on vLLM use
+# aggregated deploy; for Nemotron disagg see recipes/nemotron-3-super-fp8/README.md (SGLang/TRT-LLM).
+# This example uses Qwen3 so NIXL disagg runs against the same PVC layout.
+#
+# Prerequisites:
+#   - PVC nemotron-shared-hf-cache (Bound)
+#   - Job nemotron-model-pull completed (or snapshot_download for Qwen/Qwen3-0.6B into the same cache)
+#   - Secret hf-token-secret (still used by workers for any gated assets; HF_HUB_OFFLINE skips network when cache is complete)
+#
+# Apply:
+#   kubectl apply -f disagg-shared-hf-cache.example.yaml -n <namespace>
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: vllm-disagg
+spec:
+  pvcs:
+    - create: false
+      name: nemotron-shared-hf-cache
+  services:
+    Frontend:
+      componentType: frontend
+      replicas: 1
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.0.1
+          workingDir: /workspace
+          command:
+            - python3
+          args:
+            - -m
+            - dynamo.frontend
+            - --router-mode
+            - kv
+            - --no-kv-events
+    VllmDecodeWorker:
+      envFromSecret: hf-token-secret
+      componentType: worker
+      subComponentType: decode
+      replicas: 1
+      resources:
+        limits:
+          gpu: "2"
+        requests:
+          custom:
+            ephemeral-storage: "200Gi"
+      envs:
+        - name: HF_HOME
+          value: /home/dynamo/.cache/huggingface
+      volumeMounts:
+        - name: nemotron-shared-hf-cache
+          mountPoint: /home/dynamo/.cache/huggingface
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.0.1
+          workingDir: /workspace/examples/backends/vllm
+          env:
+            - name: HF_HUB_OFFLINE
+              value: "1"
+            - name: HF_MODULES_CACHE
+              value: /tmp/hf-transformers-modules
+            - name: VLLM_FLASHINFER_ALLREDUCE_BACKEND
+              value: "trtllm"
+          command:
+            - python3
+            - -m
+            - dynamo.vllm
+          args:
+            - --model
+            - Qwen/Qwen3-0.6B
+            - --no-enable-prefix-caching
+            - --disaggregation-mode
+            - decode
+    VllmPrefillWorker:
+      envFromSecret: hf-token-secret
+      componentType: worker
+      subComponentType: prefill
+      replicas: 1
+      resources:
+        limits:
+          gpu: "2"
+        requests:
+          custom:
+            ephemeral-storage: "200Gi"
+      envs:
+        - name: HF_HOME
+          value: /home/dynamo/.cache/huggingface
+      volumeMounts:
+        - name: nemotron-shared-hf-cache
+          mountPoint: /home/dynamo/.cache/huggingface
+      extraPodSpec:
+        mainContainer:
+          image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.0.1
+          workingDir: /workspace/examples/backends/vllm
+          env:
+            - name: HF_HUB_OFFLINE
+              value: "1"
+            - name: HF_MODULES_CACHE
+              value: /tmp/hf-transformers-modules
+            - name: VLLM_FLASHINFER_ALLREDUCE_BACKEND
+              value: "trtllm"
+          command:
+            - python3
+            - -m
+            - dynamo.vllm
+          args:
+            - --model
+            - Qwen/Qwen3-0.6B
+            - --no-enable-prefix-caching
+            - --disaggregation-mode
+            - prefill
+            - --kv-transfer-config
+            - '{"kv_connector":"NixlConnector","kv_role":"kv_both"}'

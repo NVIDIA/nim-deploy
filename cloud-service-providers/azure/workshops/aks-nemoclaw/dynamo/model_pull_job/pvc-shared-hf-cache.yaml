@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Shared Hugging Face hub cache for many vLLM pods.
+# PersistentVolumeClaims are namespace-scoped: every namespace that runs vLLM against this
+# cache needs its own PVC. To share one Azure Files share across namespaces, use a
+# PersistentVolume pointing at the same file share and one PVC per namespace, or colocate
+# graphs in one namespace.
+#
+# Requires a ReadWriteMany storage class (multiple pods / nodes attach concurrently).
+#
+# AKS examples (pick one that exists in your cluster: kubectl get sc):
+#   - azurefile-csi
+#   - azurefile-csi-premium
+#
+# Size: Nemotron 3 Super 120B NVFP4 is large; adjust if your hub snapshot is bigger.
+#
+# Apply once per namespace that should share this cache:
+#   kubectl apply -f pvc-shared-hf-cache.yaml -n <namespace>
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nemotron-shared-hf-cache
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: azurefile-csi-premium
+  resources:
+    requests:
+      storage: 512Gi

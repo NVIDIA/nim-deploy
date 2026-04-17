@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+version: "0.1.0"
+min_openshell_version: "0.0.24"
+max_openshell_version: "0.0.26"
+digest: ""  # Computed at release time
+
+profiles:
+  - default
+  - ncp
+  - nim-local
+  - vllm
+
+description: |
+  NemoClaw blueprint: orchestrates OpenClaw sandbox creation, migration,
+  and NIM/vLLM inference routing inside OpenShell.
+
+components:
+  sandbox:
+    image: "ghcr.io/nvidia/openshell-community/sandboxes/openclaw:latest"
+    name: "openclaw"
+    forward_ports:
+      - 18789
+
+  inference:
+    profiles:
+      default:
+        provider_type: "nvidia"
+        provider_name: "nvidia-inference"
+        endpoint: "https://integrate.api.nvidia.com/v1"
+        model: "nvidia/nemotron-3-super-120b-a12b"
+
+      ncp:
+        provider_type: "nvidia"
+        provider_name: "nvidia-ncp"
+        endpoint: ""
+        model: "nvidia/nemotron-3-super-120b-a12b"
+        credential_env: "NVIDIA_API_KEY"
+        dynamic_endpoint: true
+
+      nim-local:
+        provider_type: "openai"
+        provider_name: "nim-local"
+        endpoint: "http://nim-service.local:8000/v1"
+        model: "nvidia/nemotron-3-super-120b-a12b"
+        credential_env: "NIM_API_KEY"
+
+      vllm:
+        provider_type: "openai"
+        provider_name: "vllm-local"
+        endpoint: "http://localhost:8000/v1"
+        model: "nvidia/nemotron-3-nano-30b-a3b"
+        credential_env: "OPENAI_API_KEY"
+        credential_default: "dummy"
+
+  policy:
+    base: "sandboxes/openclaw/policy.yaml"
+    additions:
+      nim_service:
+        name: nim_service
+        endpoints:
+          - host: "nim-service.local"
+            port: 8000
+            protocol: rest
