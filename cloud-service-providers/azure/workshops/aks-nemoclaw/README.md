@@ -67,13 +67,34 @@ Together: agent load + shared serving + one strong NVIDIA model on AKS.
 
 ## Azure AKS and the two layers
 
-AKS is not “just Kubernetes”: Azure adds identity, storage, networking, and policy hooks. Those hooks line up differently with the **governable application surface** than with the **inference plane**.
+AKS is not “just Kubernetes.” Azure adds **identity**, **secrets**, **network**, **logs**, **GPUs**, and **disks**. Some of that helps the **governable surface** (rules and people). Some helps the **inference plane** (models and hardware).
 
-**Governable surface (who / what / how).** You care who can deploy or change agent policy, where secrets live, and whether traffic and logs stay inside your boundary. On AKS that often means **Microsoft Entra ID** (Azure RBAC on the control plane and Kubernetes RBAC in the cluster) so only the right teams touch NemoClaw config or secrets. **Azure Key Vault** with the **Secrets Store CSI driver** (or workload identity to Key Vault) keeps API keys, NGC keys, and Hugging Face tokens out of plain YAML in Git. **Azure Policy** and **Defender for Cloud** add org-wide rules (for example: no public Services where policy forbids them). **Private AKS** or **internal load balancers** reduce exposure of the control plane or admin paths. **Azure Monitor** and **Container Insights** give one place to retain and query audit-style logs if your compliance team requires it. **Network policies** (with **Azure CNI**) can separate namespaces so agent pods and inference pods talk only on allowed ports.
+### Governable surface — what you worry about
 
-**Inference plane (model / GPUs / scale).** Here you care about GPU SKUs, disk speed for weights, and scale. AKS **GPU node pools** (for example NC/ND families) host Dynamo workers. **Availability zones** on node pools improve uptime when a zone has an issue. **Cluster autoscaler** and **Horizontal Pod Autoscaler** (or KEDA) grow or shrink capacity with queue depth. **Azure managed disks** (often **Premium SSD**) back the **PVC** that holds the large Nemotron download so workers start faster and keep steady I/O. **Azure Container Registry** plus **managed identity** (or ACR attach) avoids long-lived docker passwords on nodes. **Standard Load Balancer** or **Application Gateway** exposes the front end your users or NemoClaw hit, optionally **internal** only so the model API never leaves the VNet.
+| Your question | Azure piece | Plain English |
+|----------------|-------------|----------------|
+| Who may change agents or cluster settings? | **Microsoft Entra ID** + **RBAC** (Azure + Kubernetes) | Only the groups you pick get `kubectl` or deploy rights. |
+| Where do API keys live (not in Git)? | **Key Vault** + **Secrets Store CSI** or **workload identity** | Pods read secrets at runtime; YAML in repos stays clean. |
+| How do we enforce org-wide rules? | **Azure Policy**, **Defender for Cloud** | Block risky patterns (e.g. public Services) across many clusters. |
+| How do we keep admin or API paths private? | **Private cluster**, **internal load balancer** | Less on the public internet; traffic stays in the VNet when you want that. |
+| Where do we store and search logs? | **Azure Monitor**, **Container Insights** | One place for alerts and audit-style history. |
+| Who may talk to which pod? | **Network policies** on **Azure CNI** | e.g. NemoClaw namespace ↔ Dynamo namespace only on allowed ports. |
 
-Neither layer replaces the other: Azure gives guardrails and plumbing; NemoClaw and Dynamo still implement the actual agent rules and model serving.
+**In one line:** Azure helps with **who**, **secrets**, **network shape**, and **logs** around NemoClaw—not with writing the agent rules themselves (that is still NemoClaw).
+
+### Inference plane — what you worry about
+
+| Your question | Azure piece | Plain English |
+|----------------|-------------|----------------|
+| Where do GPUs run? | **GPU node pools** (e.g. NC / ND SKUs), **availability zones** | Workers sit on GPU VMs; zones spread risk if one datacenter fails. |
+| Where do weights sit? | **Managed disks** or **Files** for **PVC** | Big model on disk; **Premium SSD** is common for speed. |
+| How do we scale with load? | **Cluster autoscaler**, **HPA**, **KEDA** | Add or remove nodes or pods when queues grow or shrink. |
+| How do nodes pull images? | **ACR** + **managed identity** (or attach ACR to AKS) | No long-lived docker password baked on every node. |
+| How do users reach the model API? | **Standard load balancer** or **Application Gateway**, **ingress** | Can stay **internal** so the API never leaves your VNet. |
+
+**In one line:** Azure helps with **GPUs**, **disk**, **scale**, **image pull**, and **how traffic enters** the cluster—Dynamo still defines how the model is served inside that stack.
+
+Azure does **not** replace NemoClaw or Dynamo: it adds **guardrails** and **plumbing** around them.
 
 ```mermaid
 flowchart TB
