@@ -106,6 +106,8 @@ spec:
         # - name: CHAT_UI_URL
         #   # Same origin users open in the browser (LB IP or hostname from kubectl get svc nemoclaw-http).
         #   value: "http://YOUR_NEMOCLAW_HTTP_LOAD_BALANCER_HOST"
+        - name: CHAT_UI_URL
+          value: "http://0.0.0.0:18789"
         - name: DOCKER_HOST
           value: unix:///var/run/docker.sock
         # Dynamo endpoint (raw host:port for socat) - UPDATE THIS FOR YOUR CLUSTER

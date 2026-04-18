@@ -10,42 +10,55 @@ This README explains **why** the workshop exists and **how** to run it. The samp
 
 Agents send a lot of traffic to the model: long prompts, tools, search hits, and streamed answers. You need two things working together:
 
-1. A **governable application surface** — rules, users, tools, and logs live here.
-2. An **inference plane** — the model runs here, on your GPUs, with stable cost and latency inside your cloud boundary.
+1. A **Governable Application Surface** — rules, users, tools, and logs live here.
+2. An **Inference Plane** — the model runs here, on your GPUs, with stable cost and latency inside your cloud boundary.
 
-### Governable application surface
+### Governable Application Surface
 
-This is the software layer where **your** rules apply (not only inside the model file).
+**Governable Application Surface (GAS)** is the software layer where **your** rules apply (not only inside the model file).
 
 - **Who** — which users or services may run an agent, and with what access.
 - **What** — which tools, APIs, and data the agent may use; what may go into the prompt.
 - **How** — how text is filtered, redacted, logged, and kept for audit; how a request is traced from the user through tools to the model call.
 
-You change these with config and policy; you do not need to retrain the model. Here, **NemoClaw** plays this role: assistants, sandboxes, and policies sit **above** the plain HTTP call to the model.
+You change these with config and policy; you do not need to retrain the model. Here, **NemoClaw** is the **Governable Application Surface** for this workshop: assistants, sandboxes, and policies sit **above** the plain HTTP call to the model.
 
-### Inference plane
+### Platform governance vs the Governable Application Surface
 
-This is the stack that **runs** the model: GPUs, scheduling, and the HTTP API your apps call. Some people say “inference plan” for the same idea (how you buy and use GPU capacity).
+**Is AKS the Governable Application Surface?** In everyday language, AKS and Azure are **governed** (RBAC, policy, networks). In this doc, **GAS** means the **agent product layer**—who may do what in **assistant and tool terms**—not the whole cloud control plane.
+
+| Layer | What “governance” means here | Examples |
+|--------|------------------------------|------------|
+| **AKS / Azure (platform)** | Who may change **infrastructure**; how **secrets, network, and logs** are wired for any workload | Entra ID, Key Vault, NetworkPolicy, Azure Policy, which team may run `kubectl apply` |
+| **NemoClaw** | What **this assistant** may do in **business terms**; how **tools, prompts, and sandboxes** are chosen and audited | Tool allowlists, policy files, operator UI, tracing “user → tool → model call” |
+
+Kubernetes does **not** understand “this employee may call only these APIs” or “redact this class of data before it hits the model.” It understands Pods, Services, and RBAC on those objects. So a cluster can be **tightly governed** and you can still run an unsafe agent if nothing in **GAS** enforces **semantic** rules.
+
+**Why the Governable Application Surface still matters (NemoClaw):** AKS answers “who may deploy a workload?” and “which subnet may this Pod use?” NemoClaw answers “what may **this conversation** do next?” and “how do we change that **without** rebuilding the inference container?” You typically want **both**: Azure/AKS for **tenant and run safety**, NemoClaw (or an equivalent you build) for **agent behavior and operator experience**. This workshop uses NemoClaw so you get that **Governable Application Surface** without hand-rolling it on top of a bare HTTP client to Dynamo.
+
+### Inference Plane
+
+**Inference Plane (IP)** is the stack that **runs** the model: GPUs, scheduling, and the HTTP API your apps call. Some people say “inference plan” for the same idea (how you buy and use GPU capacity).
 
 - **What** — which model, precision (e.g. FP8), max context, and API shape (here: OpenAI-style routes); how traffic is split between workers.
 - **Where** — which AKS cluster, GPU nodes, and region run the job and hold weights/cache.
 - **How** — how requests wait in line, batch, scale up and down, and how you watch errors and usage for ops and finance.
 
-Here, **Dynamo on AKS** is the inference plane. The governable surface **sends** requests in; the plane **returns** answers and metrics for logging and policy, without every user dealing with cluster details.
+Here, **Dynamo on AKS** is the **Inference Plane** for this workshop. The **Governable Application Surface** sends requests in; **IP** returns answers and metrics for logging and policy, without every user dealing with cluster details.
 
 ### How the two layers connect
 
-The **governable surface** is close to **people and rules**. The **inference plane** is close to **GPUs and speed**. They meet at one API: the surface checks and shapes requests; the plane runs them inside your tenant.
+**GAS** is close to **people and rules**. The **Inference Plane** is close to **GPUs and speed**. They meet at one API: the **Governable Application Surface** checks and shapes requests; **IP** runs them inside your tenant.
 
 ```mermaid
 flowchart TB
-  subgraph GAS["Governable application surface"]
+  subgraph GAS["Governable Application Surface"]
     direction TB
     WHO["Who may act"]
     SCOPE["What may be touched"]
     PROC["How we log and limit"]
   end
-  subgraph IP["Inference plane"]
+  subgraph IP["Inference Plane"]
     direction TB
     MODEL["What model and API"]
     PLACE["Where GPUs run"]
@@ -67,9 +80,11 @@ Together: agent load + shared serving + one strong NVIDIA model on AKS.
 
 ## Azure AKS and the two layers
 
-AKS is not “just Kubernetes.” Azure adds **identity**, **secrets**, **network**, **logs**, **GPUs**, and **disks**. Some of that helps the **governable surface** (rules and people). Some helps the **inference plane** (models and hardware).
+AKS is not “just Kubernetes.” Azure adds **identity**, **secrets**, **network**, **logs**, **GPUs**, and **disks**. Most of that is **platform** governance (cluster and cloud). It **supports** **GAS** but is **not** the same thing—see [Platform governance vs the Governable Application Surface](#platform-governance-vs-the-governable-application-surface). The rest of this section maps Azure pieces to **either** helping you run agents safely **on** the cluster **or** running the **Inference Plane** efficiently.
 
-### Governable surface — what you worry about
+### Azure platform controls for **GAS**
+
+The rows below are mainly **platform** controls (they wrap whatever app you run, including NemoClaw). They do **not** replace agent policies you define on the **Governable Application Surface**.
 
 | Your question | Azure piece | Plain English |
 |----------------|-------------|----------------|
@@ -80,9 +95,9 @@ AKS is not “just Kubernetes.” Azure adds **identity**, **secrets**, **networ
 | Where do we store and search logs? | **Azure Monitor**, **Container Insights** | One place for alerts and audit-style history. |
 | Who may talk to which pod? | **Network policies** on **Azure CNI** | e.g. NemoClaw namespace ↔ Dynamo namespace only on allowed ports. |
 
-**In one line:** Azure helps with **who**, **secrets**, **network shape**, and **logs** around NemoClaw—not with writing the agent rules themselves (that is still NemoClaw).
+**In one line:** Azure helps with **who touches the cluster**, **secrets**, **network shape**, and **logs**—not with defining **which tools an assistant may call** (that stays in NemoClaw’s **GAS**).
 
-### Inference plane — what you worry about
+### Azure platform controls for **IP**
 
 | Your question | Azure piece | Plain English |
 |----------------|-------------|----------------|
@@ -92,20 +107,20 @@ AKS is not “just Kubernetes.” Azure adds **identity**, **secrets**, **networ
 | How do nodes pull images? | **ACR** + **managed identity** (or attach ACR to AKS) | No long-lived docker password baked on every node. |
 | How do users reach the model API? | **Standard load balancer** or **Application Gateway**, **ingress** | Can stay **internal** so the API never leaves your VNet. |
 
-**In one line:** Azure helps with **GPUs**, **disk**, **scale**, **image pull**, and **how traffic enters** the cluster—Dynamo still defines how the model is served inside that stack.
+**In one line:** Azure helps with **GPUs**, **disk**, **scale**, **image pull**, and **how traffic enters** the cluster—Dynamo still defines how the model is served inside **IP**.
 
 Azure does **not** replace NemoClaw or Dynamo: it adds **guardrails** and **plumbing** around them.
 
 ```mermaid
 flowchart TB
-  subgraph Gas["Governable surface — typical Azure hooks"]
+  subgraph Gas["Azure platform hooks<br/>support GAS"]
     RBAC["Entra ID + RBAC<br/>who edits agents / secrets"]
     KV["Key Vault + CSI / workload ID<br/>keys not in git"]
     POL["Azure Policy / Defender<br/>org guardrails"]
     NP["Network policies + CNI<br/>pod-to-pod rules"]
     LOG["Azure Monitor / Insights<br/>logs and alerts"]
   end
-  subgraph Ip["Inference plane — typical Azure hooks"]
+  subgraph Ip["Azure platform hooks<br/>support IP"]
     GPU["GPU node pools + zones<br/>where models run"]
     PVC["Managed disk / Files PVC<br/>model cache"]
     SCALE["Cluster + HPA / KEDA<br/>scale with load"]
@@ -120,8 +135,8 @@ flowchart LR
     U[Users / operators]
     U --> EID[Entra ID]
     EID --> ING[Ingress or LB]
-    ING --> NC[NemoClaw<br/>governable surface]
-    NC -->|cluster DNS / private link| FE[Dynamo frontend<br/>inference plane]
+    ING --> NC[NemoClaw<br/>GAS]
+    NC -->|cluster DNS / private link| FE[Dynamo frontend<br/>IP]
     FE --> WRK[GPU workers]
     WRK --> VOL[(PVC on Azure Disk)]
   end
