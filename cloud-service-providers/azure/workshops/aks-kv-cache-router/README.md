@@ -50,7 +50,7 @@ Dynamo disaggregated serving needs nodes with **NVIDIA GPUs** and a supported dr
 <img src="images/image-1.png" height="200" border="1">
 <img src="images/image-2.png" height="200" border="1">
 
-2. **Choose an appropriate SKU** — For disaggregated serving, use **at least two nodes** in the pool when you scale out. Pick a VM size with **multiple GPUs per node** if you plan multi-GPU workers (for example **Standard_NC80adis_H100_v5**).
+2. **Choose an appropriate SKU** — For disaggregated serving, use **at least two nodes** in the pool when you scale out. Pick a VM size with **multiple GPUs per node** if you plan multi-GPU workers (for example **Standard_NC80adis_H100_v5**). For this workshop, we have tested and recommend using **Standard_NC80adis_H100_v5** (H100) or **Standard_ND96asr_v4** (A100) depending on availability.
 
 <img src="images/image-3.png" height="200" border="1">
 <img src="images/image-4.png" height="400" border="1">
