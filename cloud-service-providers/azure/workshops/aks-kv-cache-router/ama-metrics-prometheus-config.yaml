@@ -97,17 +97,17 @@ data:
     podannotations = "30s"
   debug-mode: |-
     enabled = false
-  # Note that below section (ksm-config) is a yaml configuration, the settings override the configuration provided by optional parameters during 
+  # Note that below section (ksm-config) is a yaml configuration, the settings override the configuration provided by optional parameters during
   # onboarding for kube-state-metrics, only uncomment and use them if the collection needs to be customized.
   # Default settings - https://github.com/Azure/prometheus-collector/blob/e40947f3eaee8843021c90bd8645ce7875ad1fcf/otelcollector/deploy/addon-chart/azure-monitor-metrics-addon/values-template.yaml#L2
   # https://learn.microsoft.com/en-us/azure/azure-monitor/containers/kubernetes-monitoring-enable?tabs=cli#optional-parameters
   # OSS documentation for kube-state-metrics resources and the metrics - https://github.com/kubernetes/kube-state-metrics/tree/main/docs#exposed-metrics
   # ksm-config: |-
-  #   resources: 
+  #   resources:
   #     secrets: {}
   #     configmaps: {}
   #   labels_allow_list: # object name and label names
-  #     pods: 
+  #     pods:
   #     - app8
   #   annotations_allow_list: # object name and annotation names
   #     namespaces:
