@@ -1,100 +1,101 @@
 # AKS NemoClaw workshop
 
-This workshop deploys **NemoClaw** on Azure Kubernetes Service (AKS) inside a **Docker-in-Docker (DinD)** pod. The workspace container builds sandboxes with Docker, proxies your in-cluster **Dynamo** frontend through `socat`, and configures NemoClaw to call **Azure OpenAI** (custom OpenAI-compatible endpoint).
+This directory is an **Azure Kubernetes Service (AKS)–oriented workshop** for running **[NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw)** on a cluster, optionally fronted by **NVIDIA Dynamo** serving **Nemotron-3 Super FP8** over SGLang in **disaggregated** mode.
+
+## What this codebase does
+
+- **`deploy_nemoclaw_k8s.sh`** — One entrypoint that can:
+  1. Optionally deploy **Dynamo** from a Kubernetes manifest and wait until disaggregated tiers look healthy.
+  2. **Clone** a pinned NemoClaw git tag into `nemoclaw-base/nemoclaw-src/NemoClaw` (for reproducible Docker build context).
+  3. **Build** the `nemoclaw-base` image for `linux/amd64` (Node-based image with NemoClaw sources and workshop policy baked in).
+  4. **Push** `nemoclaw-dind-src:latest` to your **Azure Container Registry (ACR)** (with `az acr login` retry on auth errors).
+  5. **Apply** `nemoclaw-install` manifests: optional secrets, delete the `nemoclaw` pod, then `kubectl apply` `nemoclaw-k8s.yaml` with the registry host rewritten from your `--acr-name`.
+
+- **`nemoclaw-base/`** — Dockerfile and build context: clones/copies **NemoClaw** at `NEMOCLAW_GIT_TAG` (default `v0.0.18`), copies **`nemoclaw-blueprint`** policy overrides, installs OpenShell, and produces the image referenced by the pod spec.
+
+- **`nemoclaw-install/`** — Kubernetes manifests for a **Docker-in-Docker (DinD) + workspace** pod that runs NemoClaw’s installer non-interactively and wires **`NEMOCLAW_ENDPOINT_URL`** to an in-cluster Dynamo frontend (via `socat` and `host.openshell.internal`). Edit URLs, model name, and `CHAT_UI_URL` here for your environment.
+
+- **`dynamo/`** — Vendored **Dynamo** tree (recipes, docs, tests). The deploy script’s default Dynamo manifest is  
+  `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`  
+  (SGLang disaggregated Nemotron-3 Super FP8). See that recipe’s README for GPU and secret requirements.
 
 ## Prerequisites
 
-- An AKS cluster with `kubectl` configured for it.
-- **Azure Container Registry (ACR)** you can push to (same registry name you pass as `ACR_NAME`).
-- **Docker** (local build uses `linux/amd64` for the image).
-- **Azure CLI** (`az`), used for `az acr login` when push auth fails.
-- A **Dynamo** deployment reachable from the pod (default in the manifest assumes a frontend service in the `dynamo` namespace). Adjust `DYNAMO_HOST` if your service name or namespace differs.
-- A **LoadBalancer (or equivalent) Service** that exposes the NemoClaw HTTP / Control UI port to browsers. The pod manifest refers to a Service named `nemoclaw-http` in comments; create that Service (or rename labels/selectors consistently) so users open the UI at the same origin you set in `CHAT_UI_URL`.
-- **Azure OpenAI**: a resource with a deployment, and an API key you are willing to store in a Kubernetes Secret locally (not committed).
+- Shell with **bash**, **git**, **Docker**, **kubectl** (context pointing at your cluster), and **Azure CLI** (`az`) if you use ACR login from the script.
+- **ACR** your cluster can pull from (attach ACR to AKS or use another supported pull pattern).
+- Kubernetes **namespaces** you will use (defaults below); create them if they do not exist, for example:
+  - `kubectl create namespace nemoclaw`
+  - For Dynamo: `kubectl create namespace dynamo-system` (or your `--dynamo-namespace`).
+- For **Dynamo** deployments: satisfy the recipe’s prerequisites (GPU node pool, Hugging Face token secret, model cache jobs, etc.) as described in `dynamo/dynamo/recipes/nemotron-3-super-fp8/README.md` and Dynamo’s Kubernetes docs under `dynamo/dynamo/docs/kubernetes/`.
 
-## Layout
+## Install / refresh with `deploy_nemoclaw_k8s.sh`
 
-| Path | Role |
-|------|------|
-| `nemoclaw-base/` | Dockerfile and source baked into the `nemoclaw-dind-src` image. |
-| `nemoclaw-install/nemoclaw-k8s.yaml` | Pod spec: placeholders for registry, UI URL, Azure endpoint, deployment name. |
-| `nemoclaw-install/nemoclaw-secrets.example.yaml` | Template for the API key Secret. |
-| `nemoclaw-install/nemoclaw-secrets.yaml` | **Local only** (gitignored): copy from the example and apply. |
-| `install_k8s.sh` | Build image, push to ACR, apply Secret (if present), apply Pod manifest. |
-| `dynamo/` | Optional Dynamo-related assets for the workshop (see files there). |
+Run the script from anywhere; it resolves paths relative to its own location.
 
-## Required settings
+### Required
 
-Edit **`nemoclaw-install/nemoclaw-k8s.yaml`** before or after the first apply (some values you only know after the LoadBalancer is provisioned).
+| Flag / variable | Meaning |
+|-----------------|--------|
+| `--acr-name NAME` or `ACR_NAME` | **Short** ACR name only (e.g. `myregistry`), not the full `*.azurecr.io` login server. The image pushed is `NAME.azurecr.io/nemoclaw-dind-src:latest`. |
 
-| Setting | Where | What to put |
-|--------|--------|-------------|
-| Container image registry | `spec.containers[].image` (`workspace`) | Left as `YOUR_ACR_NAME.azurecr.io/...` in git. **`install_k8s.sh`** replaces `YOUR_ACR_NAME` with `ACR_NAME` when applying. |
-| `CHAT_UI_URL` | env | **Exact origin** users type in the browser (scheme + host, no path, no trailing slash), e.g. `http://203.0.113.10` or `http://nemoclaw.example.com`. Must match how the LoadBalancer is reached; the gateway uses this for `allowedOrigins`. |
-| `DYNAMO_HOST` | env | `host:port` for the Dynamo frontend **inside the cluster** (used by `socat`). Default: `vllm-disagg-frontend.dynamo.svc.cluster.local:8000` — change if your Service differs. |
-| `NEMOCLAW_ENDPOINT_URL` | env | Azure OpenAI base URL with **`/openai/v1/`** suffix, e.g. `https://my-resource.openai.azure.com/openai/v1/`. |
-| `NEMOCLAW_MODEL` | env | Your **Azure OpenAI deployment name** (not necessarily the same as the public model name). |
-| Azure API key | Secret | See [Secrets](#secrets). Injected as `COMPATIBLE_API_KEY` via optional `secretKeyRef`; if the Secret is absent, the startup script defaults to `dummy` (fine only for endpoints that do not need a real key). |
+### Options (flags or environment variables)
 
-Other env vars in the manifest (for example `NEMOCLAW_PROVIDER`, `NEMOCLAW_INFERENCE_API`, policy paths) are tuned for this workshop; change them only if you understand the NemoClaw installer behavior.
+| Flag | Env (if any) | Default | Purpose |
+|------|----------------|---------|---------|
+| `--install-dynamo` | — | off | Before build/push: `kubectl apply` the Dynamo manifest (see `DYNAMO_DEPLOY_MANIFEST`), then **wait** until every pod in the Dynamo namespace is Running with full readiness, and there are at least **`DYNAMO_DISAGG_MIN_PODS`** ready pods per disagg tier (names matching `-disagg-decode-`, `-disagg-frontend-`, `-disagg-prefill-`). |
+| `--nemoclaw-namespace NS` | `NEMOCLAW_NAMESPACE` | `nemoclaw` | Namespace for NemoClaw `kubectl apply` / pod delete. |
+| `--dynamo-namespace NS` | `DYNAMO_NAMESPACE` | `dynamo-system` | Namespace used when `--install-dynamo` is set. |
+| `-h`, `--help` | — | — | Print usage and exit. |
 
-## Secrets
+### Environment-only tuning
 
-Do **not** commit API keys.
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DYNAMO_DEPLOY_MANIFEST` | `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml` (under this workshop) | Manifest path for `--install-dynamo`. |
+| `DYNAMO_READY_POLL_INTERVAL` | `15` | Seconds between pod status polls while waiting. |
+| `DYNAMO_READY_TIMEOUT_SEC` | `3600` | Max wait seconds (`0` = no limit). |
+| `DYNAMO_DISAGG_MIN_PODS` | `3` | Minimum **ready** pods per decode / frontend / prefill tier (name substring match). |
+| `NEMOCLAW_GIT_URL` | `https://github.com/NVIDIA/NemoClaw.git` | Clone URL for NemoClaw under `nemoclaw-base/nemoclaw-src/NemoClaw`. |
+| `NEMOCLAW_GIT_TAG` | `v0.0.18` | Git **tag** to fetch (detached checkout). If unset, `NEMOCLAW_GIT_REF` is still read for backward compatibility. |
+| `VERBOSE` | `0` | Set to `1` for more detailed logs (e.g. push output, Dynamo criteria). |
 
-1. Copy the example file:
+### Example commands
 
-   ```bash
-   cp nemoclaw-install/nemoclaw-secrets.example.yaml nemoclaw-install/nemoclaw-secrets.yaml
-   ```
-
-2. Replace `REPLACE_ME` under `azure-openai-api-key` with your Azure OpenAI key.
-
-3. Ensure the Secret namespace and name match the Pod: `nemoclaw-workshop-credentials` in namespace `nemoclaw`.
-
-`nemoclaw-secrets.yaml` is listed in `nemoclaw-install/.gitignore` so it stays local.
-
-## Installation
-
-1. **Create the namespace** (once):
-
-   ```bash
-   kubectl create namespace nemoclaw
-   ```
-
-2. **Configure** `nemoclaw-install/nemoclaw-k8s.yaml` (and create `nemoclaw-secrets.yaml` as above).
-
-3. **Attach ACR to AKS** (or otherwise allow the cluster to pull from your registry), for example:
-
-   ```bash
-   az aks update -g YOUR_RG -n YOUR_AKS --attach-acr YOUR_ACR_NAME
-   ```
-
-4. From this directory (`aks-nemoclaw`), run the install script with your **short** ACR name (as in `az acr list`, not the full `*.azurecr.io` host):
-
-   ```bash
-   export ACR_NAME=yourregistry
-   ./install_k8s.sh
-   ```
-
-   The script will:
-
-   - Build `nemoclaw-base` as `yourregistry.azurecr.io/nemoclaw-dind-src:latest`.
-   - Push to ACR (and run `az acr login --name "${ACR_NAME}"` if push fails for auth).
-   - Apply `nemoclaw-install/nemoclaw-secrets.yaml` if that file exists.
-   - Delete the existing `nemoclaw` pod (if any) and apply the pod manifest with the registry substitution.
-
-5. **LoadBalancer and `CHAT_UI_URL`**: After the HTTP Service has an external IP or hostname, set `CHAT_UI_URL` to that origin, re-apply the manifest (or delete the pod so it is recreated with updated env), so the Control UI origin checks succeed.
-
-## Manual apply (without the script)
-
-If you build and push the image yourself, apply the Secret (if used) and the pod YAML, substituting the registry name in the image field to match your push target:
+**NemoClaw only** (build, push, refresh pod; assumes Dynamo is already installed if the pod expects it):
 
 ```bash
-kubectl apply -f nemoclaw-install/nemoclaw-secrets.yaml -n nemoclaw   # if using secrets
-sed "s|YOUR_ACR_NAME.azurecr.io|yourregistry.azurecr.io|g" nemoclaw-install/nemoclaw-k8s.yaml | kubectl apply -f - -n nemoclaw
+./deploy_nemoclaw_k8s.sh --acr-name myregistry
 ```
 
-## Dynamo
+**Dynamo + NemoClaw** (apply default SGLang disagg recipe, wait for pods, then build/push/refresh):
 
-The `dynamo/` directory holds workshop-specific Dynamo material. Deploy and tune Dynamo for your cluster first, then align `DYNAMO_HOST` in `nemoclaw-k8s.yaml` with your frontend Service DNS name and port.
+```bash
+./deploy_nemoclaw_k8s.sh --acr-name myregistry --install-dynamo
+```
+
+**Custom namespaces**:
+
+```bash
+./deploy_nemoclaw_k8s.sh \
+  --acr-name myregistry \
+  --install-dynamo \
+  --dynamo-namespace my-dynamo \
+  --nemoclaw-namespace my-nemoclaw
+```
+
+**Custom Dynamo manifest** (same flags; override path):
+
+```bash
+export DYNAMO_DEPLOY_MANIFEST="/path/to/your/deploy.yaml"
+./deploy_nemoclaw_k8s.sh --acr-name myregistry --install-dynamo
+```
+
+### After the script
+
+1. **`nemoclaw-install/nemoclaw-k8s.yaml`** — Adjust `CHAT_UI_URL` (must match the origin users type in the browser for the Control UI), `DYNAMO_HOST` / service DNS if your frontend differs, `NEMOCLAW_ENDPOINT_URL`, and `NEMOCLAW_MODEL` as needed, then re-run the script or `kubectl apply` the same pattern the script uses.
+2. **Secrets** — Copy `nemoclaw-install/nemoclaw-secrets.example.yaml` to `nemoclaw-secrets.yaml` (gitignored), fill Azure OpenAI / NGC keys if you use those paths, and ensure the pod env references match. The script applies `nemoclaw-secrets.yaml` when the file exists.
+
+## Related paths
+
+- Default Dynamo recipe: `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/`
+- Pod and Service definitions: `nemoclaw-install/nemoclaw-k8s.yaml`
