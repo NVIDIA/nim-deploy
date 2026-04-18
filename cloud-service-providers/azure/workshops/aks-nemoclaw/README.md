@@ -65,6 +65,47 @@ flowchart TB
 
 Together: agent load + shared serving + one strong NVIDIA model on AKS.
 
+## Azure AKS and the two layers
+
+AKS is not “just Kubernetes”: Azure adds identity, storage, networking, and policy hooks. Those hooks line up differently with the **governable application surface** than with the **inference plane**.
+
+**Governable surface (who / what / how).** You care who can deploy or change agent policy, where secrets live, and whether traffic and logs stay inside your boundary. On AKS that often means **Microsoft Entra ID** (Azure RBAC on the control plane and Kubernetes RBAC in the cluster) so only the right teams touch NemoClaw config or secrets. **Azure Key Vault** with the **Secrets Store CSI driver** (or workload identity to Key Vault) keeps API keys, NGC keys, and Hugging Face tokens out of plain YAML in Git. **Azure Policy** and **Defender for Cloud** add org-wide rules (for example: no public Services where policy forbids them). **Private AKS** or **internal load balancers** reduce exposure of the control plane or admin paths. **Azure Monitor** and **Container Insights** give one place to retain and query audit-style logs if your compliance team requires it. **Network policies** (with **Azure CNI**) can separate namespaces so agent pods and inference pods talk only on allowed ports.
+
+**Inference plane (model / GPUs / scale).** Here you care about GPU SKUs, disk speed for weights, and scale. AKS **GPU node pools** (for example NC/ND families) host Dynamo workers. **Availability zones** on node pools improve uptime when a zone has an issue. **Cluster autoscaler** and **Horizontal Pod Autoscaler** (or KEDA) grow or shrink capacity with queue depth. **Azure managed disks** (often **Premium SSD**) back the **PVC** that holds the large Nemotron download so workers start faster and keep steady I/O. **Azure Container Registry** plus **managed identity** (or ACR attach) avoids long-lived docker passwords on nodes. **Standard Load Balancer** or **Application Gateway** exposes the front end your users or NemoClaw hit, optionally **internal** only so the model API never leaves the VNet.
+
+Neither layer replaces the other: Azure gives guardrails and plumbing; NemoClaw and Dynamo still implement the actual agent rules and model serving.
+
+```mermaid
+flowchart TB
+  subgraph Gas["Governable surface — typical Azure hooks"]
+    RBAC["Entra ID + RBAC<br/>who edits agents / secrets"]
+    KV["Key Vault + CSI / workload ID<br/>keys not in git"]
+    POL["Azure Policy / Defender<br/>org guardrails"]
+    NP["Network policies + CNI<br/>pod-to-pod rules"]
+    LOG["Azure Monitor / Insights<br/>logs and alerts"]
+  end
+  subgraph Ip["Inference plane — typical Azure hooks"]
+    GPU["GPU node pools + zones<br/>where models run"]
+    PVC["Managed disk / Files PVC<br/>model cache"]
+    SCALE["Cluster + HPA / KEDA<br/>scale with load"]
+    ACR["ACR + managed identity<br/>pull images"]
+    LB["Load balancer / ingress<br/>front door"]
+  end
+```
+
+```mermaid
+flowchart LR
+  subgraph Sub["Your Azure subscription"]
+    U[Users / operators]
+    U --> EID[Entra ID]
+    EID --> ING[Ingress or LB]
+    ING --> NC[NemoClaw<br/>governable surface]
+    NC -->|cluster DNS / private link| FE[Dynamo frontend<br/>inference plane]
+    FE --> WRK[GPU workers]
+    WRK --> VOL[(PVC on Azure Disk)]
+  end
+```
+
 ## Why disaggregated serving helps here
 
 Big models often split **prefill** (new prompt work) and **decode** (next tokens). Workers pass cache/state between them. Dynamo does that in **disaggregated** mode: prefill workers take new context, decode workers keep generating, the front end sends work to both. This repo’s default uses **SGLang** and **NIXL** between workers; see `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`.
@@ -195,14 +236,82 @@ On AKS: agents in Kubernetes; inference installed by the script or by you; defau
 
 - **`nemoclaw-install/`** — YAML for a DinD + workspace pod: non-interactive NemoClaw install; `NEMOCLAW_ENDPOINT_URL` points at Dynamo in the cluster (`socat`, `host.openshell.internal`). Edit URLs and `CHAT_UI_URL` for your site.
 
-- **`dynamo/`** — Copy of Dynamo (recipes, docs, tests). Default manifest: `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`. Read that folder’s README for GPUs and secrets.
+- **`dynamo/`** — Copy of Dynamo (recipes, docs, tests). See [Nemotron-3 Super FP8 Dynamo recipes](#nemotron-3-super-fp8-dynamo-recipes) below.
+
+## Nemotron-3 Super FP8 Dynamo recipes
+
+Upstream NVIDIA maintains several ready-made layouts for `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8` in the open Dynamo repo:
+
+- Recipe folder: [github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8](https://github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8)
+- Full prerequisites and quick start: [github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md](https://github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md)
+
+**Other layouts (not only disagg).** The same README lists **aggregated** and **disaggregated** options, for example:
+
+| Path under `recipes/nemotron-3-super-fp8/` | Mode | Backend | Notes (from upstream) |
+|--------------------------------------------|------|---------|------------------------|
+| `vllm/agg/` | Aggregated | vLLM | 4× H100/H200, TP=4 |
+| `sglang/agg/` | Aggregated | SGLang | 4× H100/H200, TP=4 |
+| `trtllm/disagg/` | Disaggregated | TensorRT-LLM | TP=2 prefill/decode split, UCX transfer |
+| `sglang/disagg/` | Disaggregated | SGLang | TP=2 split, nixl (or mooncake) transfer |
+
+This workshop’s `deploy_nemoclaw_k8s.sh` default is the **SGLang disaggregated** manifest only. You can point `DYNAMO_DEPLOY_MANIFEST` at another `deploy.yaml` if your cluster and ops model fit a different row.
+
+**Example manifest (copy in this repo).** The vendored path matches the upstream `sglang/disagg/deploy.yaml` layout; it declares a `DynamoGraphDeployment` and expects a shared **model-cache** PVC (`create: false` in the snippet—so you create/cache the model on a PVC first). Opening lines:
+
+```1:35:dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Disaggregated SGLang deployment: prefill/decode split with nixl KV transfer.
+# Tested with dynamo 1.0 (SGLang 0.5.9).
+#
+# Uses TP=2 per worker (prefill: 2 GPUs, decode: 2 GPUs) for a total of 4 GPUs.
+# KV cache is transferred between workers via nixl (GPU-direct).
+#
+# NOT working on dynamo 0.9.1 — same blocking bugs as sglang/agg.
+#
+# Known issue: Prefill warmup logs a non-blocking warning:
+#   "Prefill warmup failed: 'SamplingParams' object is not subscriptable"
+# This does not affect functionality.
+#
+apiVersion: nvidia.com/v1alpha1
+kind: DynamoGraphDeployment
+metadata:
+  name: nemotron-super-fp8-sglang-disagg
+spec:
+  backendFramework: sglang
+  envs:
+    - name: HF_HOME
+      value: /opt/models
+  pvcs:
+    - name: model-cache
+      create: false
+  services:
+    Frontend:
+      componentType: frontend
+      replicas: 1
+      volumeMounts:
+        - name: model-cache
+          mountPoint: /opt/models
+      extraPodSpec:
+```
+
+**Preliminaries from the upstream README (do these before or with the deploy).** In short:
+
+1. **Dynamo on the cluster** — Install the Dynamo platform as in the [Kubernetes deployment guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/kubernetes/README.md) (linked from the recipe README).
+2. **GPUs** — Recipe table targets **4× H100 80GB or H200** for these Nemotron layouts.
+3. **Hugging Face secret** — `kubectl create secret generic hf-token-secret --from-literal=HF_TOKEN="…" -n <namespace>` with a token that can access the NVIDIA model.
+4. **Model cache and PVC** — Under `recipes/nemotron-3-super-fp8/model-cache/`, apply the manifests so weights land on a **persistent volume**; set **`storageClassName`** in `model-cache/model-cache.yaml` to a class your cluster provides, then run the download **Job** and wait until it completes (`kubectl wait --for=condition=Complete job/model-download …`). The README notes a **~240 GB** download and roughly **30–60 minutes** depending on bandwidth.
+5. **Then deploy** — `kubectl apply -f <chosen>/deploy.yaml -n <namespace>` (e.g. `sglang/disagg` or an **agg** path above).
+
+The copy under `dynamo/dynamo/recipes/nemotron-3-super-fp8/` in this workshop should match upstream for the same paths; when in doubt, compare with [the tree on GitHub](https://github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8).
 
 ## Prerequisites
 
 - `bash`, `git`, Docker, `kubectl` (pointed at your cluster), `az` if you use ACR login from the script.
 - An ACR your cluster can pull from.
 - Namespaces if missing, e.g. `kubectl create namespace nemoclaw` and `kubectl create namespace dynamo-system` (or your chosen names).
-- For Dynamo: follow `dynamo/dynamo/recipes/nemotron-3-super-fp8/README.md` and `dynamo/dynamo/docs/kubernetes/` (GPU pool, Hugging Face secret, model cache, etc.).
+- For Dynamo + Nemotron: complete the [preliminaries above](#nemotron-3-super-fp8-dynamo-recipes) and read the local copy at `dynamo/dynamo/recipes/nemotron-3-super-fp8/README.md` plus `dynamo/dynamo/docs/kubernetes/` for platform install details.
 
 ## `deploy_nemoclaw_k8s.sh`
 
@@ -273,5 +382,8 @@ export DYNAMO_DEPLOY_MANIFEST="/path/to/your/deploy.yaml"
 
 ## Related paths
 
-- Default recipe: `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/`
+- Upstream Nemotron recipes: [github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8](https://github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8)
+- Upstream README (prereqs, quick start): [github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md](https://github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md)
+- Workshop copy — default disagg example: `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`
+- Workshop copy — agg and other paths: `dynamo/dynamo/recipes/nemotron-3-super-fp8/vllm/agg/`, `sglang/agg/`, `trtllm/disagg/`
 - Pod YAML: `nemoclaw-install/nemoclaw-k8s.yaml`
