@@ -24,6 +24,12 @@ DYNAMO_READY_POLL_INTERVAL="${DYNAMO_READY_POLL_INTERVAL:-15}"
 DYNAMO_READY_TIMEOUT_SEC="${DYNAMO_READY_TIMEOUT_SEC:-3600}"
 DYNAMO_DISAGG_MIN_PODS="${DYNAMO_DISAGG_MIN_PODS:-3}"
 
+# NemoClaw LoadBalancer (nemoclaw-ingress) wait before applying nemoclaw-k8s.yaml
+NEMOCLAW_LB_SVC_NAME="${NEMOCLAW_LB_SVC_NAME:-nemoclaw-http}"
+NEMOCLAW_LB_CONFIGMAP_NAME="${NEMOCLAW_LB_CONFIGMAP_NAME:-nemoclaw-lb-config}"
+NEMOCLAW_LB_POLL_INTERVAL="${NEMOCLAW_LB_POLL_INTERVAL:-5}"
+NEMOCLAW_LB_TIMEOUT_SEC="${NEMOCLAW_LB_TIMEOUT_SEC:-1200}"
+
 # Short ACR name only (e.g. myregistry) — not the full login server.
 ACR_NAME="${ACR_NAME:-}"
 
@@ -51,6 +57,15 @@ fi
 log_verbose() {
   [[ "${VERBOSE}" == "1" ]] || return 0
   printf '%s%s%s\n' "${_D}" "$*" "${_R}" >&2
+}
+
+# Numbered sub-step in a section (e.g. Kubernetes) and a detail line.
+log_step() {
+  log "${_B}▸ [${1}/${2}]${_R} ${3}"
+}
+
+log_result() {
+  log "${_D}  →${_R} $*"
 }
 
 section() {
@@ -111,6 +126,11 @@ Optional environment variables:
                                Sources are placed at nemoclaw-base/nemoclaw-src/NemoClaw/.
   NEMOCLAW_GIT_TAG             Git tag to fetch and check out (default: v0.0.18). If unset,
                                NEMOCLAW_GIT_REF is used for backward compatibility.
+  NEMOCLAW_LB_SVC_NAME         LoadBalancer Service name (default: nemoclaw-http); must match
+                               nemoclaw-ingress.yaml.
+  NEMOCLAW_LB_CONFIGMAP_NAME  ConfigMap for CHAT_UI_URL and LOAD_BALANCER_IP (default: nemoclaw-lb-config).
+  NEMOCLAW_LB_POLL_INTERVAL   Seconds between checks while waiting for the LB address (default: 5).
+  NEMOCLAW_LB_TIMEOUT_SEC     Max seconds to wait for a public address (0 = no limit; default: 1200).
   VERBOSE                      Set to 1 for extra messages (stream docker push, kubectl delete
                                detail, full paths, Dynamo criteria).
 EOF
@@ -180,6 +200,8 @@ if [[ "${missing_required}" -ne 0 ]]; then
 fi
 
 IMAGE="${ACR_NAME}.azurecr.io/nemoclaw-dind-src:latest"
+
+log "Run configuration: ACR_NAME=${ACR_NAME} · IMAGE=${IMAGE} · NEMOCLAW_NAMESPACE=${NEMOCLAW_NAMESPACE} · INSTALL_DYNAMO=${INSTALL_DYNAMO} · ${NEMOCLAW_LB_SVC_NAME} → ${NEMOCLAW_LB_CONFIGMAP_NAME} (LoadBalancer/ConfigMap)"
 
 is_push_auth_failure() {
   local file="$1"
@@ -338,19 +360,147 @@ ${pods}"
   done
 }
 
+# Public origin for the LoadBalancer: http + IP or http + hostname. IPv6 addresses are bracketed.
+lb_address_to_http_origin() {
+  local h="$1"
+  [[ -n "$h" ]] || return 1
+  if [[ "$h" == *:* && "$h" != *.* ]]; then
+    printf 'http://[%s]' "$h"
+  else
+    printf 'http://%s' "$h"
+  fi
+}
+
+# Return first of .ip or .hostname from the Service; empty while pending.
+get_nemoclaw_service_lb_address() {
+  local ns="$1"
+  local svc="$2"
+  local ip host
+  ip="$(kubectl get svc -n "${ns}" "${svc}" -o 'jsonpath={.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+  if [[ -n "$ip" ]]; then
+    printf '%s' "$ip"
+    return 0
+  fi
+  host="$(kubectl get svc -n "${ns}" "${svc}" -o 'jsonpath={.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+  if [[ -n "$host" ]]; then
+    printf '%s' "$host"
+    return 0
+  fi
+  return 1
+}
+
+# Wait until the LoadBalancer has an address; print the address to stdout.
+wait_for_nemoclaw_load_balancer() {
+  local ns="${NEMOCLAW_NAMESPACE}"
+  local service="${NEMOCLAW_LB_SVC_NAME}"
+  local interval="${NEMOCLAW_LB_POLL_INTERVAL}"
+  local max_wait="${NEMOCLAW_LB_TIMEOUT_SEC}"
+  local start now elapsed
+  local addr
+  start="$(date +%s)"
+  {
+    if [[ "${max_wait}" -gt 0 ]]; then
+      to_msg="${max_wait}s"
+    else
+      to_msg="none (unlimited wait)"
+    fi
+    log_result "begin wait · service=${service} namespace=${ns} · poll every ${interval}s · timeout ${to_msg}"
+  }
+  if [[ ! -t 2 ]]; then
+    printf '%s%s%s\n' "${_D}" "Waiting for ${service} (namespace ${ns}) to receive a public address (poll every ${interval}s, timeout ${max_wait}s)…" "${_R}" >&2
+  fi
+  while true; do
+    if addr="$(get_nemoclaw_service_lb_address "${ns}" "${service}" 2>/dev/null)" && [[ -n "${addr}" ]]; then
+      if [[ -t 2 ]]; then
+        printf '\n' >&2
+      fi
+      now="$(date +%s)"
+      elapsed=$((now - start))
+      log_result "load balancer ready after ${elapsed}s: ${addr} (ip preferentially; else hostname from .status.loadBalancer.ingress[0])"
+      printf '%s' "${addr}"
+      return 0
+    fi
+    now="$(date +%s)"
+    elapsed=$((now - start))
+    if [[ "${max_wait}" -gt 0 && "${elapsed}" -ge "${max_wait}" ]]; then
+      if [[ -t 2 ]]; then
+        printf '\n' >&2
+      fi
+      return 1
+    fi
+    if [[ -t 2 ]]; then
+      printf '\r%s⏳ %s: still pending (elapsed %ds)%s' "${_D}" "${service}" "${elapsed}" "${_R}" >&2
+    fi
+    sleep "${interval}"
+  done
+}
+
+# Apply a ConfigMap with raw LOAD_BALANCER_IP and CHAT_UI_URL (http://...); the Pod reads CHAT_UI_URL from the map.
+apply_nemoclaw_lb_configmap() {
+  local ns="$1"
+  local name="$2"
+  local host="$3"
+  local origin
+  local apply_out
+  origin="$(lb_address_to_http_origin "${host}")" || {
+    log "Refusing to create ${name}: empty load balancer address"
+    return 1
+  }
+  log_result "target ConfigMap: ${name} (namespace ${ns})"
+  log_result "literal LOAD_BALANCER_IP=${host}"
+  log_result "literal CHAT_UI_URL=${origin}"
+  log_verbose "kubectl create configmap ${name} --dry-run=client | kubectl apply (LOAD_BALANCER_IP, CHAT_UI_URL)"
+  if ! apply_out="$(
+    {
+      kubectl create configmap "${name}" -n "${ns}" \
+        --from-literal="LOAD_BALANCER_IP=${host}" \
+        --from-literal="CHAT_UI_URL=${origin}" \
+        --dry-run=client -o yaml | kubectl apply -f - -n "${ns}"
+    } 2>&1
+  )"; then
+    log "kubectl apply ConfigMap failed: ${apply_out}"
+    return 1
+  fi
+  [[ -n "${apply_out}" ]] && log_result "kubectl: ${apply_out}"
+  if ! kubectl get configmap "${name}" -n "${ns}" &>/dev/null; then
+    log "ConfigMap ${name} not found in namespace ${ns} after apply"
+    return 1
+  fi
+  cm_verify="$(kubectl get configmap "${name}" -n "${ns}" -o 'jsonpath={.data.LOAD_BALANCER_IP}' 2>/dev/null || true)"
+  url_verify="$(kubectl get configmap "${name}" -n "${ns}" -o 'jsonpath={.data.CHAT_UI_URL}' 2>/dev/null || true)"
+  log_result "verify (cluster) data.LOAD_BALANCER_IP=${cm_verify:-<empty>}"
+  log_result "verify (cluster) data.CHAT_UI_URL=${url_verify:-<empty>}"
+  if [[ -z "${cm_verify}" || -z "${url_verify}" ]]; then
+    log "ConfigMap ${name} is missing LOAD_BALANCER_IP and/or CHAT_UI_URL in .data"
+    return 1
+  fi
+}
+
 install_dynamo() {
+  local dyn_apply_out
   [[ -f "${DYNAMO_DEPLOY_MANIFEST}" ]] || {
     log "Missing Dynamo manifest: ${DYNAMO_DEPLOY_MANIFEST}"
     exit 1
   }
   section "DYNAMO" "apply + pod wait · ns ${DYNAMO_NAMESPACE} · $(basename "${DYNAMO_DEPLOY_MANIFEST}") · poll ${DYNAMO_READY_POLL_INTERVAL}s · timeout ${DYNAMO_READY_TIMEOUT_SEC}s"
+  log_step 1 3 "Dynamo: configuration"
+  log_result "DYNAMO_NAMESPACE=${DYNAMO_NAMESPACE}"
+  log_result "DYNAMO_DEPLOY_MANIFEST=${DYNAMO_DEPLOY_MANIFEST}"
+  log_result "DYNAMO_READY_POLL_INTERVAL=${DYNAMO_READY_POLL_INTERVAL}s DYNAMO_READY_TIMEOUT_SEC=${DYNAMO_READY_TIMEOUT_SEC} (0=unlimited) DYNAMO_DISAGG_MIN_PODS=${DYNAMO_DISAGG_MIN_PODS}"
+  log_step 2 3 "Dynamo: reset + kubectl apply (delete existing then apply)"
   log_verbose "${DYNAMO_DEPLOY_MANIFEST}"
   if [[ "${VERBOSE}" == "1" ]]; then
     kubectl delete -f "${DYNAMO_DEPLOY_MANIFEST}" -n "${DYNAMO_NAMESPACE}" --ignore-not-found >&2
   else
     kubectl delete -f "${DYNAMO_DEPLOY_MANIFEST}" -n "${DYNAMO_NAMESPACE}" --ignore-not-found &>/dev/null
   fi
-  kubectl apply -f "${DYNAMO_DEPLOY_MANIFEST}" -n "${DYNAMO_NAMESPACE}"
+  dyn_apply_out="$(
+    kubectl apply -f "${DYNAMO_DEPLOY_MANIFEST}" -n "${DYNAMO_NAMESPACE}" 2>&1
+  )" && log_result "kubectl apply: ${dyn_apply_out}" || {
+    log "Dynamo apply failed: ${dyn_apply_out}"
+    exit 1
+  }
+  log_step 3 3 "Dynamo: wait until all tiers meet readiness criteria (see on-screen table)"
   wait_for_dynamo_pods_ready
 }
 
@@ -363,26 +513,31 @@ ensure_nemoclaw_src() {
   }
   mkdir -p "${NEMOCLAW_SRC}"
 
+  log "NemoClaw sources: NEMOCLAW_GIT_TAG=${NEMOCLAW_GIT_TAG} · NEMOCLAW_GIT_URL=${NEMOCLAW_GIT_URL} · NEMOCLAW_REPO_DIR=${NEMOCLAW_REPO_DIR}"
   local tag_at_head=""
   if [[ -d "${NEMOCLAW_REPO_DIR}/.git" ]]; then
     tag_at_head="$(git -C "${NEMOCLAW_REPO_DIR}" describe --tags --exact-match HEAD 2>/dev/null || true)"
     if [[ "${tag_at_head}" == "${NEMOCLAW_GIT_TAG}" ]]; then
+      log_result "reusing existing clone: HEAD is tag ${tag_at_head} (no fetch)"
       log_verbose "NemoClaw already at tag ${NEMOCLAW_GIT_TAG}: ${NEMOCLAW_REPO_DIR}"
       return 0
     fi
   fi
 
+  log "NemoClaw: shallow fetch + checkout tag ${NEMOCLAW_GIT_TAG} → ${NEMOCLAW_REPO_DIR}"
   rm -rf "${NEMOCLAW_REPO_DIR}"
   printf '%s%s%s\n' "${_D}" "Cloning NemoClaw tag ${NEMOCLAW_GIT_TAG} from ${NEMOCLAW_GIT_URL} → ${NEMOCLAW_REPO_DIR}" "${_R}" >&2
   git init "${NEMOCLAW_REPO_DIR}"
   git -C "${NEMOCLAW_REPO_DIR}" remote add origin "${NEMOCLAW_GIT_URL}"
   GIT_TERMINAL_PROMPT=0 git -C "${NEMOCLAW_REPO_DIR}" fetch --depth 1 origin "refs/tags/${NEMOCLAW_GIT_TAG}:refs/tags/${NEMOCLAW_GIT_TAG}"
   git -C "${NEMOCLAW_REPO_DIR}" -c advice.detachedHead=false checkout --detach "${NEMOCLAW_GIT_TAG}"
+  log_result "clone complete: on-disk ${NEMOCLAW_GIT_TAG} at ${NEMOCLAW_REPO_DIR}"
 }
 
 [[ -d "${BASE_DIR}" ]] || { log "Missing directory: ${BASE_DIR}"; exit 1; }
 [[ -d "${INSTALL_DIR}" ]] || { log "Missing directory: ${INSTALL_DIR}"; exit 1; }
 [[ -f "${INSTALL_DIR}/nemoclaw-k8s.yaml" ]] || { log "Missing file: ${INSTALL_DIR}/nemoclaw-k8s.yaml"; exit 1; }
+[[ -f "${INSTALL_DIR}/nemoclaw-ingress.yaml" ]] || { log "Missing file: ${INSTALL_DIR}/nemoclaw-ingress.yaml"; exit 1; }
 
 if [[ "${INSTALL_DYNAMO}" -eq 1 ]]; then
   install_dynamo
@@ -391,6 +546,7 @@ fi
 ensure_nemoclaw_src
 
 section "DOCKER BUILD" "${IMAGE}"
+log_result "ACR_NAME=${ACR_NAME} (image ${IMAGE}) · platform=linux/amd64 · context=${BASE_DIR}"
 if ! (
   cd "${BASE_DIR}"
   docker build --platform linux/amd64 -t "${IMAGE}" .
@@ -399,26 +555,79 @@ if ! (
   exit 1
 fi
 section_end_ok "Docker build finished"
+log_result "built image: ${IMAGE}"
 
 section "DOCKER PUSH" "${IMAGE}"
+log_result "pushing to registry (ACR: ${ACR_NAME}.azurecr.io) · on auth failure the script will try az acr login"
 if ! push_with_acr_retry; then
   section_end_err "Docker push failed"
   exit 1
 fi
 section_end_ok "Docker push finished"
+log_result "pushed image: ${IMAGE}"
 
-section "KUBERNETES · NEMOCLAW" "namespace ${NEMOCLAW_NAMESPACE}"
+section "KUBERNETES · NEMOCLAW" "namespace ${NEMOCLAW_NAMESPACE} · ${NEMOCLAW_LB_SVC_NAME} → ${NEMOCLAW_LB_CONFIGMAP_NAME} → pod"
+K8S_STEPS=5
 (
   cd "${INSTALL_DIR}"
+  log_step 1 "${K8S_STEPS}" "Optional secrets: ./nemoclaw-secrets.yaml"
   if [[ -f ./nemoclaw-secrets.yaml ]]; then
-    kubectl apply -f ./nemoclaw-secrets.yaml -n "${NEMOCLAW_NAMESPACE}"
+    sec_out="$(kubectl apply -f ./nemoclaw-secrets.yaml -n "${NEMOCLAW_NAMESPACE}" 2>&1)" || {
+      log "kubectl apply secrets failed: ${sec_out}"
+      exit 1
+    }
+    log_result "kubectl: ${sec_out}"
     log_verbose "Applied ./nemoclaw-secrets.yaml"
   else
+    log_result "skipped (file absent) — use nemoclaw-secrets.example.yaml for Azure OpenAI keys if needed"
     printf '%s%s%s\n' "${_Y}" "No ./nemoclaw-secrets.yaml — add it (see nemoclaw-secrets.example.yaml) for Azure OpenAI keys." "${_R}" >&2
   fi
-  kubectl delete pod nemoclaw -n "${NEMOCLAW_NAMESPACE}" --ignore-not-found
-  # Substitute registry from ACR_NAME; edit CHAT_UI_URL / Azure URLs in nemoclaw-k8s.yaml separately.
-  sed "s|anslutskynemoclawclusterregistry.azurecr.io|${ACR_NAME}.azurecr.io|g" ./nemoclaw-k8s.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}"
+
+  log_step 2 "${K8S_STEPS}" "LoadBalancer API: apply ./nemoclaw-ingress.yaml (namespace: nemoclaw → ${NEMOCLAW_NAMESPACE})"
+  ing_out="$(
+    sed "s|^[[:space:]]*namespace: nemoclaw|  namespace: ${NEMOCLAW_NAMESPACE}|g" ./nemoclaw-ingress.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}" 2>&1
+  )" || {
+    log "kubectl apply nemoclaw-ingress.yaml failed: ${ing_out}"
+    exit 1
+  }
+  log_result "kubectl: ${ing_out}"
+  log_verbose "Applied ./nemoclaw-ingress.yaml (namespace ${NEMOCLAW_NAMESPACE})"
+  if ! lb_addr="$(wait_for_nemoclaw_load_balancer)"; then
+    log_result "wait end state: no address within timeout (see NEMOCLAW_LB_TIMEOUT_SEC, NEMOCLAW_LB_POLL_INTERVAL)"
+    section_end_err "Timed out waiting for LoadBalancer address on ${NEMOCLAW_LB_SVC_NAME} in ${NEMOCLAW_NAMESPACE} (increase NEMOCLAW_LB_TIMEOUT_SEC?)"
+    exit 1
+  fi
+  log_step 3 "${K8S_STEPS}" "Service ${NEMOCLAW_LB_SVC_NAME} has a public address"
+  log_result "NEMOCLAW_LB_SVC_NAME=${NEMOCLAW_LB_SVC_NAME}"
+  log_result "discovered address (ip or hostname): ${lb_addr}"
+
+  log_step 4 "${K8S_STEPS}" "ConfigMap ${NEMOCLAW_LB_CONFIGMAP_NAME} (CHAT_UI_URL and LOAD_BALANCER_IP)"
+  if ! apply_nemoclaw_lb_configmap "${NEMOCLAW_NAMESPACE}" "${NEMOCLAW_LB_CONFIGMAP_NAME}" "${lb_addr}"; then
+    section_end_err "Failed to create ConfigMap ${NEMOCLAW_LB_CONFIGMAP_NAME}"
+    exit 1
+  fi
+  origin="$(lb_address_to_http_origin "${lb_addr}")"
+  log_result "derived public origin (browser) CHAT_UI_URL: ${origin}"
+
+  log_step 5 "${K8S_STEPS}" "Pod: delete then apply ./nemoclaw-k8s.yaml (ACR/namespace/ConfigMap name subst.)"
+  log_result "seds: ACR=anslutskynemoclawclusterregistry.azurecr.io → ${ACR_NAME}.azurecr.io · configMapRefName nemoclaw-lb-config → ${NEMOCLAW_LB_CONFIGMAP_NAME} · namespace → ${NEMOCLAW_NAMESPACE}"
+  del_out="$(kubectl delete pod nemoclaw -n "${NEMOCLAW_NAMESPACE}" --ignore-not-found 2>&1)" || {
+    log "kubectl delete pod failed: ${del_out}"
+    exit 1
+  }
+  [[ -n "${del_out}" ]] && log_result "kubectl: ${del_out}" || log_result "kubectl: no previous nemoclaw pod to delete (ignore-not-found)"
+  k8s_out="$(
+    sed -e "s|anslutskynemoclawclusterregistry.azurecr.io|${ACR_NAME}.azurecr.io|g" \
+      -e "s|^[[:space:]]*namespace: nemoclaw|  namespace: ${NEMOCLAW_NAMESPACE}|g" \
+      -e "s|name: nemoclaw-lb-config|name: ${NEMOCLAW_LB_CONFIGMAP_NAME}|g" \
+      ./nemoclaw-k8s.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}" 2>&1
+  )" || {
+    log "kubectl apply nemoclaw-k8s.yaml failed: ${k8s_out}"
+    exit 1
+  }
+  log_result "kubectl: ${k8s_out}"
+
+  log "Summary · namespace=${NEMOCLAW_NAMESPACE} image=${ACR_NAME}.azurecr.io/nemoclaw-dind-src:latest · LB address=${lb_addr} · ${NEMOCLAW_LB_CONFIGMAP_NAME} CHAT_UI_URL=${origin} (from ConfigMap)"
 )
 section_end_ok "NemoClaw install refreshed"
 

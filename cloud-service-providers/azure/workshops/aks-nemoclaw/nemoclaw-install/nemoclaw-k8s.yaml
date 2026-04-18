@@ -3,7 +3,9 @@
 #
 # Prerequisites:
 #   kubectl create namespace nemoclaw
-# Replace YOUR_ACR_NAME, CHAT_UI_URL, NEMOCLAW_ENDPOINT_URL, and NEMOCLAW_MODEL below.
+# Replace YOUR_ACR_NAME, NEMOCLAW_ENDPOINT_URL, and NEMOCLAW_MODEL below.
+# CHAT_UI_URL is set by the deploy_nemoclaw_k8s.sh flow: it applies nemoclaw-ingress.yaml, waits
+# for the Service LoadBalancer address, then creates ConfigMap nemoclaw-lb-config (CHAT_UI_URL, LOAD_BALANCER_IP).
 # For the Azure OpenAI key, copy nemoclaw-secrets.example.yaml to nemoclaw-secrets.yaml,
 # fill in azure-openai-api-key, and kubectl apply -f nemoclaw-secrets.yaml -n nemoclaw
 # (optional secret: if omitted, COMPATIBLE_API_KEY defaults to dummy in the startup script).
@@ -54,6 +56,8 @@ spec:
           apt-get update -qq
           apt-get install -y -qq docker.io socat curl >/dev/null 2>&1
 
+          apt-get install git -y -qq
+
           # Start socat proxy for K8s DNS bridge
           echo "[2/4] Starting socat proxy..."
           socat TCP-LISTEN:8000,fork,reuseaddr TCP:$DYNAMO_HOST &
@@ -69,6 +73,11 @@ spec:
           done
           docker info >/dev/null 2>&1 || { echo "Docker not ready"; exit 1; }
           echo "Docker ready"
+
+          export GITHUB_TOKEN="<your token>"
+
+          #RUN git clone https://antonslutskyms:<TOKEN>@github.com/<USERNAME>/<REPOSITORY_NAME>.git
+
 
           # Default to a dummy compatible API key for unauthenticated endpoints
           # such as Dynamo/vLLM while still allowing a Secret-backed override.
@@ -100,12 +109,13 @@ spec:
         # http://<LoadBalancer-external-IP>/ but CHAT_UI_URL is an in-cluster name, the gateway
         # rejects requests with "origin not allowed ... allowedOrigins".
         #
-        # Set to the same origin users type in the address bar (no path, no trailing slash).
-        # External IP: kubectl get svc nemoclaw-http -n nemoclaw -o jsonpath='{.status.loadBalancer.ingress[0].ip}{"\n"}'
-        # On Azure you may get .hostname instead of .ip — use that host in the URL.
-        # - name: CHAT_UI_URL
-        #   # Same origin users open in the browser (LB IP or hostname from kubectl get svc nemoclaw-http).
-        #   value: "http://YOUR_NEMOCLAW_HTTP_LOAD_BALANCER_HOST"
+        # Set to the same origin users use in the address bar (no path, no trailing slash), from
+        # the deploy script’s ConfigMap (key CHAT_UI_URL) after the LoadBalancer has a public address.
+        - name: CHAT_UI_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nemoclaw-lb-config
+              key: CHAT_UI_URL
         - name: DOCKER_HOST
           value: unix:///var/run/docker.sock
         # Dynamo endpoint (raw host:port for socat) - UPDATE THIS FOR YOUR CLUSTER
@@ -143,6 +153,8 @@ spec:
         #   value: "azure-openai-responses"
         - name: NEMOCLAW_FROM_DOCKERFILE
           value: "/nemoclaw-src/Dockerfile"
+        - name: GITHUB_TOKEN
+          value: "<your token>"
       volumeMounts:
         - name: docker-socket
           mountPath: /var/run

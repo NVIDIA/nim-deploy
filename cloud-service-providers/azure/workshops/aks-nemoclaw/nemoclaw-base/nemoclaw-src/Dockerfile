@@ -206,17 +206,20 @@ RUN openclaw doctor --fix > /dev/null 2>&1 || true \
 # hadolint ignore=DL3002
 USER root
 
-# Ensure .openclaw-data subdirs and symlinks exist for logs, credentials, and
-# sandbox. These are defined in Dockerfile.base but the GHCR base image may
-# not have been rebuilt yet. Idempotent — harmless once the base catches up.
+# Ensure .openclaw-data subdirs and symlinks exist for logs, credentials,
+# sandbox, and tasks (OpenClaw task registry / SQLite). These are defined in
+# Dockerfile.base but the GHCR base image may not have been rebuilt yet.
+# Idempotent — harmless once the base catches up.
 # Ref: https://github.com/NVIDIA/NemoClaw/issues/804
 RUN mkdir -p /sandbox/.openclaw-data/logs \
         /sandbox/.openclaw-data/credentials \
         /sandbox/.openclaw-data/sandbox \
+        /sandbox/.openclaw-data/tasks \
     && chown sandbox:sandbox /sandbox/.openclaw-data/logs \
         /sandbox/.openclaw-data/credentials \
         /sandbox/.openclaw-data/sandbox \
-    && for dir in logs credentials sandbox; do \
+        /sandbox/.openclaw-data/tasks \
+    && for dir in logs credentials sandbox tasks; do \
         if [ -L "/sandbox/.openclaw/$dir" ]; then true; \
         elif [ -e "/sandbox/.openclaw/$dir" ]; then \
             cp -a "/sandbox/.openclaw/$dir/." "/sandbox/.openclaw-data/$dir/" 2>/dev/null || true; \

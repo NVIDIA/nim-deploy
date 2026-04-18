@@ -1,0 +1,35 @@
+# Public HTTP LoadBalancer for NemoClaw (namespace: nemoclaw).
+#
+# Prerequisites:
+# - Pod must set CHAT_UI_URL to a non-loopback URL so the dashboard forward binds 0.0.0.0:18789
+#   on the pod network (required for this Service). For browser access via this LoadBalancer,
+#   CHAT_UI_URL must also match the public origin (e.g. http://<EXTERNAL-IP>) so the gateway
+#   allows that Origin in gateway.controlUi.allowedOrigins — not only the in-cluster Service DNS.
+# - Pod from nemoclaw-k8s.yaml is running with labels app=nemoclaw and
+#   nemoclaw.io/instance=nemoclaw (so other pods with only app=nemoclaw
+#   are excluded from this Service).
+# - AKS (or other cloud) provisions EXTERNAL-IP on the Service; wait until
+#   kubectl get svc shows a real address instead of <pending>.
+#
+# Optional (Azure static public IP): create a Standard SKU public IP in the
+# node resource group, then set service annotations per AKS docs.
+#
+# Apply: kubectl apply -f nemoclaw-ingress.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nemoclaw-http
+  namespace: nemoclaw
+  labels:
+    app: nemoclaw
+spec:
+  type: LoadBalancer
+  selector:
+    app: nemoclaw
+    nemoclaw.io/instance: nemoclaw
+  ports:
+    - name: http
+      port: 80
+      targetPort: 18789
+      protocol: TCP
