@@ -58,7 +58,7 @@ RUN chmod 755 /usr/local/bin/nemoclaw-start
 # nemoclaw onboard passes these at image build time.
 #ARG NEMOCLAW_MODEL=nvidia/nemotron-3-super-120b-a12b
 
-ARG NEMOCLAW_MODEL=Qwen/Qwen3-0.6B
+ARG NEMOCLAW_MODEL=nvidia/nemotron-3-super-120b-a12b
 
 
 ARG NEMOCLAW_PROVIDER_KEY=nvidia
