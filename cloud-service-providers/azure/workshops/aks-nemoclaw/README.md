@@ -1,6 +1,52 @@
 # AKS NemoClaw workshop
 
-This directory is an **Azure Kubernetes Service (AKS)–oriented workshop** for running **[NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw)** on a cluster, optionally fronted by **NVIDIA Dynamo** serving **Nemotron-3 Super FP8** over SGLang in **disaggregated** mode.
+## Workshop overview
+
+This is an **Azure Kubernetes Service (AKS)** workshop whose goal is to show **end-to-end agentic use of [NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw)** against a **production-style inference stack**: **[NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo)** serving **`nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8`** (Nemotron-3 “Super” in FP8). You deploy Dynamo on the cluster (optional but recommended via `deploy_nemoclaw_k8s.sh --install-dynamo`), build and push the NemoClaw workspace image to **ACR**, then run NemoClaw in Kubernetes with its OpenAI-compatible endpoint pointed at the Dynamo **frontend** so assistants, tools, and the Control UI exercise the same model your users would hit in Azure.
+
+The story is intentionally **NemoClaw + Dynamo + Nemotron-3 Super FP8**: NemoClaw orchestrates agents and UX; Dynamo provides scalable **LLM serving**; Nemotron-3 Super FP8 is a large **hybrid** (Mamba / attention / MoE) model that benefits from modern serving patterns. Together they demonstrate how agent platforms plug into NVIDIA’s inference platform on AKS.
+
+## Why Dynamo and Nemotron-3 Super FP8 are a strong match
+
+**Nemotron-3 Super FP8** is a ~124B-parameter hybrid model shipped in **FP8** (weights and KV cache in FP8 where applicable). That pushes memory and math efficiency so you can run a tier of model that would be painful in BF16-only footprints—while still targeting high quality for reasoning and tool use.
+
+**NVIDIA Dynamo** is built for **distributed LLM inference**: frontends, routers, and **worker pools** that can run **aggregated** (prefill+decode on the same workers) or **disaggregated** (separate prefill and decode tiers with **KV/state transfer** between them). For a wide, MoE-heavy model, disaggregation lets you size **prefill** (long prompts, parallel experts) and **decode** (token generation, latency) differently and scale tiers independently—exactly the kind of knob large hybrid models need on real clusters.
+
+So the match is: **NemoClaw** drives realistic multi-turn and tool-heavy traffic; **Dynamo** exposes a stable **HTTP/OpenAI-compatible** frontend and operational model on Kubernetes; **Nemotron-3 Super FP8** is the flagship NVIDIA model this recipe targets—large, efficient, and representative of what enterprises want behind agents.
+
+## Disaggregated serving with Dynamo
+
+In **disaggregated** mode, Dynamo splits work across **prefill workers** (they compute attention and, for hybrid models, **Mamba/SSM state** for new tokens) and **decode workers** (they continue generation and consume transferred cache/state). A **frontend** accepts client requests and schedules work across the tiers. After prefill on one tier, **KV cache and related state** are **transferred** to decode workers (this workshop’s default recipe uses **SGLang** with a **NIXL** transfer path—GPU-direct between workers—see `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`).
+
+```mermaid
+flowchart LR
+  subgraph Clients
+    NC[NemoClaw / users]
+  end
+  subgraph Dynamo["Dynamo (Kubernetes)"]
+    FE[Frontend\nOpenAI-compatible HTTP]
+    PF[Prefill workers\nTP shards, prefill role]
+    DC[Decode workers\nTP shards, decode role]
+  end
+  NC -->|requests| FE
+  FE -->|schedule prefill| PF
+  PF -->|KV + hybrid state\ntransfer e.g. NIXL| DC
+  FE -->|stream tokens| DC
+  DC -->|responses| FE
+  FE -->|responses| NC
+```
+
+**Compared to aggregated serving**, disaggregation isolates **burst prefill** from **steady decode**, improves **utilization** when prompt and generation phases have different hardware needs, and aligns with Dynamo’s component model (frontend + labeled worker roles). The tradeoff is **complexity**: you operate more pod types, tune transfer backends, and ensure the cluster network and GPU topology support the chosen path.
+
+## KV cache routing in Dynamo (and this model)
+
+Dynamo’s **KV cache routing** (often described as **KV-aware** or **KV overlap** routing) lets a **router** prefer workers that already hold **relevant prefix blocks** in cache, so you avoid redundant prefill and improve **time-to-first-token** and throughput on **multi-turn** or **shared-prefix** workloads. The router can combine **cache overlap** signals with **decode load** in a cost model; see `dynamo/dynamo/docs/components/router/router-concepts.md` and `router-guide.md` in this repo’s vendored Dynamo tree.
+
+**Important for this workshop:** full **KV overlap–driven routing is not used for `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8` in the bundled paths the way it is for simpler attention-only stacks. The Nemotron-3 Super recipes document that **hybrid Mamba + attention** models do not yet expose a **reliable KV-event path** for accurate overlap scoring in vLLM/SGLang; aggregated vLLM/SGLang recipes therefore use **approximate** prefix-hash routing (`--router-mode kv --no-kv-events`), not true event-based KV routing. The **SGLang disaggregated** manifest used by this workshop runs the frontend with **`--router-mode round-robin --no-kv-events`**—so **KV cache routing is not enabled** for this Nemotron deployment; traffic is balanced without KV-aware placement. When NVIDIA extends event/KV semantics for this architecture, recipes can adopt stricter KV routing again.
+
+---
+
+This directory is an **AKS-oriented** implementation of that story: NemoClaw on Kubernetes, optionally deployed together with Dynamo serving **Nemotron-3 Super FP8** over **SGLang disaggregated** mode.
 
 ## What this codebase does
 
