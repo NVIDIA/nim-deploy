@@ -4,7 +4,7 @@
 # Prerequisites:
 #   kubectl create namespace nemoclaw
 # Replace YOUR_ACR_NAME, NEMOCLAW_ENDPOINT_URL, and NEMOCLAW_MODEL below.
-# CHAT_UI_URL is set by the deploy_nemoclaw_k8s.sh flow: it applies nemoclaw-ingress.yaml, waits
+# CHAT_UI_URL is set by the deploy_nemoclaw_k8s.sh flow: it applies nemoclaw-egress.yaml, waits
 # for the Service LoadBalancer address, then creates ConfigMap nemoclaw-lb-config (CHAT_UI_URL, LOAD_BALANCER_IP).
 # For the Azure OpenAI key, copy nemoclaw-secrets.example.yaml to nemoclaw-secrets.yaml,
 # fill in azure-openai-api-key, and kubectl apply -f nemoclaw-secrets.yaml -n nemoclaw
@@ -16,7 +16,7 @@ metadata:
   namespace: nemoclaw
   labels:
     app: nemoclaw
-    # Must match nemoclaw-ingress Service selector (deploy script sets this to metadata.name).
+    # Must match nemoclaw-egress.yaml Service selector (deploy script sets this to metadata.name).
     nemoclaw.io/instance: nemoclaw
 spec:
   containers:

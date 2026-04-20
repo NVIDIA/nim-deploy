@@ -27,7 +27,7 @@ DYNAMO_DISAGG_MIN_PODS="${DYNAMO_DISAGG_MIN_PODS:-3}"
 # Pod resource name in nemoclaw-k8s.yaml (metadata.name); nemoclaw.io/instance is set to the same value.
 NEMOCLAW_POD_NAME="${NEMOCLAW_POD_NAME:-}"
 
-# NemoClaw LoadBalancer (nemoclaw-ingress) wait before applying nemoclaw-k8s.yaml.
+# NemoClaw LoadBalancer (nemoclaw-egress manifest) wait before applying nemoclaw-k8s.yaml.
 # If unset/null, defaults are applied after NEMOCLAW_POD_NAME: ${pod}-http and ${pod}-lb-config.
 NEMOCLAW_LB_SVC_NAME="${NEMOCLAW_LB_SVC_NAME-}"
 NEMOCLAW_LB_CONFIGMAP_NAME="${NEMOCLAW_LB_CONFIGMAP_NAME-}"
@@ -570,7 +570,7 @@ ensure_nemoclaw_src() {
 [[ -d "${BASE_DIR}" ]] || { log "Missing directory: ${BASE_DIR}"; exit 1; }
 [[ -d "${INSTALL_DIR}" ]] || { log "Missing directory: ${INSTALL_DIR}"; exit 1; }
 [[ -f "${INSTALL_DIR}/nemoclaw-k8s.yaml" ]] || { log "Missing file: ${INSTALL_DIR}/nemoclaw-k8s.yaml"; exit 1; }
-[[ -f "${INSTALL_DIR}/nemoclaw-ingress.yaml" ]] || { log "Missing file: ${INSTALL_DIR}/nemoclaw-ingress.yaml"; exit 1; }
+[[ -f "${INSTALL_DIR}/nemoclaw-egress.yaml" ]] || { log "Missing file: ${INSTALL_DIR}/nemoclaw-egress.yaml"; exit 1; }
 
 if [[ "${INSTALL_DYNAMO}" -eq 1 ]]; then
   install_dynamo
@@ -617,20 +617,20 @@ K8S_STEPS=5
     printf '%s%s%s\n' "${_Y}" "No ./nemoclaw-secrets.yaml — add it (see nemoclaw-secrets.example.yaml) for Azure OpenAI keys." "${_R}" >&2
   fi
 
-  log_step 2 "${K8S_STEPS}" "LoadBalancer API: apply ./nemoclaw-ingress.yaml (namespace / Service / instance / NetworkPolicy name subst.)"
+  log_step 2 "${K8S_STEPS}" "LoadBalancer API: apply ./nemoclaw-egress.yaml (namespace / Service / instance / NetworkPolicy name subst.)"
   log_result "ingress seds: namespace nemoclaw → ${NEMOCLAW_NAMESPACE} · Service nemoclaw-http → ${NEMOCLAW_LB_SVC_NAME} · nemoclaw.io/instance nemoclaw → ${NEMOCLAW_POD_NAME} · NetworkPolicy nemoclaw-allow-all-egress → ${NEMOCLAW_POD_NAME}-allow-all-egress"
   ing_out="$(
     sed -e "s|^[[:space:]]*namespace: nemoclaw|  namespace: ${NEMOCLAW_NAMESPACE}|g" \
       -e "s|^  name: nemoclaw-http\$|  name: ${NEMOCLAW_LB_SVC_NAME}|" \
       -e "s|^  name: nemoclaw-allow-all-egress\$|  name: ${NEMOCLAW_POD_NAME}-allow-all-egress|" \
       -e "s|nemoclaw.io/instance: nemoclaw|nemoclaw.io/instance: ${NEMOCLAW_POD_NAME}|g" \
-      ./nemoclaw-ingress.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}" 2>&1
+      ./nemoclaw-egress.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}" 2>&1
   )" || {
-    log "kubectl apply nemoclaw-ingress.yaml failed: ${ing_out}"
+    log "kubectl apply nemoclaw-egress.yaml failed: ${ing_out}"
     exit 1
   }
   log_result "kubectl: ${ing_out}"
-  log_verbose "Applied ./nemoclaw-ingress.yaml (namespace ${NEMOCLAW_NAMESPACE})"
+  log_verbose "Applied ./nemoclaw-egress.yaml (namespace ${NEMOCLAW_NAMESPACE})"
   if ! lb_addr="$(wait_for_nemoclaw_load_balancer)"; then
     log_result "wait end state: no address within timeout (see NEMOCLAW_LB_TIMEOUT_SEC, NEMOCLAW_LB_POLL_INTERVAL)"
     section_end_err "Timed out waiting for LoadBalancer address on ${NEMOCLAW_LB_SVC_NAME} in ${NEMOCLAW_NAMESPACE} (increase NEMOCLAW_LB_TIMEOUT_SEC?)"
