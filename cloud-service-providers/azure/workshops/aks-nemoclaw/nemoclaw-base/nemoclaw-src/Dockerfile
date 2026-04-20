@@ -66,7 +66,10 @@ ARG NEMOCLAW_PRIMARY_MODEL_REF=nvidia/nemotron-3-super-120b-a12b
 # Default dashboard port 18789 — override at runtime via NEMOCLAW_DASHBOARD_PORT.
 ARG CHAT_UI_URL=http://127.0.0.1:18789
 ARG NEMOCLAW_INFERENCE_BASE_URL=https://inference.local/v1
+
+#ARG NEMOCLAW_INFERENCE_API=openai-completions
 ARG NEMOCLAW_INFERENCE_API=azure-openai-completions
+
 ARG NEMOCLAW_PREFERRED_API=openai-completions
 ARG NEMOCLAW_INFERENCE_COMPAT_B64=e30=
 # Base64-encoded JSON list of messaging channel names to pre-configure
@@ -98,6 +101,12 @@ ARG NEMOCLAW_PROXY_PORT=3128
 # The actual API key is injected at runtime via openshell:resolve:env, never
 # baked into the image.
 ARG NEMOCLAW_WEB_SEARCH_ENABLED=0
+# Set to "1" (default) to embed channels.msteams in openclaw.json (Microsoft Teams / Azure Bot).
+# Pass "0" to omit. Credentials use openshell:resolve:env:MSTEAMS_* at runtime (not in the image).
+# See https://docs.openclaw.ai/channels/msteams
+ARG NEMOCLAW_MSTEAMS_ENABLED=1
+# channels.whatsapp access policy is hardcoded below (edit E.164 literals in the RUN python block).
+# See https://docs.openclaw.ai/channels/whatsapp
 
 RUN echo "------------ NEMOCLAW_INFERENCE_API: $NEMOCLAW_INFERENCE_API"
 # SECURITY: Promote build-args to env vars so the Python script reads them
@@ -117,7 +126,8 @@ ENV NEMOCLAW_MODEL=${NEMOCLAW_MODEL} \
     NEMOCLAW_DISABLE_DEVICE_AUTH=${NEMOCLAW_DISABLE_DEVICE_AUTH} \
     NEMOCLAW_PROXY_HOST=${NEMOCLAW_PROXY_HOST} \
     NEMOCLAW_PROXY_PORT=${NEMOCLAW_PROXY_PORT} \
-    NEMOCLAW_WEB_SEARCH_ENABLED=${NEMOCLAW_WEB_SEARCH_ENABLED}
+    NEMOCLAW_WEB_SEARCH_ENABLED=${NEMOCLAW_WEB_SEARCH_ENABLED} \
+    NEMOCLAW_MSTEAMS_ENABLED=${NEMOCLAW_MSTEAMS_ENABLED}
 
 WORKDIR /sandbox
 USER sandbox
@@ -127,6 +137,8 @@ USER sandbox
 # No runtime writes to openclaw.json are needed or possible.
 # Build args (NEMOCLAW_MODEL, CHAT_UI_URL) customize per deployment.
 # Auth token is generated per build so each image has a unique token.
+# inference_api = 'openai-responses';
+
 RUN python3 -c "\
 import base64, json, os, secrets; \
 from urllib.parse import urlparse; \
@@ -135,7 +147,7 @@ chat_ui_url = os.environ['CHAT_UI_URL']; \
 provider_key = os.environ['NEMOCLAW_PROVIDER_KEY']; \
 primary_model_ref = os.environ['NEMOCLAW_PRIMARY_MODEL_REF']; \
 inference_base_url = os.environ['NEMOCLAW_INFERENCE_BASE_URL']; \
-inference_api = 'openai-responses'; \
+inference_api = os.environ['NEMOCLAW_INFERENCE_API']; \
 inference_compat = json.loads(base64.b64decode(os.environ['NEMOCLAW_INFERENCE_COMPAT_B64']).decode('utf-8')); \
 msg_channels = json.loads(base64.b64decode(os.environ.get('NEMOCLAW_MESSAGING_CHANNELS_B64', 'W10=') or 'W10=').decode('utf-8')); \
 _allowed_ids = json.loads(base64.b64decode(os.environ.get('NEMOCLAW_MESSAGING_ALLOWED_IDS_B64', 'e30=') or 'e30=').decode('utf-8')); \
@@ -144,6 +156,24 @@ _token_keys = {'discord': 'token', 'telegram': 'botToken', 'slack': 'botToken'};
 _env_keys = {'discord': 'DISCORD_BOT_TOKEN', 'telegram': 'TELEGRAM_BOT_TOKEN', 'slack': 'SLACK_BOT_TOKEN'}; \
 _ch_cfg = {ch: {'accounts': {'default': {_token_keys[ch]: f'openshell:resolve:env:{_env_keys[ch]}', 'enabled': True, **({'groupPolicy': 'open'} if ch == 'telegram' else {}), **({'dmPolicy': 'allowlist', 'allowFrom': _allowed_ids[ch]} if ch in _allowed_ids and _allowed_ids[ch] else {})}}} for ch in msg_channels if ch in _token_keys}; \
 _ch_cfg['discord'].update({'groupPolicy': 'allowlist', 'guilds': _discord_guilds}) if 'discord' in _ch_cfg and _discord_guilds else None; \
+_msteams_cfg = { \
+    'msteams': { \
+        'enabled': True, \
+        'appId': 'openshell:resolve:env:MSTEAMS_APP_ID', \
+        'appPassword': 'openshell:resolve:env:MSTEAMS_APP_PASSWORD', \
+        'tenantId': 'openshell:resolve:env:MSTEAMS_TENANT_ID', \
+        'webhook': {'port': 3978, 'path': '/api/messages'}, \
+    }, \
+} if os.environ.get('NEMOCLAW_MSTEAMS_ENABLED', '') == '1' else {}; \
+_whatsapp_cfg = { \
+    'whatsapp': { \
+        'dmPolicy': 'pairing', \
+        'allowFrom': ['+12154946184'], \
+        'groupPolicy': 'allowlist', \
+        'groupAllowFrom': ['+12154946184'], \
+    }, \
+}; \
+_channels = {**{'defaults': {'configWrites': False}}, **_ch_cfg, **_msteams_cfg, **_whatsapp_cfg}; \
 parsed = urlparse(chat_ui_url); \
 chat_origin = f'{parsed.scheme}://{parsed.netloc}' if parsed.scheme and parsed.netloc else 'http://127.0.0.1:18789'; \
 origins = ['http://127.0.0.1:18789']; \
@@ -161,7 +191,7 @@ providers = { \
 config = { \
     'agents': {'defaults': {'model': {'primary': primary_model_ref}}}, \
     'models': {'mode': 'merge', 'providers': providers}, \
-    'channels': dict({'defaults': {'configWrites': False}}, **_ch_cfg), \
+    'channels': _channels, \
     'gateway': { \
         'mode': 'local', \
         'controlUi': { \
@@ -192,6 +222,10 @@ os.chmod(path, 0o600)"
 # Install NemoClaw plugin into OpenClaw
 RUN openclaw doctor --fix > /dev/null 2>&1 || true \
     && openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
+
+RUN openclaw plugins install @openclaw/msteams
+
+RUN openclaw plugins install @openclaw/whatsapp
 
 # Lock openclaw.json via DAC: chown to root so the sandbox user cannot modify
 # it at runtime.  This works regardless of Landlock enforcement status.

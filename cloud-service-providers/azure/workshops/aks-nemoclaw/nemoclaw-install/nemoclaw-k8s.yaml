@@ -16,7 +16,7 @@ metadata:
   namespace: nemoclaw
   labels:
     app: nemoclaw
-    # Matches nemoclaw-http Service selector so LoadBalancer hits only this pod.
+    # Must match nemoclaw-ingress Service selector (deploy script sets this to metadata.name).
     nemoclaw.io/instance: nemoclaw
 spec:
   containers:
@@ -76,6 +76,9 @@ spec:
 
           export GITHUB_TOKEN="<your token>"
 
+          export TELEGRAM_BOT_TOKEN="8732347419:AAHok1QvcdD9aCNdO6MRCHbpmJV0suIXpCs"
+          export NVIDIA_API_KEY="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"
+
           #RUN git clone https://antonslutskyms:<TOKEN>@github.com/<USERNAME>/<REPOSITORY_NAME>.git
 
 
@@ -126,18 +129,19 @@ spec:
           value: "1"
         - name: NEMOCLAW_PROVIDER
           value: "custom"
-        - name: NEMOCLAW_ENDPOINT_URL
-          value: "http://host.openshell.internal:8000/v1"
         # - name: NEMOCLAW_ENDPOINT_URL
-        #   value: "https://YOUR_AZURE_OPENAI_RESOURCE.openai.azure.com/openai/v1/"
-        # - name: COMPATIBLE_API_KEY
-        #   valueFrom:
-        #     secretKeyRef:
-        #       name: nemoclaw-workshop-credentials
-        #       key: azure-openai-api-key
-        #       optional: true
+        #   value: "http://host.openshell.internal:8000/v1"
+        - name: NEMOCLAW_ENDPOINT_URL
+          value: "https://anslutsky-test-openclaw-resource.openai.azure.com/openai/v1/"
+        - name: COMPATIBLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nemoclaw-workshop-credentials
+              key: azure-openai-api-key
+              optional: true
         - name: NEMOCLAW_MODEL
-          value: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8"
+          value: "gpt-5.3-chat"
+          #value: "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8"
         - name: NEMOCLAW_SANDBOX_NAME
           value: "my-assistant"
         # Copy Docker2 openclaw-sandbox.yaml into the cloned NemoClaw tree before onboard (curl egress).
