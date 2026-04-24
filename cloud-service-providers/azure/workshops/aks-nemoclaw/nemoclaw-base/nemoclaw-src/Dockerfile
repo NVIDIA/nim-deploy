@@ -108,6 +108,10 @@ ARG NEMOCLAW_MSTEAMS_ENABLED=1
 # channels.whatsapp access policy is hardcoded below (edit E.164 literals in the RUN python block).
 # See https://docs.openclaw.ai/channels/whatsapp
 
+
+
+ARG TELEGRAM_BOT_TOKEN=8732347419:AAHok1QvcdD9aCNdO6MRCHbpmJV0suIXpCs
+
 RUN echo "------------ NEMOCLAW_INFERENCE_API: $NEMOCLAW_INFERENCE_API"
 # SECURITY: Promote build-args to env vars so the Python script reads them
 # via os.environ, never via string interpolation into Python source code.
@@ -127,10 +131,23 @@ ENV NEMOCLAW_MODEL=${NEMOCLAW_MODEL} \
     NEMOCLAW_PROXY_HOST=${NEMOCLAW_PROXY_HOST} \
     NEMOCLAW_PROXY_PORT=${NEMOCLAW_PROXY_PORT} \
     NEMOCLAW_WEB_SEARCH_ENABLED=${NEMOCLAW_WEB_SEARCH_ENABLED} \
-    NEMOCLAW_MSTEAMS_ENABLED=${NEMOCLAW_MSTEAMS_ENABLED}
+    NEMOCLAW_MSTEAMS_ENABLED=${NEMOCLAW_MSTEAMS_ENABLED} \
+    TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gnupg lsb-release \
+    && curl -sL https://aka.ms/InstallAzureCLIDeb | bash \
+    && rm -rf /var/lib/apt/lists/* \
+    && az extension add --name aks-preview || az extension update --name aks-preview
+
 
 WORKDIR /sandbox
 USER sandbox
+
+
+# Azure CLI (`az`) and the AKS extension (`aks-preview`; augments `az aks`).
+# https://learn.microsoft.com/cli/azure/install-azure-cli-linux?pivots=apt
+
 
 # Write the COMPLETE openclaw.json including gateway config and auth token.
 # This file is immutable at runtime (Landlock read-only on /sandbox/.openclaw).
@@ -223,9 +240,6 @@ os.chmod(path, 0o600)"
 RUN openclaw doctor --fix > /dev/null 2>&1 || true \
     && openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
 
-RUN openclaw plugins install @openclaw/msteams
-
-RUN openclaw plugins install @openclaw/whatsapp
 
 # Lock openclaw.json via DAC: chown to root so the sandbox user cannot modify
 # it at runtime.  This works regardless of Landlock enforcement status.

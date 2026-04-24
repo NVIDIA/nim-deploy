@@ -1,425 +1,730 @@
-# Enterprise agents on Azure Kubernetes Service
+# AKS workshop: NemoClaw with Azure Container Registry and optional Blob NFS storage
 
-This workshop shows [NVIDIA NemoClaw](https://github.com/NVIDIA/NemoClaw) agents talking to [NVIDIA Dynamo](https://github.com/ai-dynamo/dynamo) inference on AKS. The sample model is the Nemotron-3 Super FP8 weights listed below.
+This workshop walks you through running **[NemoClaw](https://github.com/NVIDIA/NemoClaw)** on **Azure Kubernetes Service (AKS)**: you build a small **custom image** (NemoClaw + workshop policy) in **Azure Container Registry (ACR)**, deploy a **Docker-in-Docker** pod whose workspace runs the installer and **OpenClaw** sandboxes under **OpenShell**, expose the **Control UI** with a **LoadBalancer** service, and optionally wire **Azure OpenAI** and **Azure Blob over NFS** for inference keys and durable storage. The goal is a repeatable, self-contained lab environment for governed agent tooling on Azure without cloning the full upstream repo to your laptop.
 
-## Document purpose
+Create a working directory on your machine, add the files in [Embedded manifests and build files](#embedded-manifests-and-build-files) (copy each fenced block into the path shown above it), then follow [Workshop flow](#workshop-flow). You do not need any other repository checkout to complete the lab.
 
-This README explains **why** the workshop exists and **how** to run it. The sample model ID is `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8`. Use `deploy_nemoclaw_k8s.sh` to optionally install inference, build and push a container to Azure Container Registry (ACR), and update the Kubernetes pod.
+The NemoClaw **Pod** can mount a **PersistentVolumeClaim** named `pvc-blob` at **`/mnt/blob`** so data survives pod restarts when you use Azure Blob over **NFS v3**. The pod spec does not create that volume; configure storage in [Persistent Azure Blob storage (NFS)](#persistent-azure-blob-storage-nfs) if you use the default manifest. For data to be visible **inside the OpenClaw sandbox**, you must satisfy **both** [OpenShell filesystem policy](#openclaw-sandbox-access-to-mntblob) and [DinD bind-mount placement](#openclaw-sandbox-access-to-mntblob) below—not only the workspace container mount.
 
-## Value in short
+Official reference for Blob CSI on AKS: [Create and manage persistent volumes with Azure Blob storage in AKS](https://learn.microsoft.com/en-us/azure/aks/create-volume-azure-blob-storage?tabs=NFS%2Cnfs).
 
-Agents send a lot of traffic to the model: long prompts, tools, search hits, and streamed answers. You need two things working together:
+---
 
-1. A **Governable Application Surface** — rules, users, tools, and logs live here.
-2. An **Inference Plane** — the model runs here, on your GPUs, with stable cost and latency inside your cloud boundary.
+## What you will deploy
 
-### Governable Application Surface
+| Piece | Role |
+|-------|------|
+| Custom **Docker image** (`nemoclaw-dind-src`) | `node:22` base with a pinned [NemoClaw](https://github.com/NVIDIA/NemoClaw) tree and a workshop policy file copied into the build context, then pushed to your ACR. |
+| **Pod** (DinD + workspace) | Workspace runs the NemoClaw installer; image is pulled from ACR; `CHAT_UI_URL` comes from a ConfigMap. |
+| **Service** (LoadBalancer) + **NetworkPolicy** | Public HTTP to the Control UI port; unrestricted egress for the labeled pod. |
+| **Optional Secret** | Azure OpenAI (and optional other) credentials for the workspace container. |
+| **Optional Blob NFS** | StorageClass, static PV, and PVC backing `pvc-blob`. |
 
-**Governable Application Surface (GAS)** is the software layer where **your** rules apply (not only inside the model file).
-
-- **Who** — which users or services may run an agent, and with what access.
-- **What** — which tools, APIs, and data the agent may use; what may go into the prompt.
-- **How** — how text is filtered, redacted, logged, and kept for audit; how a request is traced from the user through tools to the model call.
-
-You change these with config and policy; you do not need to retrain the model. Here, **NemoClaw** is the **Governable Application Surface** for this workshop: assistants, sandboxes, and policies sit **above** the plain HTTP call to the model.
-
-### Platform governance vs the Governable Application Surface
-
-**Is AKS the Governable Application Surface?** In everyday language, AKS and Azure are **governed** (RBAC, policy, networks). In this doc, **GAS** means the **agent product layer**—who may do what in **assistant and tool terms**—not the whole cloud control plane.
-
-| Layer | What “governance” means here | Examples |
-|--------|------------------------------|------------|
-| **AKS / Azure (platform)** | Who may change **infrastructure**; how **secrets, network, and logs** are wired for any workload | Entra ID, Key Vault, NetworkPolicy, Azure Policy, which team may run `kubectl apply` |
-| **NemoClaw** | What **this assistant** may do in **business terms**; how **tools, prompts, and sandboxes** are chosen and audited | Tool allowlists, policy files, operator UI, tracing “user → tool → model call” |
-
-Kubernetes does **not** understand “this employee may call only these APIs” or “redact this class of data before it hits the model.” It understands Pods, Services, and RBAC on those objects. So a cluster can be **tightly governed** and you can still run an unsafe agent if nothing in **GAS** enforces **semantic** rules.
-
-**Why the Governable Application Surface still matters (NemoClaw):** AKS answers “who may deploy a workload?” and “which subnet may this Pod use?” NemoClaw answers “what may **this conversation** do next?” and “how do we change that **without** rebuilding the inference container?” You typically want **both**: Azure/AKS for **tenant and run safety**, NemoClaw (or an equivalent you build) for **agent behavior and operator experience**. This workshop uses NemoClaw so you get that **Governable Application Surface** without hand-rolling it on top of a bare HTTP client to Dynamo.
-
-### Inference Plane
-
-**Inference Plane (IP)** is the stack that **runs** the model: GPUs, scheduling, and the HTTP API your apps call. Some people say “inference plan” for the same idea (how you buy and use GPU capacity).
-
-- **What** — which model, precision (e.g. FP8), max context, and API shape (here: OpenAI-style routes); how traffic is split between workers.
-- **Where** — which AKS cluster, GPU nodes, and region run the job and hold weights/cache.
-- **How** — how requests wait in line, batch, scale up and down, and how you watch errors and usage for ops and finance.
-
-Here, **Dynamo on AKS** is the **Inference Plane** for this workshop. The **Governable Application Surface** sends requests in; **IP** returns answers and metrics for logging and policy, without every user dealing with cluster details.
-
-### How the two layers connect
-
-**GAS** is close to **people and rules**. The **Inference Plane** is close to **GPUs and speed**. They meet at one API: the **Governable Application Surface** checks and shapes requests; **IP** runs them inside your tenant.
-
-```mermaid
-flowchart TB
-  subgraph GAS["Governable Application Surface"]
-    direction TB
-    WHO["Who may act"]
-    SCOPE["What may be touched"]
-    PROC["How we log and limit"]
-  end
-  subgraph IP["Inference Plane"]
-    direction TB
-    MODEL["What model and API"]
-    PLACE["Where GPUs run"]
-    SERVE["How we serve and scale"]
-  end
-  U[Users and systems] --> GAS
-  GAS -->|"OK requests,<br/>trimmed context"| IP
-  IP -->|"Answers, token counts,<br/>errors, timing"| GAS
-  IP --> HW[GPUs and cluster]
-```
-
-### Three workshop layers
-
-1. **Agents (NemoClaw)** — Assistants, policies, sandboxes. Turns real work into model calls you can watch and control.
-2. **Serving (Dynamo)** — OpenAI-style HTTP front door, routing, GPU workers on Kubernetes. Many apps can share one stack.
-3. **Model (Nemotron FP8)** — Large hybrid model (attention + recurrence + experts) in FP8 where it helps. Uses less GPU memory than BF16-only for the same class of model, so you can often get **more tokens per GPU dollar** when the model fits the task.
-
-Together: agent load + shared serving + one strong NVIDIA model on AKS.
-
-## Azure AKS and the two layers
-
-AKS is not “just Kubernetes.” Azure adds **identity**, **secrets**, **network**, **logs**, **GPUs**, and **disks**. Most of that is **platform** governance (cluster and cloud). It **supports** **GAS** but is **not** the same thing—see [Platform governance vs the Governable Application Surface](#platform-governance-vs-the-governable-application-surface). The rest of this section maps Azure pieces to **either** helping you run agents safely **on** the cluster **or** running the **Inference Plane** efficiently.
-
-### Azure platform controls for **GAS**
-
-The rows below are mainly **platform** controls (they wrap whatever app you run, including NemoClaw). They do **not** replace agent policies you define on the **Governable Application Surface**.
-
-| Your question | Azure piece | Plain English |
-|----------------|-------------|----------------|
-| Who may change agents or cluster settings? | **Microsoft Entra ID** + **RBAC** (Azure + Kubernetes) | Only the groups you pick get `kubectl` or deploy rights. |
-| Where do API keys live (not in Git)? | **Key Vault** + **Secrets Store CSI** or **workload identity** | Pods read secrets at runtime; YAML in repos stays clean. |
-| How do we enforce org-wide rules? | **Azure Policy**, **Defender for Cloud** | Block risky patterns (e.g. public Services) across many clusters. |
-| How do we keep admin or API paths private? | **Private cluster**, **internal load balancer** | Less on the public internet; traffic stays in the VNet when you want that. |
-| Where do we store and search logs? | **Azure Monitor**, **Container Insights** | One place for alerts and audit-style history. |
-| Who may talk to which pod? | **Network policies** on **Azure CNI** | e.g. NemoClaw namespace ↔ Dynamo namespace only on allowed ports. |
-
-**In one line:** Azure helps with **who touches the cluster**, **secrets**, **network shape**, and **logs**—not with defining **which tools an assistant may call** (that stays in NemoClaw’s **GAS**).
-
-### Azure platform controls for **IP**
-
-| Your question | Azure piece | Plain English |
-|----------------|-------------|----------------|
-| Where do GPUs run? | **GPU node pools** (e.g. NC / ND SKUs), **availability zones** | Workers sit on GPU VMs; zones spread risk if one datacenter fails. |
-| Where do weights sit? | **Managed disks** or **Files** for **PVC** | Big model on disk; **Premium SSD** is common for speed. |
-| How do we scale with load? | **Cluster autoscaler**, **HPA**, **KEDA** | Add or remove nodes or pods when queues grow or shrink. |
-| How do nodes pull images? | **ACR** + **managed identity** (or attach ACR to AKS) | No long-lived docker password baked on every node. |
-| How do users reach the model API? | **Standard load balancer** or **Application Gateway**, **ingress** | Can stay **internal** so the API never leaves your VNet. |
-
-**In one line:** Azure helps with **GPUs**, **disk**, **scale**, **image pull**, and **how traffic enters** the cluster—Dynamo still defines how the model is served inside **IP**.
-
-Azure does **not** replace NemoClaw or Dynamo: it adds **guardrails** and **plumbing** around them.
-
-```mermaid
-flowchart TB
-  subgraph Gas["Azure platform hooks<br/>support GAS"]
-    RBAC["Entra ID + RBAC<br/>who edits agents / secrets"]
-    KV["Key Vault + CSI / workload ID<br/>keys not in git"]
-    POL["Azure Policy / Defender<br/>org guardrails"]
-    NP["Network policies + CNI<br/>pod-to-pod rules"]
-    LOG["Azure Monitor / Insights<br/>logs and alerts"]
-  end
-  subgraph Ip["Azure platform hooks<br/>support IP"]
-    GPU["GPU node pools + zones<br/>where models run"]
-    PVC["Managed disk / Files PVC<br/>model cache"]
-    SCALE["Cluster + HPA / KEDA<br/>scale with load"]
-    ACR["ACR + managed identity<br/>pull images"]
-    LB["Load balancer / ingress<br/>front door"]
-  end
-```
-
-```mermaid
-flowchart LR
-  subgraph Sub["Your Azure subscription"]
-    U[Users / operators]
-    U --> EID[Entra ID]
-    EID --> ING[Ingress or LB]
-    ING --> NC[NemoClaw<br/>GAS]
-    NC -->|cluster DNS / private link| FE[Dynamo frontend<br/>IP]
-    FE --> WRK[GPU workers]
-    WRK --> VOL[(PVC on Azure Disk)]
-  end
-```
-
-## Why disaggregated serving helps here
-
-Big models often split **prefill** (new prompt work) and **decode** (next tokens). Workers pass cache/state between them. Dynamo does that in **disaggregated** mode: prefill workers take new context, decode workers keep generating, the front end sends work to both. This repo’s default uses **SGLang** and **NIXL** between workers; see `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`.
-
-NemoClaw drives **realistic** traffic (chat, tools, install steps), not a single lab query.
-
-## Money, data, and “your own” inference
-
-**Metered APIs** (e.g. OpenAI, Anthropic): you pay per token; the bill grows with use.
-
-**Your own inference** (Dynamo on your AKS): you pay for GPUs and ops; tokens can get **cheaper per unit** as you use the hardware more.
-
-Some people call your stack a **token factory**: answers are made **inside** your cloud under **your** rules, not only bought as an outside line item.
-
-Using Dynamo on AKS ties more of your agent spend to capacity you already run. You can still send some traffic to outside APIs when policy allows.
-
-| Topic | Metered API | Dynamo on your AKS |
-|--------|-------------|-------------------|
-| Cost vs use | Bill grows with adoption | Fixed/step GPU cost; busy GPUs lower cost per token |
-| Data | Leaves your account unless contracts say otherwise | Prompts and answers stay in your subscription unless you send them out |
-| Busy times | Shared public service may queue | You size your cluster to your SLA |
-| Reuse | Fast access to many public models | One stack many apps can share (OpenAI-style clients) |
-
-```mermaid
-flowchart TB
-  subgraph Demand["Your org"]
-    U[Users]
-    AP[Agent platform]
-    U --> AP
-  end
-  subgraph Own["Your inference"]
-    FE[Dynamo front end]
-    W[GPU workers]
-    FE --> W
-  end
-  subgraph Buy["Paid APIs"]
-    API[Third-party models]
-  end
-  AP -->|"most traffic"| FE
-  AP -.->|"sometimes"| API
-```
-
-### Token volume
-
-Agents burn many tokens per task: system text, search, tool JSON, plans, UI stream. Across a company, small per-user use adds up fast—often more than a pilot guessed.
-
-```mermaid
-xychart-beta
-    title "Example only: token volume vs rollout size"
-    x-axis [Pilot, One unit, Many units, Whole company]
-    y-axis "Relative volume" 0 --> 100
-    line [5, 25, 55, 100]
-```
-
-Real curves depend on user count, agent depth, and max context. Plan for **cost per token** and **serving speed**, not only model quality.
-
-### Cost per token (simple view)
-
-**Cost per token ≈ (all-in cost for a month) ÷ (tokens served that month).**
-
-Dynamo helps the bottom number (more tokens per GPU) and ties the top number to **GPUs you control**, not a retail API markup.
-
-```mermaid
-pie title Example only: mix after partial move to own GPUs
-    "Your GPUs" : 72
-    "Paid APIs" : 28
-```
-
-### Strategy chart (example only)
-
-```mermaid
-quadrantChart
-    title Example only — not advice
-    x-axis You run less infra --> You run more infra
-    y-axis Hard to predict cost --> Easier to predict cost
-    quadrant-1 Strong for steady scale
-    quadrant-2 More ops, messy spend
-    quadrant-3 Try and learn
-    quadrant-4 Less ops, messy spend
-    Paid APIs: [0.28, 0.32]
-    Dynamo on AKS: [0.74, 0.76]
-```
-
-Savings are **not** automatic. You still need busy GPUs, a full cost picture (hardware, power, staff, licenses, risk), and the right model. Nemotron here is **one** choice.
-
-## Disaggregated serving (Dynamo)
-
-**Prefill** workers handle new input (attention and, for hybrid models, extra state). **Decode** workers keep making tokens. They share state over the network (this workshop: **SGLang** + **NIXL**). A **frontend** takes client requests and talks to both tiers.
-
-```mermaid
-flowchart LR
-  subgraph Consumers
-    CL[Agents and users]
-  end
-  subgraph Dyn["Dynamo on Kubernetes"]
-    FE[Frontend]
-    PF[Prefill workers]
-    DC[Decode workers]
-  end
-  CL -->|asks| FE
-  FE -->|prefill| PF
-  PF -->|state transfer| DC
-  FE -->|decode| DC
-  DC -->|answer| FE
-  FE -->|answer| CL
-```
-
-**Tradeoff:** more moving parts than one big pool; you must run more pod types and tune the network/GPU layout.
-
-## KV routing and this workshop’s model
-
-Dynamo can **route** requests to workers that already hold part of the prompt in cache (fewer repeats, faster first token). See `dynamo/dynamo/docs/components/router/router-concepts.md` and `router-guide.md` in the bundled Dynamo tree.
-
-For **this** Nemotron hybrid recipe, the bundled **disagg** setup does **not** use full KV-overlap routing like simple attention-only stacks. Hybrid Mamba + attention models do not yet give clean KV “events” for exact routing in these backends. This workshop’s SGLang disagg file uses **round-robin** and turns KV events **off**. That may change in future releases.
-
-## What this repo does
-
-On AKS: agents in Kubernetes; inference installed by the script or by you; default recipe is **SGLang disagg** for the model ID at the top.
-
-- **`deploy_nemoclaw_k8s.sh`**
-  1. Optionally install Dynamo from a manifest and wait until pods look ready.
-  2. Clone a fixed NemoClaw git tag into `nemoclaw-base/nemoclaw-src/NemoClaw`.
-  3. Build `nemoclaw-base` for `linux/amd64`.
-  4. Push `nemoclaw-dind-src:latest` to ACR (`az acr login` retry on auth errors).
-  5. Apply `nemoclaw-install` (secrets if present, delete `nemoclaw` pod, apply `nemoclaw-k8s.yaml` with your registry name).
-
-- **`nemoclaw-base/`** — Docker build: NemoClaw at `NEMOCLAW_GIT_TAG` (default `v0.0.18`), `nemoclaw-blueprint`, OpenShell; image the pod uses.
-
-- **`nemoclaw-install/`** — YAML for a DinD + workspace pod: non-interactive NemoClaw install; `NEMOCLAW_ENDPOINT_URL` points at Dynamo in the cluster (`socat`, `host.openshell.internal`). Edit URLs and `CHAT_UI_URL` for your site.
-
-- **`dynamo/`** — Copy of Dynamo (recipes, docs, tests). See [Nemotron-3 Super FP8 Dynamo recipes](#nemotron-3-super-fp8-dynamo-recipes) below.
-
-## Nemotron-3 Super FP8 Dynamo recipes
-
-Upstream NVIDIA maintains several ready-made layouts for `nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8` in the open Dynamo repo:
-
-- Recipe folder: [github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8](https://github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8)
-- Full prerequisites and quick start: [github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md](https://github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md)
-
-**Other layouts (not only disagg).** The same README lists **aggregated** and **disaggregated** options, for example:
-
-| Path under `recipes/nemotron-3-super-fp8/` | Mode | Backend | Notes (from upstream) |
-|--------------------------------------------|------|---------|------------------------|
-| `vllm/agg/` | Aggregated | vLLM | 4× H100/H200, TP=4 |
-| `sglang/agg/` | Aggregated | SGLang | 4× H100/H200, TP=4 |
-| `trtllm/disagg/` | Disaggregated | TensorRT-LLM | TP=2 prefill/decode split, UCX transfer |
-| `sglang/disagg/` | Disaggregated | SGLang | TP=2 split, nixl (or mooncake) transfer |
-
-This workshop’s `deploy_nemoclaw_k8s.sh` default is the **SGLang disaggregated** manifest only. You can point `DYNAMO_DEPLOY_MANIFEST` at another `deploy.yaml` if your cluster and ops model fit a different row.
-
-**Example manifest (copy in this repo).** The vendored path matches the upstream `sglang/disagg/deploy.yaml` layout; it declares a `DynamoGraphDeployment` and expects a shared **model-cache** PVC (`create: false` in the snippet—so you create/cache the model on a PVC first). Opening lines:
-
-```1:35:dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml
-# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-# Disaggregated SGLang deployment: prefill/decode split with nixl KV transfer.
-# Tested with dynamo 1.0 (SGLang 0.5.9).
-#
-# Uses TP=2 per worker (prefill: 2 GPUs, decode: 2 GPUs) for a total of 4 GPUs.
-# KV cache is transferred between workers via nixl (GPU-direct).
-#
-# NOT working on dynamo 0.9.1 — same blocking bugs as sglang/agg.
-#
-# Known issue: Prefill warmup logs a non-blocking warning:
-#   "Prefill warmup failed: 'SamplingParams' object is not subscriptable"
-# This does not affect functionality.
-#
-apiVersion: nvidia.com/v1alpha1
-kind: DynamoGraphDeployment
-metadata:
-  name: nemotron-super-fp8-sglang-disagg
-spec:
-  backendFramework: sglang
-  envs:
-    - name: HF_HOME
-      value: /opt/models
-  pvcs:
-    - name: model-cache
-      create: false
-  services:
-    Frontend:
-      componentType: frontend
-      replicas: 1
-      volumeMounts:
-        - name: model-cache
-          mountPoint: /opt/models
-      extraPodSpec:
-```
-
-**Preliminaries from the upstream README (do these before or with the deploy).** In short:
-
-1. **Dynamo on the cluster** — Install the Dynamo platform as in the [Kubernetes deployment guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/kubernetes/README.md) (linked from the recipe README).
-2. **GPUs** — Recipe table targets **4× H100 80GB or H200** for these Nemotron layouts.
-3. **Hugging Face secret** — `kubectl create secret generic hf-token-secret --from-literal=HF_TOKEN="…" -n <namespace>` with a token that can access the NVIDIA model.
-4. **Model cache and PVC** — Under `recipes/nemotron-3-super-fp8/model-cache/`, apply the manifests so weights land on a **persistent volume**; set **`storageClassName`** in `model-cache/model-cache.yaml` to a class your cluster provides, then run the download **Job** and wait until it completes (`kubectl wait --for=condition=Complete job/model-download …`). The README notes a **~240 GB** download and roughly **30–60 minutes** depending on bandwidth.
-5. **Then deploy** — `kubectl apply -f <chosen>/deploy.yaml -n <namespace>` (e.g. `sglang/disagg` or an **agg** path above).
-
-The copy under `dynamo/dynamo/recipes/nemotron-3-super-fp8/` in this workshop should match upstream for the same paths; when in doubt, compare with [the tree on GitHub](https://github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8).
+---
 
 ## Prerequisites
 
-- `bash`, `git`, Docker, `kubectl` (pointed at your cluster), `az` if you use ACR login from the script.
-- An ACR your cluster can pull from.
-- Namespaces if missing, e.g. `kubectl create namespace nemoclaw` and `kubectl create namespace dynamo-system` (or your chosen names).
-- For Dynamo + Nemotron: complete the [preliminaries above](#nemotron-3-super-fp8-dynamo-recipes) and read the local copy at `dynamo/dynamo/recipes/nemotron-3-super-fp8/README.md` plus `dynamo/dynamo/docs/kubernetes/` for platform install details.
+1. **Azure CLI** (`az`), **Docker**, **kubectl**, and **git** on the machine you use for the workshop.
+2. An **AKS cluster** with:
+   - Workload identity / pull permissions as needed for your ACR (typically `az aks update -n … --attach-acr <acrName>`).
+   - The [**Azure Blob CSI driver**](https://learn.microsoft.com/en-us/azure/aks/create-volume-azure-blob-storage?tabs=NFS%2Cnfs) enabled (required for Blob PVs/PVCs on AKS).
+3. **ACR** with permission to push `nemoclaw-dind-src:latest` (image will be `\<ACR_NAME\>.azurecr.io/nemoclaw-dind-src:latest`).
+4. For **NFS Blob** (persistent workshop storage): a storage account created **with NFS v3 support** (NFS cannot be turned on for an existing non-NFS account). See [NFS 3.0 support for Azure Blob](https://learn.microsoft.com/en-us/azure/storage/blobs/network-file-system-protocol-support-how-to).
+5. For **NFS with private networking**: Microsoft documents that the AKS **cluster identity** may need **Contributor** on the virtual network and NSG when using NFS; follow the networking guidance in the same [AKS Blob volume article](https://learn.microsoft.com/en-us/azure/aks/create-volume-azure-blob-storage?tabs=NFS%2Cnfs).
 
-## `deploy_nemoclaw_k8s.sh`
+---
 
-Run from any directory; the script finds its own files.
+## Embedded manifests and build files
 
-### Required
+Create a directory for the workshop (examples below use `~/nemoclaw-workshop` and assume your shell is **in that directory**). For each subsection, create the listed path and paste the YAML or Dockerfile exactly.
 
-| Flag / variable | Meaning |
-|-----------------|--------|
-| `--acr-name NAME` or `ACR_NAME` | Short ACR name only (e.g. `myregistry`). Image: `NAME.azurecr.io/nemoclaw-dind-src:latest`. |
+### Policy file for the image build
 
-### Options
+Create `nemoclaw-blueprint/policies/openclaw-sandbox.yaml`:
 
-| Flag | Env | Default | Purpose |
-|------|-----|---------|---------|
-| `--install-dynamo` | — | off | Apply Dynamo YAML, wait for Running/Ready pods and enough ready pods per disagg tier (`-disagg-decode-`, `-disagg-frontend-`, `-disagg-prefill-`). |
-| `--nemoclaw-namespace NS` | `NEMOCLAW_NAMESPACE` | `nemoclaw` | Where NemoClaw YAML applies. |
-| `--dynamo-namespace NS` | `DYNAMO_NAMESPACE` | `dynamo-system` | Where Dynamo YAML applies when using `--install-dynamo`. |
-| `-h`, `--help` | — | — | Help text. |
+```yaml
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# OpenClaw sandbox network policy (development / lab). Egress CONNECT is
+# allowed to resolved addresses in the full IPv4/IPv6 allowlist on TCP ports
+# 80 and 443 only. Loopback and link-local remain blocked inside OpenShell.
+# Kubernetes API/etcd/kubelet ports remain hard-blocked in the proxy regardless
+# of policy — see OpenShell BLOCKED_CONTROL_PLANE_PORTS.
+#
+# To add endpoints: update this file and re-run `nemoclaw onboard`
+# or apply dynamically via `openshell policy set`.
 
-### Environment variables
+version: 1
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `DYNAMO_DEPLOY_MANIFEST` | `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml` | YAML for `--install-dynamo`. |
-| `DYNAMO_READY_POLL_INTERVAL` | `15` | Seconds between pod checks. |
-| `DYNAMO_READY_TIMEOUT_SEC` | `3600` | Max wait (`0` = no limit). |
-| `DYNAMO_DISAGG_MIN_PODS` | `3` | Min ready pods per decode / front / prefill tier (name match). |
-| `NEMOCLAW_GIT_URL` | `https://github.com/NVIDIA/NemoClaw.git` | Git remote for NemoClaw. |
-| `NEMOCLAW_GIT_TAG` | `v0.0.18` | Git tag to checkout; if unset, `NEMOCLAW_GIT_REF` is used. |
-| `VERBOSE` | `0` | Set `1` for more logs. |
+filesystem_policy:
+  include_workdir: false
+  read_only:
+    - /usr
+    - /lib
+    - /proc
+    - /dev/urandom
+    - /app
+    - /etc
+    - /var/log
+    # With /mnt/blob below, include /mnt read_only so Landlock allows traversing
+    # the parent (otherwise `ls /mnt` fails inside the sandbox).
+    - /mnt
+  read_write:
+    - /sandbox
+    - /tmp
+    - /dev/null
+    - /sandbox/.openclaw
+    - /sandbox/.openclaw-data
+    # When using pvc-blob, add /mnt/blob (read_only or read_write) — see
+    # "OpenClaw sandbox access to /mnt/blob" under Persistent Azure Blob storage.
+    - /mnt/blob
 
-### Examples
+landlock:
+  compatibility: best_effort
 
-Inference already running — only rebuild image and refresh pod:
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
 
-```bash
-./deploy_nemoclaw_k8s.sh --acr-name myregistry
+network_policies:
+  unrestricted:
+    name: unrestricted
+    endpoints:
+      - allowed_ips:
+          - "0.0.0.0/0"
+          - "::/0"
+        access: full
+        ports:
+          - 80
+          - 443
+    binaries:
+      - { path: "/**" }
 ```
 
-Install Dynamo, wait, then build, push, refresh:
+### Dockerfile for `nemoclaw-dind-src`
 
-```bash
-./deploy_nemoclaw_k8s.sh --acr-name myregistry --install-dynamo
+Create `Dockerfile` in the workshop root (same directory you will run `docker build` from):
+
+```dockerfile
+# NemoClaw baked into node image for DinD workspace jobs.
+FROM node:22
+
+ENV OPENSHELL_LOG_LEVEL=debug
+
+COPY ./nemoclaw-src/NemoClaw /nemoclaw-src
+COPY ./nemoclaw-blueprint /nemoclaw-src/nemoclaw-blueprint
+
+RUN curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | OPENSHELL_VERSION=v0.0.26 sh
 ```
 
-Custom namespaces:
+### LoadBalancer Service and NetworkPolicy
 
-```bash
-./deploy_nemoclaw_k8s.sh \
-  --acr-name myregistry \
-  --install-dynamo \
-  --dynamo-namespace my-dynamo \
-  --nemoclaw-namespace my-nemoclaw
+Create `nemoclaw-egress.yaml`:
+
+```yaml
+# Public HTTP LoadBalancer for NemoClaw (default namespace: nemoclaw).
+# - Service: port 80 -> targetPort 18789 on the workspace container.
+# - NetworkPolicy: allow all egress for pods with labels app=nemoclaw and nemoclaw.io/instance.
+#
+# Prerequisites:
+# - Pod must set CHAT_UI_URL to a non-loopback URL so the dashboard forward binds 0.0.0.0:18789.
+# - CHAT_UI_URL must match the public origin users open in the browser for allowedOrigins.
+# - Wait until the Service shows a real EXTERNAL-IP or hostname instead of <pending>.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nemoclaw-http
+  namespace: nemoclaw
+  labels:
+    app: nemoclaw
+spec:
+  type: LoadBalancer
+  selector:
+    app: nemoclaw
+    nemoclaw.io/instance: nemoclaw
+  ports:
+    - name: http
+      port: 80
+      targetPort: 18789
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nemoclaw-allow-all-egress
+  namespace: nemoclaw
+  labels:
+    app: nemoclaw
+spec:
+  podSelector:
+    matchLabels:
+      app: nemoclaw
+      nemoclaw.io/instance: nemoclaw
+  policyTypes:
+    - Egress
+  egress:
+    - {}
 ```
 
-Custom Dynamo YAML:
+### NemoClaw Pod
 
-```bash
-export DYNAMO_DEPLOY_MANIFEST="/path/to/your/deploy.yaml"
-./deploy_nemoclaw_k8s.sh --acr-name myregistry --install-dynamo
+Create `nemoclaw-k8s.yaml`. Replace placeholder values (ACR host, endpoints, model, tokens) **before** applying, or rely on the `sed` / `kubectl` steps in the workshop flow for the image registry only.
+
+```yaml
+# NemoClaw on Kubernetes — Docker-in-Docker + workspace installer.
+#
+# Before apply: kubectl create namespace nemoclaw (or your chosen namespace).
+# Replace the workspace image with YOUR_ACR.azurecr.io/nemoclaw-dind-src:latest
+# Replace NEMOCLAW_ENDPOINT_URL, NEMOCLAW_MODEL, DYNAMO_HOST, GITHUB_TOKEN as needed.
+#
+# CHAT_UI_URL: supplied from a ConfigMap (e.g. nemoclaw-lb-config) after the
+# LoadBalancer Service has a public address — see workshop flow.
+#
+# Optional Secret nemoclaw-workshop-credentials (key azure-openai-api-key):
+# if absent, COMPATIBLE_API_KEY defaults to dummy in the startup script.
+#
+# pvc-blob: mount blob01 at /mnt/blob on BOTH dind and workspace so Docker
+# bind-mounts into OpenClaw sandboxes resolve on the dockerd host — see README
+# "OpenClaw sandbox access to /mnt/blob".
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nemoclaw
+  namespace: nemoclaw
+  labels:
+    app: nemoclaw
+    nemoclaw.io/instance: nemoclaw
+spec:
+  containers:
+    - name: dind
+      image: docker:24-dind
+      securityContext:
+        privileged: true
+      env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+      command: ["dockerd", "--host=unix:///var/run/docker.sock"]
+      volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
+        - name: docker-socket
+          mountPath: /var/run
+        - name: docker-config
+          mountPath: /etc/docker
+        - name: blob01
+          mountPath: "/mnt/blob"
+          readOnly: false
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "2"
+
+    - name: workspace
+      image: anslutskynemoclawclusterregistry.azurecr.io/nemoclaw-dind-src:latest
+      command:
+        - bash
+        - -c
+        - |
+          set -e
+
+          echo "[1/4] Installing packages..."
+          apt-get update -qq
+          apt-get install -y -qq docker.io socat curl >/dev/null 2>&1
+
+          apt-get install git -y -qq
+
+          echo "[2/4] Starting socat proxy..."
+          socat TCP-LISTEN:8000,fork,reuseaddr TCP:$DYNAMO_HOST &
+          echo "127.0.0.1 host.openshell.internal" >> /etc/hosts
+          sleep 1
+
+          echo "[3/4] Waiting for Docker daemon..."
+          for i in $(seq 1 30); do
+            if docker info >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker info >/dev/null 2>&1 || { echo "Docker not ready"; exit 1; }
+          echo "Docker ready"
+
+          export COMPATIBLE_API_KEY="${COMPATIBLE_API_KEY:-dummy}"
+
+          export NEMOCLAW_REPO_ROOT=/nemoclaw-src
+
+          echo "[4/4] Running NemoClaw installer..."
+          umask 077
+          bash /nemoclaw-src/scripts/install.sh --non-interactive --yes-i-accept-third-party-software
+
+          echo "Onboard complete. Container staying alive!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+          exec sleep infinity
+      env:
+        - name: CHAT_UI_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nemoclaw-lb-config
+              key: CHAT_UI_URL
+        - name: DOCKER_HOST
+          value: unix:///var/run/docker.sock
+        - name: DYNAMO_HOST
+          value: "YOUR-DYNAMO-FRONTEND.dynamo-system.svc.cluster.local:8000"
+        - name: NEMOCLAW_NON_INTERACTIVE
+          value: "1"
+        - name: NEMOCLAW_PROVIDER
+          value: "custom"
+        - name: NEMOCLAW_ENDPOINT_URL
+          value: "https://YOUR_RESOURCE.openai.azure.com/openai/v1/"
+        - name: COMPATIBLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nemoclaw-workshop-credentials
+              key: azure-openai-api-key
+              optional: true
+        - name: NEMOCLAW_MODEL
+          value: "YOUR_AZURE_OPENAI_DEPLOYMENT_NAME"
+        - name: NEMOCLAW_SANDBOX_NAME
+          value: "my-assistant"
+        - name: NEMOCLAW_WORKSHOP_POLICY_SRC
+          value: "/nemoclaw-src/nemoclaw-blueprint/policies/openclaw-sandbox.yaml"
+        - name: NEMOCLAW_POLICY_MODE
+          value: "suggested"
+        - name: NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE
+          value: "1"
+        - name: NEMOCLAW_FROM_DOCKERFILE
+          value: "/nemoclaw-src/Dockerfile"
+        - name: GITHUB_TOKEN
+          value: "<your token>"
+      volumeMounts:
+        - name: docker-socket
+          mountPath: /var/run
+        - name: docker-config
+          mountPath: /etc/docker
+        - name: blob01
+          mountPath: "/mnt/blob"
+          readOnly: false
+      resources:
+        requests:
+          memory: "4Gi"
+          cpu: "2"
+      ports:
+        - containerPort: 18789
+          name: dashboard
+          protocol: TCP
+
+  initContainers:
+    - name: init-docker-config
+      image: busybox
+      command: ["sh", "-c", "echo '{\"default-cgroupns-mode\":\"host\"}' > /etc/docker/daemon.json"]
+      volumeMounts:
+        - name: docker-config
+          mountPath: /etc/docker
+
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
+    - name: docker-socket
+      emptyDir: {}
+    - name: docker-config
+      emptyDir: {}
+    - name: blob01
+      persistentVolumeClaim:
+        claimName: pvc-blob
+
+  restartPolicy: Never
 ```
 
-### After you run it
+### Optional Secret (Azure OpenAI and related)
 
-1. Edit `nemoclaw-install/nemoclaw-k8s.yaml`: `CHAT_UI_URL` (must match the URL users open), `DYNAMO_HOST`, `NEMOCLAW_ENDPOINT_URL`, `NEMOCLAW_MODEL` if needed; apply again or rerun the script.
-2. Secrets: copy `nemoclaw-install/nemoclaw-secrets.example.yaml` to `nemoclaw-secrets.yaml`, fill keys, align with pod env. The script applies it if the file exists.
+Create `nemoclaw-secrets.yaml` only if you want a real API key (otherwise skip applying this file):
 
-## Related paths
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nemoclaw-workshop-credentials
+  namespace: nemoclaw
+type: Opaque
+stringData:
+  azure-openai-api-key: REPLACE_ME
+  NGC_KEY: REPLACE_ME
+```
 
-- Upstream Nemotron recipes: [github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8](https://github.com/ai-dynamo/dynamo/tree/main/recipes/nemotron-3-super-fp8)
-- Upstream README (prereqs, quick start): [github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md](https://github.com/ai-dynamo/dynamo/blob/main/recipes/nemotron-3-super-fp8/README.md)
-- Workshop copy — default disagg example: `dynamo/dynamo/recipes/nemotron-3-super-fp8/sglang/disagg/deploy.yaml`
-- Workshop copy — agg and other paths: `dynamo/dynamo/recipes/nemotron-3-super-fp8/vllm/agg/`, `sglang/agg/`, `trtllm/disagg/`
-- Pod YAML: `nemoclaw-install/nemoclaw-k8s.yaml`
+Edit the values, then apply in [Step 2](#step-2--optional-azure-openai-and-other-secrets).
+
+### NFS StorageClass (optional persistent storage)
+
+Create `blob-nfs-sc.yaml`:
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azureblob-nfs-premium
+provisioner: blob.csi.azure.com
+parameters:
+  protocol: nfs
+  tags: environment=Development
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - nconnect=4
+```
+
+### Static NFS PersistentVolume (optional)
+
+Create `pv-blob-nfs.yaml` and replace `volumeHandle`, `resourceGroup`, `storageAccount`, and `containerName` with **your** Azure resources:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/provisioned-by: blob.csi.azure.com
+  name: pv-blob
+spec:
+  capacity:
+    storage: 1Pi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: azureblob-nfs-premium
+  mountOptions:
+    - nconnect=4
+  csi:
+    driver: blob.csi.azure.com
+    volumeHandle: YOUR_STORAGEACCOUNT_YOUR_CONTAINER
+    volumeAttributes:
+      resourceGroup: YOUR_RG
+      storageAccount: YOUR_STORAGE_ACCOUNT
+      containerName: YOUR_CONTAINER
+      protocol: nfs
+```
+
+### PersistentVolumeClaim for the static PV (optional)
+
+Create `pvc-blob-nfs.yaml`:
+
+```yaml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-blob
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: pv-blob
+  storageClassName: azureblob-nfs-premium
+```
+
+### Alternative: dynamic PVC (optional)
+
+If you prefer a **dynamically** provisioned claim instead of the static PV/PVC pair, create `pvc-blob-dynamic.yaml` and change the pod volume’s `claimName` to match `metadata.name` here (`azure-blob-storage`):
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azure-blob-storage
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: azureblob-nfs-premium
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+---
+
+## Workshop flow
+
+All shell commands assume you have `cd`’d into the **same directory** where you created `Dockerfile`, `nemoclaw-k8s.yaml`, `nemoclaw-egress.yaml`, and the `nemoclaw-blueprint/` tree.
+
+### Step 0 — Log in and choose names
+
+```bash
+az login
+az aks get-credentials --resource-group <RG> --name <AKS_CLUSTER>
+```
+
+```bash
+export ACR_NAME=<your-acr-short-name>
+export NEMOCLAW_NAMESPACE=nemoclaw
+export NEMOCLAW_POD_NAME=nemoclaw
+export NEMOCLAW_LB_SVC_NAME="${NEMOCLAW_POD_NAME}-http"
+export NEMOCLAW_LB_CONFIGMAP_NAME="${NEMOCLAW_POD_NAME}-lb-config"
+```
+
+```bash
+kubectl create namespace "${NEMOCLAW_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+```
+
+### Step 1 — (Optional) Persistent Azure Blob over NFS
+
+Follow [Persistent Azure Blob storage (NFS)](#persistent-azure-blob-storage-nfs) using the `blob-nfs-sc.yaml`, `pv-blob-nfs.yaml`, and `pvc-blob-nfs.yaml` files you created. If you skip storage, remove or adjust the `persistentVolumeClaim` volume in your pod manifest so the pod does not wait on a missing claim.
+
+### Step 2 — (Optional) Azure OpenAI and other secrets
+
+If you created `nemoclaw-secrets.yaml`:
+
+```bash
+kubectl apply -f ./nemoclaw-secrets.yaml -n "${NEMOCLAW_NAMESPACE}"
+```
+
+If you skip this, the startup script defaults `COMPATIBLE_API_KEY` to `dummy` when the Secret is absent.
+
+### Step 3 — (Optional) Deploy Dynamo first
+
+If you use NVIDIA Dynamo’s disaggregated SGLang stack in-cluster, apply the manifests from the [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo) project (for example under `recipes/` for your model) or your own packaging into a namespace such as `dynamo-system`, then wait until every pod there is **Running** with full readiness and your frontend service matches the `DYNAMO_HOST` value in your pod spec.
+
+Skip this step if you already have an inference endpoint; update `DYNAMO_HOST` and `NEMOCLAW_ENDPOINT_URL` in the pod YAML you saved before applying.
+
+### Step 4 — Pin NemoClaw sources for the image build
+
+```bash
+export NEMOCLAW_GIT_URL=https://github.com/NVIDIA/NemoClaw.git
+export NEMOCLAW_GIT_TAG=v0.0.18
+mkdir -p nemoclaw-src
+rm -rf nemoclaw-src/NemoClaw
+git clone --depth 1 --branch "${NEMOCLAW_GIT_TAG}" "${NEMOCLAW_GIT_URL}" nemoclaw-src/NemoClaw
+```
+
+### Step 5 — Build and push the workshop image
+
+```bash
+docker build --platform linux/amd64 -t "${ACR_NAME}.azurecr.io/nemoclaw-dind-src:latest" .
+```
+
+```bash
+docker push "${ACR_NAME}.azurecr.io/nemoclaw-dind-src:latest"
+# If unauthorized:
+az acr login --name "${ACR_NAME}"
+docker push "${ACR_NAME}.azurecr.io/nemoclaw-dind-src:latest"
+```
+
+### Step 6 — LoadBalancer, ConfigMap, and NemoClaw pod
+
+```bash
+if [[ -f ./nemoclaw-secrets.yaml ]]; then
+  kubectl apply -f ./nemoclaw-secrets.yaml -n "${NEMOCLAW_NAMESPACE}"
+fi
+```
+
+**6a — Egress**
+
+If you use the defaults in the pasted YAML (`namespace: nemoclaw`, Service `nemoclaw-http`, instance `nemoclaw`):
+
+```bash
+kubectl apply -f ./nemoclaw-egress.yaml
+```
+
+If you changed namespace, Service name, or instance label, pipe the file through `sed` so those fields stay aligned:
+
+```bash
+sed -e "s|^[[:space:]]*namespace: nemoclaw|  namespace: ${NEMOCLAW_NAMESPACE}|g" \
+  -e "s|^  name: nemoclaw-http\$|  name: ${NEMOCLAW_LB_SVC_NAME}|" \
+  -e "s|^  name: nemoclaw-allow-all-egress\$|  name: ${NEMOCLAW_POD_NAME}-allow-all-egress|" \
+  -e "s|nemoclaw.io/instance: nemoclaw|nemoclaw.io/instance: ${NEMOCLAW_POD_NAME}|g" \
+  ./nemoclaw-egress.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}"
+```
+
+**6b — Wait for the LoadBalancer address**
+
+```bash
+kubectl get svc -n "${NEMOCLAW_NAMESPACE}" "${NEMOCLAW_LB_SVC_NAME}" -w
+```
+
+**6c — ConfigMap**
+
+```bash
+export LB_ADDR=<paste-external-ip-or-hostname>
+export CHAT_UI_URL="http://${LB_ADDR}"
+```
+
+For IPv6 addresses (not hostnames), use `export CHAT_UI_URL="http://[${LB_ADDR}]"`.
+
+```bash
+kubectl create configmap "${NEMOCLAW_LB_CONFIGMAP_NAME}" -n "${NEMOCLAW_NAMESPACE}" \
+  --from-literal="LOAD_BALANCER_IP=${LB_ADDR}" \
+  --from-literal="CHAT_UI_URL=${CHAT_UI_URL}" \
+  --dry-run=client -o yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}"
+```
+
+**6d — Pod manifest**
+
+The embedded pod example uses a placeholder ACR host. Replace it with your registry (and optionally namespace, pod name, ConfigMap name, instance label):
+
+```bash
+kubectl delete pod "${NEMOCLAW_POD_NAME}" -n "${NEMOCLAW_NAMESPACE}" --ignore-not-found
+sed -e "s|anslutskynemoclawclusterregistry.azurecr.io|${ACR_NAME}.azurecr.io|g" \
+  ./nemoclaw-k8s.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}"
+```
+
+For custom namespace or pod name:
+
+```bash
+kubectl delete pod "${NEMOCLAW_POD_NAME}" -n "${NEMOCLAW_NAMESPACE}" --ignore-not-found
+sed -e "s|anslutskynemoclawclusterregistry.azurecr.io|${ACR_NAME}.azurecr.io|g" \
+  -e "s|^[[:space:]]*namespace: nemoclaw|  namespace: ${NEMOCLAW_NAMESPACE}|g" \
+  -e "s|name: nemoclaw-lb-config|name: ${NEMOCLAW_LB_CONFIGMAP_NAME}|g" \
+  -e "s|^  name: nemoclaw\$|  name: ${NEMOCLAW_POD_NAME}|" \
+  -e "s|nemoclaw.io/instance: nemoclaw|nemoclaw.io/instance: ${NEMOCLAW_POD_NAME}|g" \
+  ./nemoclaw-k8s.yaml | kubectl apply -f - -n "${NEMOCLAW_NAMESPACE}"
+```
+
+### Step 7 — Verify
+
+```bash
+kubectl get pods,svc,configmap -n "${NEMOCLAW_NAMESPACE}"
+kubectl get configmap "${NEMOCLAW_LB_CONFIGMAP_NAME}" -n "${NEMOCLAW_NAMESPACE}" -o yaml
+```
+
+Open the Control UI at the `CHAT_UI_URL` value you stored in the ConfigMap (same origin users type in the browser).
+
+---
+
+## Persistent Azure Blob storage (NFS)
+
+This section aligns with Microsoft’s **static NFS PV** flow: [Create a static PV with Azure Blob storage](https://learn.microsoft.com/en-us/azure/aks/create-volume-azure-blob-storage?tabs=NFS%2Cnfs) (NFS tab).
+
+### Why NFS here
+
+The default pod manifest requests shared access via a single PVC (`pvc-blob`) mounted at `/mnt/blob`. NFS v3 against Azure Blob matches the CSI driver `blob.csi.azure.com`.
+
+### Azure-side preparation
+
+1. **Enable the Blob CSI driver** on the cluster if it is not already (see [prerequisites in the Microsoft article](https://learn.microsoft.com/en-us/azure/aks/create-volume-azure-blob-storage?tabs=NFS%2Cnfs)).
+2. **Create a storage account with NFS v3 enabled** and a **container** for your data.
+3. **Network**: Ensure nodes can reach the blob endpoint per [Mount Blob Storage by using NFS 3.0](https://learn.microsoft.com/en-us/azure/storage/blobs/network-file-system-protocol-support-how-to) and the AKS article’s networking notes.
+
+### Apply StorageClass, PV, and PVC
+
+After editing `pv-blob-nfs.yaml` for your account:
+
+```bash
+kubectl apply -f ./blob-nfs-sc.yaml
+kubectl apply -f ./pv-blob-nfs.yaml
+kubectl apply -f ./pvc-blob-nfs.yaml -n nemoclaw
+```
+
+If your NemoClaw namespace is not `nemoclaw`, apply the PVC to `${NEMOCLAW_NAMESPACE}` instead.
+
+| Field (in PV) | Purpose |
+|---------------|---------|
+| `metadata.name` | PV name; must match `volumeName` in the PVC unless you change both. |
+| `spec.storageClassName` | Must match the StorageClass (`azureblob-nfs-premium` above). |
+| `spec.csi.volumeHandle` | **Unique** ID per blob container in the cluster (e.g. `storageaccount_container`). Do **not** use `#` or `/`. |
+| `spec.csi.volumeAttributes.*` | Your resource group, storage account, container, and `protocol: nfs`. |
+
+**Capacity** on the PV is mainly for scheduling; a large value (for example `1Pi`) avoids binding issues.
+
+```bash
+kubectl get pv pv-blob
+kubectl get pvc pvc-blob -n nemoclaw
+```
+
+### Optional: quick mount test
+
+Use a small test pod mounting `pvc-blob` at `/mnt/blob` (as in the Microsoft article) to validate storage before running the full installer.
+
+### OpenClaw sandbox access to `/mnt/blob`
+
+The **workspace** container and the **OpenClaw** process inside it can see `/mnt/blob` as soon as the PVC is mounted on that container. The **OpenClaw sandbox** is a separate Linux environment (child **Docker** container) managed by **OpenShell**. Two independent things must be true for `/mnt/blob` to exist and be usable there.
+
+#### 1. OpenShell filesystem policy (Landlock and mount preparation)
+
+OpenShell only exposes paths listed under `filesystem_policy.read_only` or `filesystem_policy.read_write` in `nemoclaw-blueprint/policies/openclaw-sandbox.yaml`. Add **`/mnt/blob`** to one of those lists (use **`read_only`** for datasets you do not want the agent to mutate; **`read_write`** when the agent should persist files on the share).
+
+Also add **`/mnt`** under **`read_only`**. Landlock applies to path prefixes used for traversal; if only `/mnt/blob` is listed, **`ls /mnt`** (and sometimes discovering the mount) can return **Permission denied** even when `/mnt/blob` is intended to be available. Listing **`/mnt`** stays read-only; keep the actual share writable only if **`/mnt/blob`** is under `read_write`.
+
+After editing the policy file, apply it the same way you normally refresh policy—for example re-run **`nemoclaw onboard`**, or on a running sandbox use **`openshell policy set --policy <file> <sandbox-name>`** (see NemoClaw docs on network policies / policy tiers).
+
+**Check that the loaded policy includes your path** (from a shell in the workspace container, with `NEMOCLAW_SANDBOX_NAME` or your sandbox name):
+
+```bash
+openshell policy get --full my-assistant
+```
+
+Confirm `filesystem_policy` lists `/mnt/blob` and that **`openshell policy list my-assistant`** shows the latest version as **Loaded**, not stuck in **Pending**.
+
+If policy shows `/mnt/blob` but the path is **missing** inside the sandbox, check DinD mounts (subsection 2). If `/mnt/blob` **exists** but **`ls /mnt/blob` shows no files** while workspace and `dind` show PVC contents, read subsection 4 (OpenShell creates an empty directory when the Docker bind is absent).
+
+#### 2. DinD: bind-mount source must live on the `dockerd` container
+
+The **`dind`** container runs **`dockerd`**. When OpenShell creates the OpenClaw sandbox container, Docker bind-mounts host paths from **the filesystem where `dockerd` runs**—that is, inside **`dind`**, not inside **`workspace`**.
+
+If `pvc-blob` is mounted only on **`workspace`**, then `ls /mnt/blob` succeeds on the workspace shell but **`/mnt/blob` on the Docker host (`dind`) is not your PVC**. Sandbox containers therefore do not receive the blob volume, even when policy allows `/mnt/blob`.
+
+**Fix:** Mount the same PVC volume (`blob01` in the example manifest) at **`/mnt/blob` on both containers**—`dind` and `workspace`—as in `nemoclaw-install/nemoclaw-k8s.yaml` and the embedded pod YAML above. Recreate the pod after changing mounts.
+
+**Sanity checks:**
+
+```bash
+kubectl exec -n nemoclaw nemoclaw -c workspace -- ls -la /mnt/blob
+kubectl exec -n nemoclaw nemoclaw -c dind -- ls -la /mnt/blob
+```
+
+Both should list the same backing storage. If `dind` cannot see the volume, fix the pod spec before debugging OpenClaw further.
+
+#### 3. Recreate the sandbox if it was started before the fix
+
+Existing sandbox containers keep their old bind configuration until recreated. After fixing the pod and policy, restart or recreate the sandbox (or the whole pod) so a new container is created with the correct mounts.
+
+#### 4. Empty `/mnt/blob` (path exists, `ls` shows no files)
+
+Policy and Landlock only **allow** paths; they do **not** by themselves configure **Docker** to bind the DinD host’s `/mnt/blob` into the **inner** OpenClaw sandbox container.
+
+OpenShell’s supervisor runs **`prepare_filesystem()`** before the sandboxed process starts. For every path in **`filesystem_policy.read_write`**, if the path is **not** already present in the container rootfs, OpenShell **creates it** with `create_dir_all` (see [OpenShell sandbox architecture — Filesystem preparation](https://github.com/NVIDIA/OpenShell/blob/main/architecture/sandbox.md)). If the sandbox container was **never** given a host bind such as **`-v /mnt/blob:/mnt/blob`** from the machine where **`dockerd`** runs (`dind`), then **`/mnt/blob` does not exist** when that code runs → OpenShell creates an **empty directory** → you can `cd` and `ls` there, but you **do not** see PVC files. Mounting the PVC on **`dind`** is **necessary** for a future host bind to work, but **not sufficient** unless whatever **creates** the sandbox container (NemoClaw + OpenShell / gateway / community image) actually passes that volume through to `docker run` / the equivalent API.
+
+**Confirm from the workspace shell** (same host that talks to DinD’s socket):
+
+List containers with images so you pick the **OpenClaw sandbox** workload, **not** the OpenShell cluster container:
+
+```bash
+docker ps -a --format '{{.ID}}\t{{.Names}}\t{{.Image}}'
+```
+
+Ignore **`openshell-cluster-*`** (it mounts Docker volumes such as `/var/lib/rancher/k3s` for the in-cluster OpenShell control plane). That container is **not** the per-assistant OpenClaw sandbox where **`nemoclaw … connect`** runs. Inspect the container whose **image** or **name** matches your **OpenClaw** sandbox (often a separate ID/name from `openshell-cluster-nemoclaw`).
+
+```bash
+docker inspect "<SANDBOX_WORKLOAD_CONTAINER_ID>" --format '{{json .Mounts}}'
+```
+
+If **`jq`** is not installed, pipe through **`python3 -m json.tool`** when Python is available, or read the one-line JSON as-is.
+
+Look for a mount whose **`Destination`** is **`/mnt/blob`**. The **`Source`** should be a path on the **`dind`** filesystem that backs your PVC (the same tree `kubectl exec … -c dind -- ls /mnt/blob` shows). If **`/mnt/blob` is absent from `Mounts`**, the empty directory behavior above is expected until upstream tooling gains an explicit extra bind for your deployment.
+
+**If a bind exists but listings still disagree**, compare **`ls -la /mnt/blob`** in workspace, `dind`, and the sandbox. NFS **root squashing** or **mode 0700** directories owned by root on the share can hide names from the unprivileged **`sandbox`** user even when the mount is correct.
+
+**Practical workarounds** when live PVC pass-through is not wired into sandbox creation yet: copy artifacts with **`openshell sandbox upload`** (see NemoClaw backup/restore docs), or stage data under paths the default image already bind-mounts (for example under **`/sandbox`** if your flow supports that).
+
+---
+
+## Workshop parameters (quick reference)
+
+| Item | Typical value |
+|------|----------------|
+| `ACR_NAME` | Short ACR name (`\<name\>.azurecr.io`). |
+| `NEMOCLAW_NAMESPACE` | `nemoclaw` |
+| `NEMOCLAW_POD_NAME` | `nemoclaw` |
+| `NEMOCLAW_LB_SVC_NAME` | `\<NEMOCLAW_POD_NAME\>-http` |
+| `NEMOCLAW_LB_CONFIGMAP_NAME` | `\<NEMOCLAW_POD_NAME\>-lb-config` |
+| `NEMOCLAW_GIT_TAG` | `v0.0.18` |
+
+---
+
+## Troubleshooting
+
+| Symptom | Check |
+|---------|-------|
+| Pod pending on `pvc-blob` | PVC missing, wrong namespace, PV not `Bound`, or StorageClass / `volumeHandle` / account mismatch. |
+| LoadBalancer stays pending | `kubectl get svc -n nemoclaw`; Azure LB SKU / quota. |
+| Push auth failure | `az acr login --name <ACR_NAME>`; ACR firewall / identity. |
+| Control UI “origin not allowed” | `CHAT_UI_URL` in the ConfigMap must match the browser origin (scheme + host + port). |
+| NFS mount errors | NFS v3 on account, network path from nodes, CSI driver, RBAC per Microsoft docs. |
+| `/mnt/blob` missing inside OpenClaw despite policy showing it | Mount **`pvc-blob` at `/mnt/blob` on `dind` as well as `workspace`** ([OpenClaw sandbox access to `/mnt/blob`](#openclaw-sandbox-access-to-mntblob)); confirm with `kubectl exec … -c dind -- ls /mnt/blob`. Recreate the sandbox pod after changes. |
+| `ls /mnt` → Permission denied inside sandbox | Add **`/mnt`** to **`filesystem_policy.read_only`** alongside `/mnt/blob`, then **`openshell policy set`** or re-onboard and reconnect (`nemoclaw … connect`). |
+| `/mnt/blob` exists in sandbox but is **empty** while workspace/`dind` have files | Policy + DinD are not enough: the **sandbox container** needs a **Docker bind** for `/mnt/blob` from the `dind` host. If **`docker inspect` → `Mounts`** has no `/mnt/blob`, OpenShell’s **`prepare_filesystem()`** likely created an **empty** `read_write` directory ([Empty `/mnt/blob`](#4-empty-mntblob-path-exists-ls-shows-no-files)). Use **`openshell sandbox upload`**, stage under **`/sandbox`**, or follow upstream for extra sandbox volumes. |
