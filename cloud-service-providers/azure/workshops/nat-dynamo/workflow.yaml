@@ -1,0 +1,48 @@
+functions:
+  # Add a tool to search wikipedia
+  wikipedia_search:
+    _type: wiki_search
+    max_results: 2
+
+llms:
+  # Microsoft Foundry (Azure AI) — OpenAI-compatible v1 API (see NeMo Agent Toolkit `openai` LLM: base_url + model)
+  # Ref: https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/openai_llm/index.html
+  foundry_llm:
+    _type: openai
+    base_url: "https://anslutsky-test-openclaw-resource.services.ai.azure.com/openai/v1"
+    model_name: gpt-5.3-chat
+    # export OPENAI_API_KEY before `nat run`, or set `api_key` for local use only (do not commit)
+    #temperature: 0.0
+
+# llms:
+#   aoai_llm:
+#     _type: azure_openai
+#     model_name: gpt-4.1
+#     # api_key + base_url + deployment: see https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/azure_openai_llm/index.html
+#     # api_version: 2025-01-01-preview
+#     # base_url: https://example.cognitiveservices.azure.com/
+#     # deployment_name: gpt-4.1
+#
+# --- Alternative: NVIDIA Dynamo LLM (OpenAI-compatible) with agent (prefix) hints enabled.
+#     Prefix headers (x-prefix-id, osl, iat, total_requests) are injected by default for KV / routing.
+#     Ref: https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/dynamo_llm/index.html
+#     In `workflow:`, set `llm_name: dynamo_llm` when you switch the active `llms` block to this.
+#
+#   dynamo_llm:
+#     _type: dynamo
+#     base_url: "http://dynamo-frontend:8000/v1"
+#     model_name: meta/llama-3.1-8b-instruct
+#     api_key: "EMPTY"  # or export OPENAI_API_KEY
+#     # Agent hints (enabled by default; set prefix_template: null to disable)
+#     prefix_template: "nat-dynamo-{uuid}"
+#     prefix_total_requests: 10
+#     prefix_osl: MEDIUM  # LOW | MEDIUM | HIGH — output length hint
+#     prefix_iat: MEDIUM  # LOW | MEDIUM | HIGH — inter-arrival / pacing hint
+#     request_timeout: 600.0
+
+workflow:
+  _type: react_agent
+  tool_names: [wikipedia_search]
+  llm_name: foundry_llm
+  verbose: true
+  parse_agent_response_max_retries: 3
