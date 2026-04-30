@@ -1,0 +1,115 @@
+# NeMo Agent Toolkit (`nat serve`) on AKS — image from ACR.
+#
+# Prerequisites:
+# - AKS must be allowed to pull from anslutskycontainerappacr.azurecr.io. Pick ONE:
+#
+#   A) Attach ACR to the cluster (no pull Secret needed — comment out imagePullSecrets below):
+#        az aks update -g <resource-group> -n <aks-name> --attach-acr anslutskycontainerappacr
+#
+#   B) Use a docker-registry pull Secret (uncomment imagePullSecrets; create Secret first):
+#        kubectl create secret docker-registry acr-creds \
+#          --namespace nat-dynamo \
+#          --docker-server=anslutskycontainerappacr.azurecr.io \
+#          --docker-username=$(az acr credential show -n anslutskycontainerappacr --query username -o tsv) \
+#          --docker-password=$(az acr credential show -n anslutskycontainerappacr --query "passwords[0].value" -o tsv)
+#
+# Troubleshooting ErrImagePull:
+# - "401 Unauthorized" / "failed to fetch anonymous token" → use A or B above.
+# - "no match for platform in manifest" → rebuild and push for linux/amd64 (AKS nodes), e.g.:
+#        docker buildx build --platform linux/amd64 -t anslutskycontainerappacr.azurecr.io/nat-dynamo-serve:latest --push .
+#
+# - Your workflow.yaml may need env vars (e.g. OPENAI_API_KEY) for non-Dynamo LLMs.
+#
+# Apply:
+#   kubectl apply -f nat-dynamo-serve.yaml
+#
+# Port-forward (if Service is ClusterIP):
+#   kubectl port-forward -n nat-dynamo svc/nat-dynamo-serve 8080:8080
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nat-dynamo
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nat-dynamo-serve
+  namespace: nat-dynamo
+  labels:
+    app: nat-dynamo-serve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nat-dynamo-serve
+  template:
+    metadata:
+      labels:
+        app: nat-dynamo-serve
+    spec:
+      # If you see 401 on pull: uncomment after creating Secret (see file header), OR attach ACR instead:
+      #   az aks update -g <rg> -n <aks> --attach-acr anslutskycontainerappacr
+      # imagePullSecrets:
+      #   - name: acr-creds
+      containers:
+        - name: nat-dynamo-serve
+          image: anslutskycontainerappacr.azurecr.io/nat-dynamo-serve:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          # Uncomment and create the Secret if your workflow needs API keys.
+          # envFrom:
+          #   - secretRef:
+          #       name: nat-dynamo-secrets
+          # env:
+          #   - name: OPENAI_API_KEY
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: nat-dynamo-secrets
+          #         key: openai-api-key
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nat-dynamo-serve
+  namespace: nat-dynamo
+  labels:
+    app: nat-dynamo-serve
+spec:
+  type: LoadBalancer
+  selector:
+    app: nat-dynamo-serve
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

@@ -28,21 +28,41 @@ llms:
 #     Ref: https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/dynamo_llm/index.html
 #     In `workflow:`, set `llm_name: dynamo_llm` when you switch the active `llms` block to this.
 #
-#   dynamo_llm:
-#     _type: dynamo
-#     base_url: "http://dynamo-frontend:8000/v1"
-#     model_name: meta/llama-3.1-8b-instruct
-#     api_key: "EMPTY"  # or export OPENAI_API_KEY
-#     # Agent hints (enabled by default; set prefix_template: null to disable)
-#     prefix_template: "nat-dynamo-{uuid}"
-#     prefix_total_requests: 10
-#     prefix_osl: MEDIUM  # LOW | MEDIUM | HIGH — output length hint
-#     prefix_iat: MEDIUM  # LOW | MEDIUM | HIGH — inter-arrival / pacing hint
-#     request_timeout: 600.0
+  dynamo_llm:
+    _type: dynamo
+    # --- base_url (pay close attention): NAT must reach Dynamo's OpenAI-compatible root, always ending in /v1
+    #     (no trailing slash after v1). Wrong host/port/namespace is the #1 cause of in-cluster NAT failures.
+    #
+    #     In-cluster form: http://<FRONTEND_SVC_NAME>.<K8S_NAMESPACE>.svc.cluster.local:<PORT>/v1
+    #     - FRONTEND_SVC_NAME: the Kubernetes Service for the Dynamo *Frontend* (often "<DynamoGraphDeployment.metadata.name>-frontend").
+    #     - K8S_NAMESPACE: the namespace where that Service exists (must match where you applied the graph).
+    #     - PORT: the Service's *port* (often 8000; confirm with kubectl/k9s below).
+    #
+    #     kubectl (examples):
+    #       kubectl get svc -n dynamo-cloud | grep -i frontend
+    #       kubectl get svc -A | grep -i frontend
+    #       kubectl describe svc agg-8xtp2-frontend -n dynamo-cloud   # Ports: line shows targetPort vs port
+    #     From output, use metadata.name of the Service + its namespace + the port clients use (e.g. 8000).
+    #
+    #     k9s: :svc → pick the Dynamo namespace → find the row whose name ends with *-frontend* (or contains Frontend)
+    #     → Enter for details → note Service name, Namespace, and Port. Build the URL as above.
+    #
+    #     Local dev (NAT on laptop): use port-forward instead, e.g. http://127.0.0.1:8000/v1
+    base_url: "http://agg-8xtp2-frontend.dynamo-cloud.svc.cluster.local:8000/v1"
+    model_name: Qwen/Qwen3-32B
+    api_key: "EMPTY"  # or export OPENAI_API_KEY
+
+    # Agent hints (enabled by default; set prefix_template: null to disable)
+    # prefix_template: "nat-dynamo-{uuid}"
+    # prefix_total_requests: 10
+    # prefix_osl: MEDIUM  # LOW | MEDIUM | HIGH — output length hint
+    # prefix_iat: MEDIUM  # LOW | MEDIUM | HIGH — inter-arrival / pacing hint
+    # request_timeout: 600.0
 
 workflow:
   _type: react_agent
   tool_names: [wikipedia_search]
-  llm_name: foundry_llm
+  llm_name: dynamo_llm
   verbose: true
   parse_agent_response_max_retries: 3
+  use_native_tool_calling: true

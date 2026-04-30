@@ -1,0 +1,4 @@
+# Local data and vendored NeMo Agent Toolkit clone
+data/
+NeMo-Agent-Toolkit/
+*.tgz
