@@ -285,7 +285,19 @@ kubectl apply -f k8s/nat-dynamo-serve.yaml
 
 ### Step F — Load test with aiperf
 
-Use the same trace file (e.g. **`mooncake_trace.jsonl`**) for comparable runs. For a **light smoke run**, use **`--concurrency 1`** and a small **`--request-count`** (example below uses **10** requests).
+**Mooncake trace (`mooncake_trace.jsonl`)**
+
+The file is a **JSONL** workload published with the [Mooncake](https://github.com/kvcache-ai/Mooncake) project (see the **FAST'25 / arxiv** trace release under `FAST25-release/arxiv-trace/` in that repository). Each line is one client request, with fields such as:
+
+- **`timestamp`** — Arrival time in **milliseconds** relative to the first request. Several lines can share a timestamp when requests land in the same batch.
+- **`input_length`** and **`output_length`** — Requested **input** and **output** sequence lengths for that turn (the lengths aiperf’s `mooncake_trace` mode uses to shape the load). They span a **wide range**, unlike a single fixed prompt size.
+- **`hash_ids`** — A sequence of **block-level identifiers** for the prompt prefix (the public format assumes a **512-token block** for interpreting array length: one block per `input_length / block_size` segment). **Shared** integers across requests indicate **overlapping prefixes**, which is how the trace encodes **KV-cache reuse** pressure and realistic **prefix** behavior.
+
+**Why use it for this workshop**
+
+Solo hand-written prompts or a single repeated string do not stress **time-to-first-token (TTFT)**, **streaming**, **decode length**, or **concurrency** the way a production mix does. This trace supplies **varied ISL/OSL**, **non-trivial timing**, and **prefix structure** so a profile run reflects **router, cache, and decode** effects on Dynamo—and so adding **NAT in front** (extra hop, agent workflow, tool-calling) is measured against a **stable, comparable** workload. Using the **identical** `mooncake_trace.jsonl` for the **NAT** and **direct-to-Dynamo** commands below isolates the effect of the agent layer on **the same** request mix.
+
+For a **light smoke run**, use **`--concurrency 1`** and a small **`--request-count`** (the example below uses **10** requests). Obtain the trace from the Mooncake release path above or from the same source the workshop **`aiperf_harness`** image uses; keep the file path aligned with **`--input-file`**.
 
 **Through NAT** (full path: NAT in front of Dynamo; replace **`YOUR_NAT_IP`** with your **LoadBalancer / public IP** or DNS name, or use `localhost` when using `kubectl port-forward` to NAT):
 
