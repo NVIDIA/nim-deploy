@@ -257,7 +257,7 @@ If Dynamo is on the host via port-forward, you may need **`host.docker.internal`
 
 ### Step D — (Optional) Push the image to Azure Container Registry (ACR)
 
-Use this when you plan **Step E** (run NAT on AKS) and want the image in a registry the cluster can pull from—same idea as [Push your first image to a container registry](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-docker-cli?tabs=azure-cli).
+Use this step when **Step E** (run NAT on AKS) requires an image in a registry the cluster can pull.
 
 Set **`ACR_NAME`** to your registry’s short name (no `.azurecr.io`). After **`docker build -t nat-dynamo-serve .`** from Step C:
 
