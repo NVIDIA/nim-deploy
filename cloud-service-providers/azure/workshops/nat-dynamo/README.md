@@ -255,7 +255,27 @@ docker run --rm -p 8080:8080 nat-dynamo-serve
 
 If Dynamo is on the host via port-forward, you may need **`host.docker.internal`** (or host networking on Linux) for `base_url` inside the container—or keep **`127.0.0.1`** only when NAT runs on the host, not in Docker.
 
-### Step D — (Optional) Run NAT on AKS
+### Step D — (Optional) Push the image to Azure Container Registry (ACR)
+
+Use this when you plan **Step E** (run NAT on AKS) and want the image in a registry the cluster can pull from—same idea as [Push your first image to a container registry](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-docker-cli?tabs=azure-cli).
+
+Set **`ACR_NAME`** to your registry’s short name (no `.azurecr.io`). After **`docker build -t nat-dynamo-serve .`** from Step C:
+
+```bash
+export ACR_NAME=<your-acr-name>
+export TAG=latest   # or a version tag you prefer
+
+az acr login --name "${ACR_NAME}"
+
+docker tag nat-dynamo-serve "${ACR_NAME}.azurecr.io/nat-dynamo-serve:${TAG}"
+docker push "${ACR_NAME}.azurecr.io/nat-dynamo-serve:${TAG}"
+```
+
+Use that full reference (**`<ACR_NAME>.azurecr.io/nat-dynamo-serve:<TAG>`**) as the **`image`** in [`k8s/nat-dynamo-serve.yaml`](./k8s/nat-dynamo-serve.yaml). Ensure the cluster can pull from ACR—typically **`az aks update -g <resource-group> -n <aks-cluster-name> --attach-acr "${ACR_NAME}"`**—or configure an `imagePullSecret` as described in the manifest comments.
+
+If you build on **Apple Silicon** (or another non-`linux/amd64` host), build and push for AKS nodes with **`docker buildx`** (see the comments at the top of [`k8s/nat-dynamo-serve.yaml`](./k8s/nat-dynamo-serve.yaml)).
+
+### Step E — (Optional) Run NAT on AKS
 
 [`k8s/nat-dynamo-serve.yaml`](./k8s/nat-dynamo-serve.yaml) defines a **Namespace**, **Deployment**, and **Service** (example uses a private registry image). **Replace** the image with **your** built image in **your** registry; attach ACR to AKS or use an `imagePullSecret`. **Critical:** `workflow.yaml` inside the image must use an **in-cluster** Dynamo `base_url`, not `127.0.0.1`. Apply when ready:
 
@@ -263,7 +283,7 @@ If Dynamo is on the host via port-forward, you may need **`host.docker.internal`
 kubectl apply -f k8s/nat-dynamo-serve.yaml
 ```
 
-### Step E — Load test with aiperf
+### Step F — Load test with aiperf
 
 Use the same trace file (e.g. **`mooncake_trace.jsonl`**) for comparable runs. For a **light smoke run**, use **`--concurrency 1`** and a small **`--request-count`** (example below uses **10** requests).
 
