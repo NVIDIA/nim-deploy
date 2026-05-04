@@ -14,9 +14,15 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from typing import Any
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
 
 
 def _origin(base: str) -> str:
@@ -75,7 +81,8 @@ def _try_health(base: str, timeout: float) -> bool:
 
 
 def main() -> int:
-    default_base = os.environ.get("DYNAMO_BASE_URL", "http://52.142.237.163:8080")
+#    default_base = os.environ.get("DYNAMO_BASE_URL", "http://52.142.237.163:8080")
+    default_base = os.environ.get("DYNAMO_BASE_URL", "http://localhost:8000")
     default_model = os.environ.get("DYNAMO_MODEL", "Qwen/Qwen3-32B")
     p = argparse.ArgumentParser(
         description=__doc__,
@@ -116,18 +123,61 @@ def main() -> int:
         action="store_true",
         help="Do not call GET /health (some configs disable it)",
     )
+    p.add_argument(
+        "--prompt",
+        default="Reply with a single short sentence: what is 2+2?",
+        help="User message content for the chat completion test",
+    )
+    p.add_argument(
+        "--machine-result-line",
+        action="store_true",
+        help=(
+            "Print a final DYNAMO_RESULT_JSON line (single-line JSON) for scripted parsing"
+        ),
+    )
     args = p.parse_args()
     base = _origin(args.base_url)
     v1 = f"{base}/v1"
     api_key = args.api_key
 
+    result: dict[str, Any] = {
+        "version": 1,
+        "base_url": base,
+        "model": args.model,
+        "health": {},
+        "chat": {},
+        "exit": 0,
+    }
+
+    def finalize(exit_code: int) -> int:
+        result["exit"] = exit_code
+        if args.machine_result_line:
+            print(f"DYNAMO_RESULT_JSON {json.dumps(result)}", flush=True)
+        return exit_code
+
     print(f"Base: {base}")
-    if not args.skip_health:
+    if args.skip_health:
+        result["health"] = {"skipped": True}
+    else:
         print("GET /health …", end=" ", flush=True)
-        if _try_health(base, args.timeout):
-            print("ok")
+        h_t0 = _utc_now_iso()
+        h_t1 = time.perf_counter()
+        ok = _try_health(base, args.timeout)
+        h_elapsed = time.perf_counter() - h_t1
+        h_t2 = _utc_now_iso()
+        result["health"] = {
+            "skipped": False,
+            "ok": ok,
+            "t_start": h_t0,
+            "t_end": h_t2,
+            "elapsed_s": round(h_elapsed, 6),
+        }
+        if ok:
+            print(f"ok  [{h_t0} → {h_t2}, {h_elapsed:.3f}s]")
         else:
-            print("failed or not available (continuing)")
+            print(
+                f"failed or not available (continuing)  [{h_t0} → {h_t2}, {h_elapsed:.3f}s]"
+            )
 
     print("POST /v1/chat/completions …", end=" ", flush=True)
     payload: dict[str, Any] = {
@@ -135,12 +185,14 @@ def main() -> int:
         "messages": [
             {
                 "role": "user",
-                "content": "Reply with a single short sentence: what is 2+2?",
+                "content": args.prompt,
             }
         ],
         "stream": False,
         "max_tokens": args.max_tokens,
     }
+    llm_t0 = _utc_now_iso()
+    llm_pc0 = time.perf_counter()
     try:
         c2, cdata = _json_request(
             "POST",
@@ -150,24 +202,65 @@ def main() -> int:
             timeout=args.timeout,
         )
     except urllib.error.HTTPError as e:
+        llm_elapsed = time.perf_counter() - llm_pc0
+        llm_t1 = _utc_now_iso()
         err_body = e.read().decode("utf-8", errors="replace")
-        print(f"HTTP {e.code}")
+        print(f"HTTP {e.code}  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
         try:
             err_j = json.loads(err_body)
             err_body = json.dumps(err_j, indent=2)
         except json.JSONDecodeError:
             pass
         print(err_body[:4000], file=sys.stderr)
-        return 1
+        result["chat"] = {
+            "ok": False,
+            "http": e.code,
+            "t_start": llm_t0,
+            "t_end": llm_t1,
+            "elapsed_s": round(llm_elapsed, 6),
+            "error": f"HTTPError {e.code}",
+        }
+        return finalize(1)
     except OSError as e:
-        print(f"error: {e}", file=sys.stderr)
-        return 1
+        llm_elapsed = time.perf_counter() - llm_pc0
+        llm_t1 = _utc_now_iso()
+        print(
+            f"error: {e}  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]",
+            file=sys.stderr,
+        )
+        result["chat"] = {
+            "ok": False,
+            "http": None,
+            "t_start": llm_t0,
+            "t_end": llm_t1,
+            "elapsed_s": round(llm_elapsed, 6),
+            "error": str(e),
+        }
+        return finalize(1)
 
+    llm_elapsed = time.perf_counter() - llm_pc0
+    llm_t1 = _utc_now_iso()
     if c2 // 100 != 2:
-        print(f"HTTP {c2}")
+        print(f"HTTP {c2}  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
         print(cdata, file=sys.stderr)
-        return 1
-    print(f"ok ({c2})")
+        result["chat"] = {
+            "ok": False,
+            "http": c2,
+            "t_start": llm_t0,
+            "t_end": llm_t1,
+            "elapsed_s": round(llm_elapsed, 6),
+            "error": f"HTTP status {c2}",
+        }
+        return finalize(1)
+    print(f"ok ({c2})  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
+    result["chat"] = {
+        "ok": True,
+        "http": c2,
+        "t_start": llm_t0,
+        "t_end": llm_t1,
+        "elapsed_s": round(llm_elapsed, 6),
+        "error": None,
+    }
     if isinstance(cdata, dict) and cdata.get("choices"):
         msg = (cdata["choices"][0].get("message") or {}).get("content")
         if msg:
@@ -178,7 +271,7 @@ def main() -> int:
         print("response (truncated):", json.dumps(cdata)[:2000])
 
     print("All tests passed.")
-    return 0
+    return finalize(0)
 
 
 if __name__ == "__main__":

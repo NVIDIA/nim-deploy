@@ -2,3 +2,6 @@
 data/
 NeMo-Agent-Toolkit/
 *.tgz
+vibe_analytics/
+
+**/local.build.sh

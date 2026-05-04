@@ -32,14 +32,20 @@ This guide explains **what** NeMo Agent Toolkit and NVIDIA Dynamo are, **how the
 | | **NVIDIA Dynamo** | **NeMo Agent Toolkit (NAT)** |
 |---|---------------------|------------------------------|
 | **Purpose** | **Model inference at scale** on Kubernetes: schedule GPUs, run disaggregated graphs (prefill/decode, routers, workers), expose an **OpenAI-compatible HTTP API** (`/v1/chat/completions`, etc.). | **Agent orchestration**: define **workflows** (ReAct and other patterns), **tools** (HTTP, search, …), and **LLM backends** in YAML; run via CLI (`nat run`, `nat serve`) or your own app using the same configs. |
-| **You implement** | A **`DynamoGraphDeployment`** (CRD): which images, model id, replicas, caches, frontend URL. | A **`workflow.yaml`**: which LLM adapter to use (`dynamo`, `openai`, …), tool list, agent type. |
+| **You implement** | A **`DynamoGraphDeployment`** (CRD): which images, model id, replicas, caches, frontend URL. | A **`workflow.yaml`**: which LLM adapter to use (`dynamo`, `openai`, …), tool list, and workflow `_type` (e.g. `tool_calling_agent` or `react_agent`). |
 | **Runs where** | **On GPUs in the cluster** (workers, routers, frontend pod). | **On your laptop, in Docker, or on CPU pods in AKS**—anywhere that can reach Dynamo’s HTTP endpoint. |
 
 **Why use them together:** Dynamo answers “how do we serve **Qwen3-32B** (or similar) efficiently on **AKS**?” NAT answers “how do we build an **agent** (reasoning + tools) that **calls** that model?” NAT’s **`dynamo` LLM type** speaks the same OpenAI-style protocol Dynamo exposes, and can add **agent hints** (prefix ids, pacing / length hints) so the backend can route and cache smarter than a dumb HTTP client. You keep **one inference stack** (Dynamo) and swap or extend **agent logic** (NAT) without changing how the model is served.
 
 ---
 
-## 2. Dynamo stack (what you deploy on AKS)
+## 2. Agent hints (why NAT matters for Dynamo)
+
+Generic clients send chat requests with little context. NAT’s **Dynamo LLM** integration can attach **hints** (e.g. prefix identifiers, output-length and inter-arrival hints) so Dynamo-side routing and caching can treat **agent sessions** more intelligently. Details and knobs: [NAT Dynamo LLM API](https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/dynamo_llm/index.html).
+
+---
+
+## 3. Dynamo stack (what you deploy on AKS)
 
 At a high level:
 
@@ -65,11 +71,19 @@ For a longer Azure-focused walkthrough (Prometheus, node pools, platform install
 
 ---
 
-## 3. NAT stack (what you configure and run)
+## 4. NAT stack (what you configure and run)
 
-1. **`workflow.yaml`** — Declares **`llms`** (each has `_type`: `dynamo`, `openai`, …), **`functions`** (tools), and a **`workflow`** (e.g. `_type: react_agent`) that references an LLM by name and which tools to use.
+1. **`workflow.yaml`** — Declares **`llms`** (each has `_type`: `dynamo`, `openai`, …), **`functions`** (tools), and a **`workflow`** (`_type` such as `tool_calling_agent` or `react_agent`) that references an LLM by name and which tools to use.
 2. **CLI** — From a Python env that has NAT installed (this workshop bundles **`NeMo-Agent-Toolkit`** for local/Docker builds): `nat run` (interactive) or `nat serve` (HTTP server, default **8080**).
 3. **Dynamo LLM block** — Points `base_url` at Dynamo’s **`…/v1`** URL. **Local dev:** after `kubectl port-forward`, often `http://127.0.0.1:8000/v1`. **Pod in cluster:** use the Kubernetes **DNS name** of the frontend service (see comments in [`workflow.yaml`](./workflow.yaml)).
+
+#### Workflow type: tool_calling_agent, streaming, and TTFT
+
+For **end-to-end HTTP streaming** (OpenAI-style SSE on `POST /v1/chat/completions` with `"stream": true`), prefer **`_type: tool_calling_agent`** in `workflow.yaml`. That workflow registers both a one-shot handler and a **streaming** handler: NAT selects streaming when the request sets `stream: true` (see the FastAPI chat route). By contrast, **`react_agent`** completes the LangGraph turn and returns a full **`ChatResponse`**—it does not expose the same token-level streaming path to the client.
+
+**Why this matters for TTFT (time to first token):** With **`tool_calling_agent`** and **`stream: true`**, the first byte the client sees is typically the **first streamed chunk** from the agent node (after the model begins emitting tokens for that step). The client does **not** wait for the full agent response (all tool rounds and the final message) before TTFT can be observed—benchmarking tools such as **aiperf** (`--streaming`) report TTFT as **time until that first chunk**, not end-to-end completion time. If you use a non-streaming workflow or call NAT with **`stream: false`**, the HTTP response is held until the workflow returns a complete result, so “first token” style metrics align with **full completion latency**, not an early partial token.
+
+**Requirements:** `tool_calling_agent` relies on **native tool calling** (LangChain `bind_tools` / model `tool_calls`). Your served model and Dynamo endpoint must support that protocol. **`react_agent`** uses **text ReAct** parsing instead and can be a better fit when the backend must not receive structured tool calls—at the cost of no NAT-managed streaming path as described above.
 
 **Conceptual diagram:**
 
@@ -89,7 +103,7 @@ flowchart LR
 
 ---
 
-## 4. End-to-end architecture (this workshop)
+## 5. End-to-end architecture (this workshop)
 
 ```mermaid
 flowchart LR
@@ -112,7 +126,7 @@ flowchart LR
 
 ---
 
-## 5. Workshop steps
+## 6. Workshop steps
 
 ### Step A — Deploy Qwen/Qwen3-32B on AKS/Dynamo
 
@@ -221,7 +235,8 @@ Build the in-cluster value from your cluster:
 
 In **k9s**, press **`:`** then **`svc`**, select the namespace where Dynamo runs, open the **`*-frontend`** service, and read **Name**, **Namespace**, and **Port** from the detail view, then use the same template.
 
-3. Ensure **`workflow.llm_name`** references your Dynamo LLM entry (e.g. `dynamo_llm`).
+4. Ensure **`workflow.llm_name`** references your Dynamo LLM entry (e.g. `dynamo_llm`).
+5. Set **`workflow._type`** to match your goal: use **`tool_calling_agent`** when you want **streaming** and meaningful **TTFT** under aiperf (see [Workflow type: tool_calling_agent, streaming, and TTFT](#workflow-type-tool_calling_agent-streaming-and-ttft) in section 4). Use **`react_agent`** for text-based ReAct when native tool calling is not desired.
 
 Run locally (after installing NAT / `uv sync` in `NeMo-Agent-Toolkit` per project README):
 
@@ -281,12 +296,6 @@ aiperf profile \
 ```
 
 Match **`--url`** host/port to where NAT or Dynamo is reachable, and **`--model`** to the served model id. For heavier or schedule-driven runs you can add options such as **`--fixed-schedule`** (see [aiperf docs](https://github.com/ai-dynamo/aiperf/tree/main/docs)).
-
----
-
-## 6. Agent hints (why NAT matters for Dynamo)
-
-Generic clients send chat requests with little context. NAT’s **Dynamo LLM** integration can attach **hints** (e.g. prefix identifiers, output-length and inter-arrival hints) so Dynamo-side routing and caching can treat **agent sessions** more intelligently. Details and knobs: [NAT Dynamo LLM API](https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/dynamo_llm/index.html).
 
 ---
 

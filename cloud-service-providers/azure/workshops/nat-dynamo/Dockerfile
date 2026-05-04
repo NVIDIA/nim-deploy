@@ -31,4 +31,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 EXPOSE 8080
 
-CMD ["nat", "serve", "--config_file=/opt/nat/workflow.yaml", "--port", "8080", "--host", "0.0.0.0"]
+CMD ["nat", "--log-level", "DEBUG", "serve", "--config_file=/opt/nat/workflow.yaml", "--port", "8080", "--host", "0.0.0.0"]

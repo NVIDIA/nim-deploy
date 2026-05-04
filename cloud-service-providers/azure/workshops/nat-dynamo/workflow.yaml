@@ -1,8 +1,7 @@
 functions:
-  # Add a tool to search wikipedia
-  wikipedia_search:
-    _type: wiki_search
-    max_results: 2
+  current_datetime:
+    _type: current_datetime
+
 
 llms:
   # Microsoft Foundry (Azure AI) — OpenAI-compatible v1 API (see NeMo Agent Toolkit `openai` LLM: base_url + model)
@@ -23,8 +22,8 @@ llms:
 #     # base_url: https://example.cognitiveservices.azure.com/
 #     # deployment_name: gpt-4.1
 #
-# --- Alternative: NVIDIA Dynamo LLM (OpenAI-compatible) with agent (prefix) hints enabled.
-#     Prefix headers (x-prefix-id, osl, iat, total_requests) are injected by default for KV / routing.
+# --- Alternative: NVIDIA Dynamo LLM (OpenAI-compatible) with nvext.agent_hints (request body).
+#     Set enable_nvext_hints: true to inject hints (not HTTP prefix headers; see NAT Dynamo LLM docs).
 #     Ref: https://docs.nvidia.com/nemo/agent-toolkit/latest/api/nat/llm/dynamo_llm/index.html
 #     In `workflow:`, set `llm_name: dynamo_llm` when you switch the active `llms` block to this.
 #
@@ -51,6 +50,8 @@ llms:
     base_url: "http://agg-8xtp2-frontend.dynamo-cloud.svc.cluster.local:8000/v1"
     model_name: Qwen/Qwen3-32B
     api_key: "EMPTY"  # or export OPENAI_API_KEY
+    # Required True for nvext.agent_hints injection and Dynamo hint transport logging.
+    enable_nvext_hints: false
 
     # Agent hints (enabled by default; set prefix_template: null to disable)
     # prefix_template: "nat-dynamo-{uuid}"
@@ -59,10 +60,10 @@ llms:
     # prefix_iat: MEDIUM  # LOW | MEDIUM | HIGH — inter-arrival / pacing hint
     # request_timeout: 600.0
 
+# Plain LLM completion — no tools, no ReAct parsing, no native tool_calls to the backend.
+# (react_agent requires at least one tool and is a poor fit when the model endpoint must not receive tool calling.)
 workflow:
-  _type: react_agent
-  tool_names: [wikipedia_search]
+  _type: tool_calling_agent
   llm_name: dynamo_llm
-  verbose: true
-  parse_agent_response_max_retries: 3
-  use_native_tool_calling: true
+  tool_names: [current_datetime]
+

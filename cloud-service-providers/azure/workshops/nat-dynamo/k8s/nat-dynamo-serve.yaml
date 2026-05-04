@@ -62,6 +62,12 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
+          env:
+            # Per-request latency breakdown in pod logs: kubectl logs -f deploy/nat-dynamo-serve -n nat-dynamo | grep NAT_PERF
+            - name: NAT_PERF_DEBUG
+              value: "1"
+            - name: NAT_FASTAPI_LOG_LEVEL
+              value: "10"
           # Uncomment and create the Secret if your workflow needs API keys.
           # envFrom:
           #   - secretRef:

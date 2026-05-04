@@ -27,6 +27,8 @@ spec:
             - -m
             - dynamo.frontend
           args:
+            - --router-mode
+            - kv
             - --router-reset-states
       replicas: 1
       resources:
