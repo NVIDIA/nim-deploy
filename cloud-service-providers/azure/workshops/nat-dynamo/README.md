@@ -69,6 +69,12 @@ flowchart TB
 
 For a longer Azure-focused walkthrough (Prometheus, node pools, platform install order), see [**Configuring NVIDIA Dynamo on AKS**](../aks-dynamo/README.md). This repo includes an example graph for **Qwen/Qwen3-32B**: [`agg-router-qwen3-32B.yaml`](./agg-router-qwen3-32B.yaml)—adjust image tags and names to match your Dynamo release.
 
+### Priority-aware scheduling (agg-router-qwen3-32B)
+
+The **VllmDecodeWorker** in [`agg-router-qwen3-32B.yaml`](./agg-router-qwen3-32B.yaml) passes **`--scheduling-policy priority`** to `python3 -m dynamo.vllm` (next to **`--async-scheduling`**). Dynamo’s OpenAI extensions document that **vLLM** backends should use this policy so per-request **`nvext.agent_hints.priority`** (from clients such as NAT’s Dynamo LLM integration) affects **engine-side** scheduling and queue ordering, not only the KV router in front. The **Frontend** in this graph already uses **`--router-mode kv`**; router-side priority behavior remains governed by Dynamo’s KV router settings (for example the default **`--router-queue-threshold`** behavior described in Dynamo’s router documentation).
+
+If you customize this manifest, keep worker args compatible with your **`vllm-runtime`** image tag; verify supported flags with `python3 -m dynamo.vllm --help` inside that image if you upgrade Dynamo.
+
 ---
 
 ## 4. NAT stack (what you configure and run)
@@ -167,7 +173,7 @@ This section gets **Qwen/Qwen3-32B** running behind Dynamo’s OpenAI-compatible
    kubectl apply -f agg-router-qwen3-32B.yaml -n "${NAMESPACE}"
    ```
 
-   Edit the manifest first if your **Dynamo runtime image version**, GPU counts, or service names must differ from the workshop defaults.
+   Edit the manifest first if your **Dynamo runtime image version**, GPU counts, or service names must differ from the workshop defaults. The sample worker enables **priority-aware vLLM scheduling** via **`--scheduling-policy priority`**; see [Priority-aware scheduling (agg-router-qwen3-32B)](#priority-aware-scheduling-agg-router-qwen3-32b).
 
 5. Wait until **Frontend** and **worker** pods are **Ready**; note the **frontend** `Service` (pattern `<release-name>-frontend` for this graph).
 
@@ -340,7 +346,7 @@ Obtain the trace from the Mooncake release path above or from the same source th
 | [`workflow.yaml`](./workflow.yaml) | NAT agents, tools, and Dynamo LLM URL |
 | [`Dockerfile`](./Dockerfile) | Build NAT `nat serve` image |
 | [`k8s/nat-dynamo-serve.yaml`](./k8s/nat-dynamo-serve.yaml) | Example NAT Deployment + Service on AKS |
-| [`agg-router-qwen3-32B.yaml`](./agg-router-qwen3-32B.yaml) | Example `DynamoGraphDeployment` |
+| [`agg-router-qwen3-32B.yaml`](./agg-router-qwen3-32B.yaml) | Example `DynamoGraphDeployment` (vLLM worker includes **`--scheduling-policy priority`** for **`nvext.agent_hints.priority`**) |
 | [`model-cache/cache.yaml`](./model-cache/cache.yaml) | PVCs for model, compilation, and perf caches (RWX) |
 | [`model-cache/model-download-job.yaml`](./model-cache/model-download-job.yaml) | Job to prefetch **Qwen/Qwen3-32B** into `model-cache` |
 | [`test_dynamo_endpoint.py`](./test_dynamo_endpoint.py) | Minimal HTTP health + chat test for Dynamo |

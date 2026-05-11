@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Smoke tests for a Dynamo OpenAI-compatible HTTP API (default port 8080)."""
 #
-# Checks GET /health and POST /v1/chat/completions. The frontend
+# Checks GET /health and POST /v1/chat/completions (streaming SSE). The frontend
 # is usually 8000 in-cluster; use port-forward to 8080, e.g.:
 #   kubectl port-forward -n dynamo-system svc/<release>-frontend 8080:8000
 # Env: DYNAMO_BASE_URL (default http://127.0.0.1:8080), DYNAMO_MODEL, OPENAI_API_KEY
@@ -38,32 +38,178 @@ def _http_get(url: str, timeout: float) -> tuple[int, str]:
         return resp.getcode(), raw
 
 
-def _json_request(
-    method: str,
-    url: str,
+def _first_content_delta(chunk: dict[str, Any]) -> str | None:
+    choices = chunk.get("choices") or []
+    if not choices:
+        return None
+    delta = (choices[0] or {}).get("delta") or {}
+    content = delta.get("content")
+    if isinstance(content, str) and content:
+        return content
+    reasoning = delta.get("reasoning_content")
+    if isinstance(reasoning, str) and reasoning:
+        return reasoning
+    return None
+
+
+def _finish_reason(chunk: dict[str, Any]) -> str | None:
+    choices = chunk.get("choices") or []
+    if not choices:
+        return None
+    fr = (choices[0] or {}).get("finish_reason")
+    return str(fr) if fr is not None else None
+
+
+def _usage(chunk: dict[str, Any]) -> tuple[int | None, int | None, int | None]:
+    u = chunk.get("usage")
+    if not isinstance(u, dict):
+        return None, None, None
+    pt = u.get("prompt_tokens")
+    ct = u.get("completion_tokens")
+    tt = u.get("total_tokens")
+    return (
+        int(pt) if isinstance(pt, int) else None,
+        int(ct) if isinstance(ct, int) else None,
+        int(tt) if isinstance(tt, int) else None,
+    )
+
+
+def _stream_chat_completion(
     *,
-    body: dict[str, Any] | None = None,
-    api_key: str | None = None,
-    timeout: float = 300.0,
-) -> tuple[int, Any]:
-    data: bytes | None
-    if body is not None:
-        data = json.dumps(body).encode("utf-8")
-    else:
-        data = None
+    url: str,
+    body: dict[str, Any],
+    api_key: str | None,
+    timeout: float,
+) -> dict[str, Any]:
+    """POST chat/completions with stream:true; parse SSE and aggregate text deltas."""
+    data = json.dumps(body).encode("utf-8")
     headers: dict[str, str] = {
-        "Accept": "application/json",
+        "Accept": "text/event-stream",
+        "Content-Type": "application/json",
     }
-    if data is not None:
-        headers["Content-Type"] = "application/json"
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        raw = resp.read().decode("utf-8")
-        if not raw:
-            return resp.getcode(), None
-        return resp.getcode(), json.loads(raw)
+
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    t0 = time.perf_counter()
+    ttft: float | None = None
+    chunks = 0
+    parts: list[str] = []
+    finish_reason: str | None = None
+    ptokens: int | None = None
+    ctokens: int | None = None
+    ttokens: int | None = None
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            code = resp.getcode()
+            if code // 100 != 2:
+                raw = resp.read().decode("utf-8", errors="replace")
+                return {
+                    "ok": False,
+                    "http": code,
+                    "error": raw[:4000],
+                    "content": "",
+                    "ttft_s": None,
+                    "elapsed_s": time.perf_counter() - t0,
+                    "chunks": 0,
+                    "finish_reason": None,
+                    "prompt_tokens": None,
+                    "completion_tokens": None,
+                    "total_tokens": None,
+                }
+
+            buffer = b""
+            while True:
+                chunk_bytes = resp.read(8192)
+                if not chunk_bytes:
+                    break
+                buffer += chunk_bytes
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
+                    line_s = line.decode("utf-8", errors="replace").strip()
+                    if not line_s or line_s.startswith(":"):
+                        continue
+                    if not line_s.startswith("data:"):
+                        continue
+                    payload = line_s[5:].strip()
+                    if payload == "[DONE]":
+                        return {
+                            "ok": True,
+                            "http": code,
+                            "error": None,
+                            "content": "".join(parts),
+                            "ttft_s": ttft,
+                            "elapsed_s": time.perf_counter() - t0,
+                            "chunks": chunks,
+                            "finish_reason": finish_reason,
+                            "prompt_tokens": ptokens,
+                            "completion_tokens": ctokens,
+                            "total_tokens": ttokens,
+                        }
+                    try:
+                        obj = json.loads(payload)
+                    except json.JSONDecodeError:
+                        continue
+                    chunks += 1
+                    piece = _first_content_delta(obj)
+                    if piece is not None:
+                        if ttft is None:
+                            ttft = time.perf_counter() - t0
+                        parts.append(piece)
+                    fr = _finish_reason(obj)
+                    if fr:
+                        finish_reason = fr
+                    u_pt, u_ct, u_tt = _usage(obj)
+                    if u_pt is not None:
+                        ptokens = u_pt
+                    if u_ct is not None:
+                        ctokens = u_ct
+                    if u_tt is not None:
+                        ttokens = u_tt
+
+            return {
+                "ok": False,
+                "http": code,
+                "error": "stream ended without [DONE]",
+                "content": "".join(parts),
+                "ttft_s": ttft,
+                "elapsed_s": time.perf_counter() - t0,
+                "chunks": chunks,
+                "finish_reason": finish_reason,
+                "prompt_tokens": ptokens,
+                "completion_tokens": ctokens,
+                "total_tokens": ttokens,
+            }
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8", errors="replace")
+        return {
+            "ok": False,
+            "http": e.code,
+            "error": err_body[:4000],
+            "content": "".join(parts),
+            "ttft_s": ttft,
+            "elapsed_s": time.perf_counter() - t0,
+            "chunks": chunks,
+            "finish_reason": finish_reason,
+            "prompt_tokens": ptokens,
+            "completion_tokens": ctokens,
+            "total_tokens": ttokens,
+        }
+    except OSError as e:
+        return {
+            "ok": False,
+            "http": None,
+            "error": str(e),
+            "content": "".join(parts),
+            "ttft_s": ttft,
+            "elapsed_s": time.perf_counter() - t0,
+            "chunks": chunks,
+            "finish_reason": finish_reason,
+            "prompt_tokens": ptokens,
+            "completion_tokens": ctokens,
+            "total_tokens": ttokens,
+        }
 
 
 def _try_health(base: str, timeout: float) -> bool:
@@ -81,7 +227,7 @@ def _try_health(base: str, timeout: float) -> bool:
 
 
 def main() -> int:
-#    default_base = os.environ.get("DYNAMO_BASE_URL", "http://52.142.237.163:8080")
+    #    default_base = os.environ.get("DYNAMO_BASE_URL", "http://52.142.237.163:8080")
     default_base = os.environ.get("DYNAMO_BASE_URL", "http://localhost:8000")
     default_model = os.environ.get("DYNAMO_MODEL", "Qwen/Qwen3-32B")
     p = argparse.ArgumentParser(
@@ -125,7 +271,7 @@ def main() -> int:
     )
     p.add_argument(
         "--prompt",
-        default="Reply with a single short sentence: what is 2+2?",
+        default="I was billed twice for my subscription last month—can I receive a refund for the extra charge?",
         help="User message content for the chat completion test",
     )
     p.add_argument(
@@ -179,7 +325,9 @@ def main() -> int:
                 f"failed or not available (continuing)  [{h_t0} → {h_t2}, {h_elapsed:.3f}s]"
             )
 
-    print("POST /v1/chat/completions …", end=" ", flush=True)
+    print("Prompt:")
+    print(args.prompt)
+    print("POST /v1/chat/completions (stream) …", end=" ", flush=True)
     payload: dict[str, Any] = {
         "model": args.model,
         "messages": [
@@ -188,87 +336,72 @@ def main() -> int:
                 "content": args.prompt,
             }
         ],
-        "stream": False,
+        "stream": True,
         "max_tokens": args.max_tokens,
+        "stream_options": {"include_usage": True},
     }
     llm_t0 = _utc_now_iso()
     llm_pc0 = time.perf_counter()
-    try:
-        c2, cdata = _json_request(
-            "POST",
-            f"{v1}/chat/completions",
-            body=payload,
-            api_key=api_key,
-            timeout=args.timeout,
-        )
-    except urllib.error.HTTPError as e:
-        llm_elapsed = time.perf_counter() - llm_pc0
-        llm_t1 = _utc_now_iso()
-        err_body = e.read().decode("utf-8", errors="replace")
-        print(f"HTTP {e.code}  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
-        try:
-            err_j = json.loads(err_body)
-            err_body = json.dumps(err_j, indent=2)
-        except json.JSONDecodeError:
-            pass
-        print(err_body[:4000], file=sys.stderr)
+    sm = _stream_chat_completion(
+        url=f"{v1}/chat/completions",
+        body=payload,
+        api_key=api_key,
+        timeout=args.timeout,
+    )
+    llm_elapsed = sm["elapsed_s"]
+    llm_t1 = _utc_now_iso()
+
+    if not sm["ok"]:
+        print(f"fail  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
+        err_msg = sm["error"] or "unknown error"
+        if isinstance(err_msg, str) and err_msg.strip().startswith("{"):
+            try:
+                err_j = json.loads(err_msg)
+                err_msg = json.dumps(err_j, indent=2)
+            except json.JSONDecodeError:
+                pass
+        print(err_msg[:4000], file=sys.stderr)
         result["chat"] = {
             "ok": False,
-            "http": e.code,
+            "http": sm["http"],
             "t_start": llm_t0,
             "t_end": llm_t1,
             "elapsed_s": round(llm_elapsed, 6),
-            "error": f"HTTPError {e.code}",
-        }
-        return finalize(1)
-    except OSError as e:
-        llm_elapsed = time.perf_counter() - llm_pc0
-        llm_t1 = _utc_now_iso()
-        print(
-            f"error: {e}  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]",
-            file=sys.stderr,
-        )
-        result["chat"] = {
-            "ok": False,
-            "http": None,
-            "t_start": llm_t0,
-            "t_end": llm_t1,
-            "elapsed_s": round(llm_elapsed, 6),
-            "error": str(e),
+            "error": sm["error"],
+            "streaming": True,
+            "ttft_s": round(sm["ttft_s"], 6) if sm["ttft_s"] is not None else None,
+            "chunks": sm["chunks"],
         }
         return finalize(1)
 
-    llm_elapsed = time.perf_counter() - llm_pc0
-    llm_t1 = _utc_now_iso()
-    if c2 // 100 != 2:
-        print(f"HTTP {c2}  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
-        print(cdata, file=sys.stderr)
-        result["chat"] = {
-            "ok": False,
-            "http": c2,
-            "t_start": llm_t0,
-            "t_end": llm_t1,
-            "elapsed_s": round(llm_elapsed, 6),
-            "error": f"HTTP status {c2}",
-        }
-        return finalize(1)
-    print(f"ok ({c2})  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
-    result["chat"] = {
+    http_code = sm["http"]
+    assert http_code is not None
+    print(f"ok ({http_code})  [{llm_t0} → {llm_t1}, {llm_elapsed:.3f}s]")
+    chat_out: dict[str, Any] = {
         "ok": True,
-        "http": c2,
+        "http": http_code,
         "t_start": llm_t0,
         "t_end": llm_t1,
         "elapsed_s": round(llm_elapsed, 6),
         "error": None,
+        "streaming": True,
+        "ttft_s": round(sm["ttft_s"], 6) if sm["ttft_s"] is not None else None,
+        "chunks": sm["chunks"],
+        "finish_reason": sm["finish_reason"],
+        "prompt_tokens": sm["prompt_tokens"],
+        "completion_tokens": sm["completion_tokens"],
+        "total_tokens": sm["total_tokens"],
     }
-    if isinstance(cdata, dict) and cdata.get("choices"):
-        msg = (cdata["choices"][0].get("message") or {}).get("content")
-        if msg:
-            print("assistant:", msg.strip()[:2000])
-        else:
-            print("response (truncated):", json.dumps(cdata)[:2000])
+    result["chat"] = chat_out
+
+    msg = sm["content"].strip()
+    if msg:
+        print("assistant:", msg[:2000])
     else:
-        print("response (truncated):", json.dumps(cdata)[:2000])
+        print(
+            "assistant: (no text deltas; tool-only or empty stream)",
+            file=sys.stderr,
+        )
 
     print("All tests passed.")
     return finalize(0)

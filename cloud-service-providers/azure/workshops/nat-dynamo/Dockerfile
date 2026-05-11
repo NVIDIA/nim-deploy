@@ -18,6 +18,7 @@ WORKDIR /opt/nat
 
 COPY NeMo-Agent-Toolkit /opt/nat/NeMo-Agent-Toolkit
 COPY workflow.yaml /opt/nat/workflow.yaml
+COPY prediction_trie.json /opt/nat/prediction_trie.json
 
 WORKDIR /opt/nat/NeMo-Agent-Toolkit
 
@@ -26,8 +27,12 @@ ENV SETUPTOOLS_SCM_PRETEND_VERSION=1.0.0+docker
 ENV UV_PROJECT_ENVIRONMENT=/opt/nat/NeMo-Agent-Toolkit/.venv
 ENV PATH="/opt/nat/NeMo-Agent-Toolkit/.venv/bin:${PATH}"
 
+# Demo package (editable) pulls nvidia-nat[eval,langchain,test] from the repo and registers workflow _types.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --extra langchain
+    uv venv --clear \
+    && uv pip install -e ./examples/dynamo_integration/latency_sensitivity_demo
+
+RUN uv pip install "nvidia-nat[profiler]"
 
 EXPOSE 8080
 

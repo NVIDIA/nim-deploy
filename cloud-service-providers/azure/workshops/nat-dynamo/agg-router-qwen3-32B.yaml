@@ -59,6 +59,8 @@ spec:
           - --gpu-memory-utilization
           - '0.90'
           - --async-scheduling
+          - --scheduling-policy
+          - priority
           - --block-size
           - '64'
           - --hf-overrides
