@@ -3,16 +3,15 @@
 # Equivalent local command (from NeMo-Agent-Toolkit repo root):
 #   nat eval --reps 2 --config_file .../configs/<config yaml basename>
 #
-# This file is a template: set env vars JOB_NAME and NAT_CONFIG_BASENAME, then pipe through
-# gettext envsubst(1) with ONLY those two placeholders substituted (see k8s/apply_config_profile_jobs.sh).
-# A restricted substitution list is required so shell defaults in the container command (e.g. NAT_EVAL_REPS)
-# are not altered.
+# This file is a template: set env vars for gettext envsubst (see k8s/apply_config_profile_jobs.sh).
+# Substituted keys: JOB_NAME, JOB_BASE, NAT_CONFIG_BASENAME, DYNAMO_OPENAI_BASE_URL, NAT_EVAL_REPS, NAT_PERF_DEBUG.
+# JOB_NAME includes a timestamp when using the script; JOB_BASE is the stable id (label nat-profile-job).
+# NAT passes Dynamo URL and reps via nat eval CLI flags; NAT_PERF_DEBUG uses env(1) on the command line (no nat flag).
 #
 # Prerequisites:
 # - Image pushed to ACR (same image as nat-dynamo-serve): anslutskycontainerappacr.azurecr.io/nat-dynamo-serve:latest
 # - Dynamo OpenAI-compatible endpoint reachable from the pod (NOT localhost unless Dynamo is in the same container).
-#   This Job sets DYNAMO_OPENAI_BASE_URL and passes --override llms.dynamo_llm.base_url so you do not rely on whatever
-#   base_url was baked into the image at build time. Match workflow.yaml / your Dynamo frontend Service DNS.
+#   The Job passes --override llms.dynamo_llm.base_url with DYNAMO_OPENAI_BASE_URL from apply/restart scripts.
 # - AKS can pull from ACR (attach ACR or imagePullSecrets — same as nat-dynamo-serve.yaml).
 #
 # Logs (replace JOB_NAME with the name you applied):
@@ -33,6 +32,7 @@ metadata:
   namespace: nat-dynamo
   labels:
     app: ${JOB_NAME}
+    nat-profile-job: ${JOB_BASE}
 spec:
   backoffLimit: 0
   ttlSecondsAfterFinished: 86400
@@ -40,6 +40,7 @@ spec:
     metadata:
       labels:
         app: ${JOB_NAME}
+        nat-profile-job: ${JOB_BASE}
     spec:
       restartPolicy: Never
       # Uncomment if not using `az aks update --attach-acr anslutskycontainerappacr`:
@@ -50,26 +51,18 @@ spec:
           image: anslutskycontainerappacr.azurecr.io/nat-dynamo-serve:latest
           imagePullPolicy: Always
           workingDir: /opt/nat/NeMo-Agent-Toolkit
-          # Use shell so DYNAMO_OPENAI_BASE_URL is expanded and you can change the endpoint without rebuilding the image.
+          # Reps, Dynamo base URL, and NAT_PERF_DEBUG are supplied via envsubst from apply/restart scripts (CLI-style:
+          # nat eval --reps … --override llms.dynamo_llm.base_url … ; NAT_PERF_DEBUG via env(1) — no dedicated nat flag).
           # Default matches workflow.yaml / config_profile cluster DNS. If you see openai.APIConnectionError from nat eval,
           # verify from a debug pod: kubectl run curl --rm -it --restart=Never --image=curlimages/curl -- curl -sS -o /dev/null -w "%{http_code}" http://agg-8xtp2-frontend.dynamo-cloud.svc.cluster.local:8000/v1/models
           command:
             - /bin/sh
             - -c
             - >
-              exec nat eval --reps "${NAT_EVAL_REPS:-2}"
+              exec env NAT_PERF_DEBUG="${NAT_PERF_DEBUG}"
+              nat eval --reps "${NAT_EVAL_REPS}"
               --config_file /opt/nat/NeMo-Agent-Toolkit/examples/dynamo_integration/latency_sensitivity_demo/src/latency_sensitivity_demo/configs/${NAT_CONFIG_BASENAME}
               --override llms.dynamo_llm.base_url "${DYNAMO_OPENAI_BASE_URL}"
-          env:
-            - name: DYNAMO_OPENAI_BASE_URL
-              value: "http://agg-8xtp2-frontend.dynamo-cloud.svc.cluster.local:8000/v1"
-            - name: NAT_EVAL_REPS
-              value: "400"
-            # Helpful when validating Dynamo DNS from pod logs (optional).
-            # - name: NAT_DYNAMO_DEBUG
-            #   value: "1"
-            - name: NAT_PERF_DEBUG
-              value: "1"
           resources:
             requests:
               cpu: "500m"

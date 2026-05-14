@@ -70,7 +70,7 @@ llms:
     nvext_prefix_iat: MEDIUM
 
     # UPDATE THIS PATH to your profiled prediction trie
-    nvext_prediction_trie_path: /opt/nat/prediction_trie.json
+    # nvext_prediction_trie_path: /opt/nat/prediction_trie.json
 
 workflow:
   _type: latency_sensitivity_demo

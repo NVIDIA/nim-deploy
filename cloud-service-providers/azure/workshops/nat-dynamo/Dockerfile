@@ -32,7 +32,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv --clear \
     && uv pip install -e ./examples/dynamo_integration/latency_sensitivity_demo
 
-RUN uv pip install "nvidia-nat[profiler]"
+# Profiler plugin from monorepo (replaces nvidia-nat[profiler] from PyPI).
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -e /opt/nat/NeMo-Agent-Toolkit/packages/nvidia_nat_profiler
 
 EXPOSE 8080
 
