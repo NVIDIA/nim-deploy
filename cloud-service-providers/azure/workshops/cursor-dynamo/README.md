@@ -6,4 +6,4 @@ This workshop shows how **widely adopted AI tools** (for example **Cursor**) can
 
 ## Tokenomics Funnel
 
-![Cursor + governed inference — tokenomics funnel (triangle tiers)](escalation-path-pyramid.png)
+![Tokenomics funnel — three-tier triangle](escalation-path-pyramid.png)
