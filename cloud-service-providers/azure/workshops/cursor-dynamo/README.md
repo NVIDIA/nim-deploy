@@ -1,3 +1,9 @@
+**Escalation Path** — inverted pyramid: **Tier 1** is the wide top (most agent traffic); **Tier 3** is the narrow tip (rare frontier escalation).
+
+![Escalation Path — inverted pyramid from local SLMs (wide top) to frontier APIs (narrow tip)](escalation-path-pyramid.png)
+
+*Graphic: generated with Cursor’s built-in image model (Gemini-class / diffusion-style image generation, comparable in spirit to Google Imagen / Gemini image tools).*
+
 ```mermaid
 ---
 title: Escalation Path
@@ -5,17 +11,17 @@ title: Escalation Path
 flowchart TB
     REQ["AI agent requests<br/><i>100% enter; most never need a higher tier</i>"]
 
-    subgraph tier1["Tier 1 — Local / edge · ~80–95%+ of turns"]
+    subgraph tier1["▲ Tier 1 — TOP OF PYRAMID (widest) — ~80–95%+ of turns · local / edge"]
         direction TB
         L1["Compact SLMs on laptop, workstation, or VPC<br/><b>Example:</b> Nemotron Nano and similar small models"]
     end
 
-    subgraph tier2["Tier 2 — Enterprise foundation · ~single digits–teens %"]
+    subgraph tier2["◆ Tier 2 — MIDDLE (narrowing) — ~single digits–teens % · enterprise foundation"]
         direction TB
         L2["Larger governed models in your cloud or data center<br/><b>Example:</b> Nemotron Super, Ultra-class deployments"]
     end
 
-    subgraph tier3["Tier 3 — Frontier · smallest share (~few %)"]
+    subgraph tier3["▼ Tier 3 — TIP (narrowest) — smallest share (~few %) · frontier"]
         direction TB
         L3["Highest capability, external or specialist APIs<br/><b>Example:</b> Claude, GPT, Gemini, and comparable frontier models"]
     end
