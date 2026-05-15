@@ -7,5 +7,3 @@ This workshop shows how **widely adopted AI tools** (for example **Cursor**) can
 ## Escalation path (tokenomics funnel)
 
 ![Cursor + governed inference — tokenomics funnel (triangle tiers)](escalation-path-pyramid.png)
-
-*Graphic: Cursor image generation, styled for board decks—muted navy / slate palette, generous whitespace, sharp geometry.*
