@@ -1,5 +1,5 @@
-**Escalation Path** — triangle on a white background: **Tier 1** is the wide top (most agent traffic); **Tier 2** is Nemotron 3 (Super / Ultra); **Tier 3** is the narrow tip (rare frontier escalation).
+**Escalation Path** — C-suite summary: a restrained triangle schematic with **Tier 1** carrying most volume at the top, **Tier 2** Nemotron 3 (Super / Ultra) in the middle, and a **thin Tier 3** at the sharp tip for rare frontier use (Claude, GPT, Gemini).
 
-![Escalation Path — triangle tiers from local SLMs (top) to frontier APIs (tip)](escalation-path-pyramid.png)
+![Escalation Path — boardroom-style triangle tiers](escalation-path-pyramid.png)
 
-*Graphic: generated with Cursor’s built-in image model (Gemini-class / diffusion-style image generation, comparable in spirit to Google Imagen / Gemini image tools).*
+*Graphic: Cursor image generation, styled for board decks—muted navy / slate palette, generous whitespace, sharp geometry.*
