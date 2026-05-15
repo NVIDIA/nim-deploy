@@ -1,0 +1,24 @@
+---
+description: Git commits use JSON serialization of the preceding user/assistant exchange as the commit message.
+alwaysApply: true
+---
+
+# Git commit messages (serialized request/response)
+
+Whenever you run `git commit` for the user (any repo under this workspace), use **exactly one** `-m` argument whose entire string is a **single-line JSON object** with two keys:
+
+- **`request`**: The user message that immediately preceded the commit (verbatim, before any trimming that would lose meaning). If that message embeds double quotes, escape them as `\"` inside the JSON string.
+- **`response`**: A concise summary of what you changed or did in the assistant turn that produced the commit (files touched, branch, push if applicable). Write this as past or present fact consistent with when the commit is recorded; do not claim a push succeeded inside the commit message if the commit is created before `git push` runs—either run push in the same shell after commit and describe both, or phrase the response so it matches the actual order of operations.
+
+## Format
+
+```text
+git commit -m '{"request":"...","response":"..."}'
+```
+
+Use only this JSON line as the commit subject/body (no separate conventional prefix unless the user later asks to change this rule). If the JSON would exceed practical limits, shorten the `response` value while keeping `request` complete; never drop the JSON structure.
+
+## Edge cases
+
+- If the user message is only “commit” / “commit and push”, set `request` to that text and set `response` to a factual summary of the staged diff (paths and intent).
+- If multiple user turns occurred since the last commit, treat **preceding** as the **most recent user message** that led to this commit (typically the one that asked to commit or that defined the work being committed).
