@@ -49,3 +49,5 @@ When the commit runs in the **`nim-deploy`** repository:
 If the script fails (no transcript files, wrong machine layout), tell the user and ask whether to proceed without the export for that commit.
 
 **Overrides (optional):** `CONVERSATION_EXPORT_TRANSCRIPT=/path/to/file.jsonl` forces the source file. `CURSOR_AGENT_TRANSCRIPTS_ROOT=/path/to/projects` limits `find` to a subtree under that directory instead of `$HOME/.cursor/projects`.
+
+**Redaction:** The refresh script replaces `/Users/anslutsky` and JSON-escaped `\/Users\/anslutsky` with the placeholder `__USER_HOME__` (override with `CONVERSATION_EXPORT_HOME_PLACEHOLDER`) in `conversation-export.jsonl` only; it does not rewrite the Cursor source transcript on disk. Cursor project directory names under `.cursor/projects` (for example `Users-<account>-Dev`) are not rewritten unless you extend the script.

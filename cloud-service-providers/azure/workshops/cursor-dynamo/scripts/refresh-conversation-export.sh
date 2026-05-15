@@ -27,5 +27,11 @@ else
   fi
 fi
 
+PH="${CONVERSATION_EXPORT_HOME_PLACEHOLDER:-__USER_HOME__}"
+
 cp "$SRC" "$OUT"
-echo "Updated $OUT <= $SRC"
+# Redact local home prefix in the export only (paths appear in JSON/tool payloads).
+export PH
+perl -i -pe 'BEGIN { $p = $ENV{PH} // "__USER_HOME__" } s#/Users/anslutsky#$p#g; s#\\/Users\\/anslutsky#$p#g' "$OUT"
+
+echo "Updated $OUT <= $SRC (redacted /Users/anslutsky -> ${PH})"
