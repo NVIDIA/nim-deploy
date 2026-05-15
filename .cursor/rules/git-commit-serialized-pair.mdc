@@ -1,5 +1,8 @@
 ---
-description: Git commits use JSON serialization of the preceding user/assistant exchange as the commit message.
+description: >-
+  Git commits use JSON request/response messages; nim-deploy commits refresh
+  cursor-dynamo/conversation-export.jsonl from the Cursor transcript before
+  each commit; refresh after edits under cursor-dynamo/.
 alwaysApply: true
 ---
 
@@ -22,3 +25,27 @@ Use only this JSON line as the commit subject/body (no separate conventional pre
 
 - If the user message is only “commit” / “commit and push”, set `request` to that text and set `response` to a factual summary of the staged diff (paths and intent).
 - If multiple user turns occurred since the last commit, treat **preceding** as the **most recent user message** that led to this commit (typically the one that asked to commit or that defined the work being committed).
+
+---
+
+# Conversation export (`nim-deploy`)
+
+**Static path:** `nim-deploy/cloud-service-providers/azure/workshops/cursor-dynamo/conversation-export.jsonl`
+
+**Script:** `nim-deploy/cloud-service-providers/azure/workshops/cursor-dynamo/scripts/refresh-conversation-export.sh` (run from anywhere; it resolves paths from the script location).
+
+## After edits under `cursor-dynamo/`
+
+Whenever you create or modify files under `nim-deploy/cloud-service-providers/azure/workshops/cursor-dynamo/`, **run the refresh script** before you finish the assistant turn (unless the user explicitly opts out). That keeps `conversation-export.jsonl` aligned with the latest Cursor parent transcript available on disk.
+
+## Before every `git commit` in `nim-deploy`
+
+When the commit runs in the **`nim-deploy`** repository:
+
+1. Run `bash cloud-service-providers/azure/workshops/cursor-dynamo/scripts/refresh-conversation-export.sh` (from repo root) or the script’s absolute path.
+2. `git add cloud-service-providers/azure/workshops/cursor-dynamo/conversation-export.jsonl`
+3. Then run `git commit` (with the JSON `-m` rule above) so **each commit includes an up-to-date copy** of the conversation snapshot, even if the user did not name that file.
+
+If the script fails (no transcript files, wrong machine layout), tell the user and ask whether to proceed without the export for that commit.
+
+**Overrides (optional):** `CONVERSATION_EXPORT_TRANSCRIPT=/path/to/file.jsonl` forces the source file. `CURSOR_AGENT_TRANSCRIPTS_ROOT=/path/to/projects` limits `find` to a subtree under that directory instead of `$HOME/.cursor/projects`.
