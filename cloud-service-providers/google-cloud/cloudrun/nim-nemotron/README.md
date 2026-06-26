@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample has moved to `nvidia-gcp-samples`. This copy in `nim-deploy` is deprecated and is no longer the canonical reference. Use the maintained sample at <https://github.com/NVIDIA/nvidia-gcp-samples/tree/master/inference/cloud-run/nim/nemotron>.
+
 # Deploying NIMs to Google Cloud Run using RTX PRO 6000
 
 This guide outlines the steps to deploy a NIM LLM to Google Cloud Run, using Nemotron V3 30B as an example.

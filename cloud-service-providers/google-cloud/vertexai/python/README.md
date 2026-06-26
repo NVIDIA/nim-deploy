@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample has moved to `nvidia-gcp-samples`. This copy in `nim-deploy` is deprecated and is no longer the canonical reference. Use the maintained sample at <https://github.com/NVIDIA/nvidia-gcp-samples/tree/master/inference/agent-platform/nim/llm-nim/python>.
+
 # NVIDIA NIM on GCP Vertex AI
 
 **NVIDIA NIM** is a set of microservices designed to accelerate the deployment of generative AI models across the cloud, data center, and workstations. NIMs are categorized by model family and a per model basis. Leveraging NVIDIA’s GPU acceleration on Google Cloud Platform, NIM offers an efficient and scalable path to inference with unparalleled performance.

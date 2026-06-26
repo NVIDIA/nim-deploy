@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample has moved to `nvidia-gcp-samples`. This copy in `nim-deploy` is deprecated and is no longer the canonical reference. Use the maintained sample at <https://github.com/NVIDIA/nvidia-gcp-samples/tree/master/industry-solutions/gke/bionemo-drug-discovery>.
+
 # NVIDIA BioNeMo Blueprint: Generative Virtual Screening for Drug Discovery
 
 *Disclaimer: This sample is based on this [repository](https://github.com/NVIDIA-BioNeMo-blueprints/generative-virtual-screening). For the most up to date information, please refer to it.*
