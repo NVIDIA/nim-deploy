@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # End to End LLM App development with Azure AI Studio, Prompt Flow and NIMs
 
  ![tl:dr](./images/contoso-chat-nim.png)
@@ -210,4 +213,3 @@ Let's run the flow to see what happens.  **Note that the input node is pre-confi
 - Click the `Prompt Flow` tab in the Visual Studio Code terminal window for execution times
 
 For more details on running the prompt flow, [follow the instructions here](https://microsoft.github.io/promptflow/how-to-guides/init-and-test-a-flow.html#test-a-flow).
-

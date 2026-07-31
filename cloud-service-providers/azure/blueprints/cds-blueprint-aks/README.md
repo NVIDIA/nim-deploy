@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # CDS on AKS (Single GPU)
 
 NVIDIA Cosmos Dataset Search blueprint on Azure Kubernetes Service with a single GPU.

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # Configuring NVIDIA Dynamo on Azure Kubernetes Service (AKS) with Managed Prometheus
 
 This guide provides a comprehensive walkthrough for setting up NVIDIA Dynamo for disaggregated inference serving on Azure Kubernetes Service (AKS). You will learn how to configure GPU-accelerated node pools, integrate Azure Managed Prometheus for observability, and deploy the Dynamo platform to achieve optimized scaling and performance.
@@ -240,4 +243,3 @@ Users may observe the effect of the Disaggregate scaling in terms of important m
 The resulting graph shows TTFT metrics climb and then rapidly decline, which reflects the effects of the Disaggregate scaling:
 
 <img src="images/image-30.png" height="300" border=1>
-
