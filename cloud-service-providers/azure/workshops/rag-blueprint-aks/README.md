@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # Overview
 
 The NVIDIA RAG blueprint serves as a reference solution for a foundational Retrieval Augmented Generation (RAG) pipeline.

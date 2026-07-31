@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # Llama 3.1-8b  NIM Deployment Guide with AKS PVC Installation 
 
 ## Overview

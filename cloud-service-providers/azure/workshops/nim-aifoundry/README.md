@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # Deploy NVIDIA NIM on  Azure AI Foundry
 
 To learn more about NVIDIA NIM on  Azure AI Foundry: 

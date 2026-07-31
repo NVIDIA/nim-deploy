@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # Deploy NVIDIA AI-Q  Research Blueprint on Azure Kubernetes Service + Azure AI Foundry
 
 ![Azure_Cloud_Shell.png](imgs/AIQonAzureFoundry.png)

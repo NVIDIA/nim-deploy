@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # VSS on AKS (Single GPU)
 
 NVIDIA Video Search and Summarization blueprint on Azure Kubernetes Service with a single H100 GPU.

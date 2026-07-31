@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained Azure samples are available at <https://github.com/NVIDIA/nvidia-azure-samples>.
+
 # Deploy RAG application using NVIDIA NIMs and NeMo Retriever on Azure Kubernetes Service Workshop
 
   * Diagram
@@ -863,5 +866,4 @@ Be sure to check out the following articles for more information:
   * [NVIDIA GPUs](https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/overview?tabs=breakdownseries%2Cgeneralsizelist%2Ccomputesizelist%2Cmemorysizelist%2Cstoragesizelist%2Cgpusizelist%2Cfpgasizelist%2Chpcsizelist#gpu-accelerated)
   * [NVIDIA AI Enterprise](https://console.cloud.Azure.com/marketplace/product/nvidia/nvidia-ai-enterprise-vmi)
   * [NVIDIA NIMs](https://www.nvidia.com/en-us/ai/)
-
 
