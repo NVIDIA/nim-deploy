@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained AWS samples are available at <https://github.com/NVIDIA/nvidia-aws-samples>.
+
 # AI-Q Blueprint Deployment on AWS Elastic Kubernetes Service (EKS)
 
 This guide shows how to deploy the [NVIDIA AI-Q Research Assistant Blueprint](https://build.nvidia.com/nvidia/aiq) on Amazon Elastic Kubernetes Service (EKS). For more detailed deployment information about the AI-Q Research assistant blueprint, see the [github repository](https://github.com/NVIDIA-AI-Blueprints/aiq-research-assistant)
