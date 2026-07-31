@@ -1,3 +1,13 @@
+> [!IMPORTANT]
+> This repository is being deprecated as the canonical home for cloud service provider samples. New and maintained CSP samples are moving to dedicated sample repositories:
+>
+> - [NVIDIA Google Cloud samples](https://github.com/NVIDIA/nvidia-gcp-samples)
+> - [NVIDIA Azure samples](https://github.com/NVIDIA/nvidia-azure-samples)
+> - [NVIDIA OCI samples](https://github.com/NVIDIA/nvidia-oci-samples)
+> - [NVIDIA AWS samples](https://github.com/NVIDIA/nvidia-aws-samples)
+>
+> Existing content in this repository remains available for reference, but new CSP sample development should happen in the destination repositories.
+
 ## Introduction
 This repo showcases different ways NVIDIA NIMs can be deployed. This repo contains reference implementations, example documents, and architecture guides that can be used as a starting point to deploy multiple NIMs and other NVIDIA microservices into Kubernetes and other production deployment environments.
 

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample has moved to `nvidia-gcp-samples`. This copy in `nim-deploy` is deprecated and is no longer the canonical reference. Use the maintained sample at <https://github.com/NVIDIA/nvidia-gcp-samples/tree/master/inference/gke/nim/llm-nim>.
+
 # NVIDIA NIMs on GKE
 
 This repository sets up a GKE cluster with node pools equipped with NVIDIA GPUs for hosting NIMs and carrying out inference. Meta's [llama3-8b-instruct NIM](https://build.nvidia.com/meta/llama3-8b) serves as a demonstration model in this instance. The repository references the NVIDIA-provided [helm charts](https://github.com/NVIDIA/nim-deploy/tree/main/helm).

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample has moved to `nvidia-gcp-samples`. This copy in `nim-deploy` is deprecated and is no longer the canonical reference. Use the maintained sample at <https://github.com/NVIDIA/nvidia-gcp-samples/tree/master/industry-solutions/compute-engine/video-search-and-summarization>.
+
 # Deploy NVIDIA VSS Blueprint with Helm on Google Compute Engine
 
 ## Introduction

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample has moved to `nvidia-gcp-samples`. This copy in `nim-deploy` is deprecated and is no longer the canonical reference. Use the maintained sample at <https://github.com/NVIDIA/nvidia-gcp-samples/tree/master/industry-solutions/gke/rag>.
+
 
 *Disclaimer: This sample is based on this [repository](https://github.com/NVIDIA-AI-Blueprints/rag). For the most up to date information, licensing, and terms of use please refer to it.*
 
