@@ -1,0 +1,519 @@
+title: OKE AI Stack deployment
+description: Terraform Stack for OKE deployment with Nginx, Jupyter Notebook and NIM.
+informationalText: Terraform Stack for OKE deployment with Nginx, Jupyter Notebook and NIM.
+schemaVersion: 1.1.0
+version: "20190304"
+
+# URL of Logo Icon used on Application Information tab. Logo must be 130x130 pixels.
+# (Optional)
+logoUrl: https://objectstorage.eu-frankfurt-1.oraclecloud.com/p/laivzo5VNcM9uZf9O6ftZb4-QTPOcszBFwtfu7AGOtbINpfSDKqbJAnSNIRDjtX6/n/orasenatdpltintegration03/b/default-bucket/o/oracle_icon.jpg
+
+
+locale: "en"
+variableGroups:
+  - title: "Hidden RMS variables"
+    visible: false
+    variables:
+      - tenancy_ocid
+      - compartment_ocid
+      - region
+      - user_ocid
+      - current_user_ocid
+
+  - title: "Hidden stack variables"
+    visible: false
+    variables:
+      - create_iam_resources
+      - create_iam_tag_namespace
+      - create_iam_defined_tags
+      - use_defined_tags
+      - tag_namespace
+      - bastion_allowed_cidrs
+      - bastion_image_os
+      - bastion_image_os_version
+      - bastion_image_type
+      - bastion_image_id
+      - bastion_user
+      - operator_image_os
+      - operator_image_os_version
+      - operator_image_type
+      - operator_image_id
+      - operator_user
+      - control_plane_allowed_cidrs
+      - create_cluster
+      - operator_allowed_cidrs
+      - state_id
+      - nvcr_username
+      - nvcr_password
+      - operator_install_kubectl_from_repo
+      - cluster_type
+      - load_balancers
+      - preferred_load_balancer
+      - pods_cidr
+      - services_cidr
+      - create_iam_autoscaler_policy
+      - create_iam_kms_policy
+      - create_iam_operator_policy
+      - create_iam_worker_policy
+      - defined_tags
+      - freeform_tags
+
+
+  - title: "General configuration"
+    visible: true
+    variables:
+      - compartment_id
+      - cluster_name
+      - show_advanced_oke
+      - kubernetes_version
+      - cni_type
+
+  - title: "Networking configuration"
+    visible: true
+    variables:
+      - create_vcn
+      - vcn_name
+      - vcn_id
+      - ig_route_table_id
+      - nat_route_table_id
+      - cidr_vcn
+      - cidr_bastion_subnet
+      - cidr_operator_subnet
+      - cidr_cp_subnet
+      - cidr_int_lb_subnet
+      - cidr_pub_lb_subnet
+      - cidr_workers_subnet
+      - cidr_pods_subnet
+
+  - title: "Kubernetes nodepools configuration"
+    visible: true
+    variables:
+      - simple_np_size
+      - simple_np_flex_shape
+      - simple_np_boot_volume_size
+      - gpu_np_size
+      - gpu_np_shape
+      - gpu_np_boot_volume_size
+
+  - title: "Access to the Kubernetes cluster"
+    visible: true
+    variables:
+      - create_operator_and_bastion
+      - create_operator_policy_to_manage_cluster
+      - control_plane_is_public
+      - ssh_public_key
+
+  
+  - title: "Helm Chart deployments"
+    visible: true
+    variables:
+      - deploy_nginx
+      - nginx_user_values_override
+      - deploy_cert_manager
+      - cert_manager_user_values_override
+      - deploy_jupyterhub
+      - jupyterhub_user_values_override
+      - jupyter_admin_user
+      - jupyter_admin_password
+      - jupyter_playbooks_repo
+      - deploy_nim
+      - nim_user_values_override
+      - nim_image_repository
+      - nim_image_tag
+      - NGC_API_KEY
+            
+variables:
+  create_iam_resources:
+    type: bool
+    default: false
+    visible: false
+
+  create_iam_tag_namespace:
+    type: bool
+    default: false
+    visible: false
+
+  create_iam_defined_tags:
+    type: bool
+    default: false
+    visible: false
+
+  use_defined_tags:
+    type: bool
+    default: false
+    visible: false
+
+  compartment_id:
+    type: oci:identity:compartment:id
+    title: Deployment compartment target
+    description: Please select the compartment where the resources will be created
+    required: true
+
+  cluster_name:
+    type: string
+    minLength: 3
+    maxLength: 40
+    pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]*?[a-zA-Z0-9]$"
+    title: Cluster Name
+    description: The name of the OKE cluster.
+    default: oke
+    required: true
+
+  show_advanced_oke:
+    title: Show advanced OKE settings
+    description: Expand options to set advanced OKE settings
+    type: boolean
+    default: false
+
+  kubernetes_version:
+    type: enum
+    title: Kubernetes version
+    description: The version of the Kubernetes cluster.
+    default: v1.30.1
+    enum:
+      - v1.30.1
+      - v1.29.1
+      - v1.28.2
+    allowMultiple: false
+    required: true
+    visible: ${show_advanced_oke}
+
+  cni_type:
+    type: enum
+    title: Kubernetes cluster networking type
+    description: The networking to be used with the OKE cluster.
+    default: flannel
+    enum:
+      - flannel
+      - npn
+    allowMultiple: false
+    required: true
+    visible: ${show_advanced_oke}
+
+  create_vcn:
+    title: Create new VCN
+    description: Create new VCN for the OKE cluster.
+    type: boolean
+    default: true
+
+  vcn_name:
+    type: string
+    minLength: 3
+    maxLength: 40
+    pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]*?[a-zA-Z0-9]$"
+    title: VCN Name
+    description: The name of VCN.
+    default: oke-vcn
+    required: true
+    visible: ${create_vcn}
+
+  vcn_id:
+    title: Select VCN for the OKE cluster
+    description: Select the existing VCN for the OKE cluster.
+    type: oci:core:vcn:id
+    dependsOn:
+      compartmentId: ${compartment_id}
+    visible:
+      not:
+        - ${create_vcn}
+
+  ig_route_table_id:
+    title:  Public subnet Route Table OCID
+    description: OCID of the route table for public subnets from the selected VCN.
+    type: string
+    visible:
+      not:
+        - ${create_vcn}
+    default: ""
+
+  nat_route_table_id:
+    title: Private subnet Route Table OCID
+    description: OCID of the route table for private subnets from the selected VCN.
+    type: string
+    visible:
+      not:
+        - ${create_vcn}
+    default: ""
+
+  cidr_vcn:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-8])$"
+    title: VCN CIDR Block
+    description: The CIDR block to use with the new VCN.
+    default: 10.0.0.0/16
+    required: true
+    visible: ${create_vcn}
+
+  cidr_bastion_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-9])$"
+    title: Bastion subnet CIDR
+    description: The CIDR block used for the bastion subnet.
+    default: 10.0.0.0/29
+    required: true
+
+  cidr_operator_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-9])$"
+    title: Operator subnet CIDR
+    description: The CIDR block used for the operator subnet.
+    default: 10.0.0.64/29
+    required: true
+
+  cidr_cp_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-9])$"
+    title: OKE Control Plane subnet CIDR
+    description: The CIDR block used for the OKE Control Plane subnet.
+    default: 10.0.0.8/29
+    required: true
+
+  cidr_int_lb_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-8])$"
+    title: OKE Internal LBs subnet CIDR
+    description: The CIDR block used for the OKE Internal Load Balancers subnet.
+    default: 10.0.0.32/27
+    required: true
+
+  cidr_pub_lb_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-8])$"
+    title: OKE Public LBs subnet CIDR
+    description: The CIDR block used for the OKE Public Load Balancers subnet.
+    default: 10.0.128.0/27
+    required: true
+
+  cidr_workers_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-8])$"
+    title: OKE Worker nodes subnet CIDR
+    description: The CIDR block used for the OKE Workers subnet.
+    default: 10.0.144.0/20
+    required: true
+
+  cidr_pods_subnet:
+    type: string
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[1][6-9])|(?:2[0-8])$"
+    title: OKE Pods subnet CIDR
+    description: The CIDR block used for the OKE Pods subnet (will be used only if networking type is NPN).
+    default: 10.0.64.0/18
+    required: true
+    visible:
+      eq:
+      - ${cni_type}
+      - npn
+
+  control_plane_is_public:
+    title: Create public OKE API?
+    description: Associate a public IP address with the OKE control plane endpoint? This is required for Helm deployments when bastion and operator hosts are not created.
+    type: boolean
+    default: true
+
+  ssh_public_key:
+    title: SSH public key
+    description: Public SSH key to be included in the ~/.ssh/authorized_keys file for the bastion, operator and worker nodes.
+    # renders variable as an SSH key control
+    type: oci:core:ssh:publickey
+    required: false
+
+  simple_np_flex_shape:
+    title: Generic Nodepool shape
+    type: oci:core:instanceshapewithflex:name
+    dependsOn:
+      compartmentId: ${compartment_id}
+    required: true
+
+  simple_np_size:
+    title: Generic Nodepool size
+    type: integer
+    minimum: 1
+    required: true
+    default: 1
+
+  simple_np_boot_volume_size:
+    title: Generic Nodepool boot volume size
+    description: The size of the boot volume for the nodes in the Generic nodepool.
+    type: integer
+    minimum: 50
+    required: true
+    default: 50
+
+  gpu_np_shape:
+    title: GPU Nodepool shape
+    type: enum
+    enum:
+    - VM.GPU.A10.1
+    - VM.GPU.A10.2
+    - VM.GPU2.1
+    - VM.GPU3.1
+    - VM.GPU3.2
+    - VM.GPU3.4
+    - BM.GPU2.2
+    - BM.GPU3.8
+    - BM.GPU4.8
+    - BM.GPU.A10.4
+    - BM.GPU.A100-v2.8
+    - BM.GPU.H100.8
+    default: VM.GPU.A10.1
+
+  gpu_np_size:
+    title: GPU Nodepool size
+    type: integer
+    minimum: 0
+    required: true
+    default: 1
+
+  gpu_np_boot_volume_size:
+    title: GPU Nodepool boot volume size
+    description: The size of the boot volume for the nodes in the GPU nodepool.
+    type: integer
+    minimum: 50
+    required: true
+    default: 100
+
+  create_operator_and_bastion:
+    title: Create bastion and operator hosts
+    description: Bastion and operator hosts are required for successful helm chart deployment when the OKE cluster endpoint is private.
+    type: boolean
+    default: true
+
+  create_operator_policy_to_manage_cluster:
+    type: boolean
+    default: true
+    title: Create operator IAM policy
+    description: Create minimal IAM policy to allow the operator host to manage the OKE cluster. The policy is required for successful helm chart deployment via the operator host.
+    visible: ${create_operator_and_bastion}
+
+  deploy_nginx:
+    type: boolean
+    default: true
+    title: Helm | Deploy Nginx ingress controller
+    description: Nginx ingress controller is used to expose the OKE services to the user.
+    visible: true
+
+  nginx_user_values_override:
+    type: file
+    title: Helm | Nginx Ingress Controller helm chart values override
+    description: Override the values for the <a href="https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/README.md">Nginx Ingress Controller Helm chart</a> .
+    visible: ${deploy_nginx}
+
+  deploy_cert_manager:
+    type: boolean
+    default: true
+    title: Helm | Deploy Cert-Manager
+    description: Cert-manager is used to generate TLS certificates for the ingress resources.
+    visible: true
+
+  cert_manager_user_values_override:
+    type: file
+    title: Helm | Cert-Manager helm chart values override
+    description: Override the values for the <a href="https://artifacthub.io/packages/helm/cert-manager/cert-manager">Cert-Manager chart</a> .
+    visible: ${deploy_cert_manager}
+
+  deploy_jupyterhub:
+    type: boolean
+    default: true
+    title: Helm | Deploy JupyterHub
+    description: JupyterHub provides a web accessible Python environment where demos can be easily executed.
+    visible: true
+
+  jupyterhub_user_values_override:
+    type: file
+    title: Helm | JupyterHub helm chart values override
+    description: Override the values for the <a href="https://z2jh.jupyter.org/en/stable/jupyterhub/installation.html">JupyterHub Helm chart</a> .
+    visible: ${deploy_jupyterhub}
+
+  jupyter_admin_user:
+    type: string
+    minLength: 3
+    maxLength: 16
+    pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]*?[a-zA-Z0-9]$"
+    title: Helm | JupyterHub - Admin User
+    description: The admin user to connect to the Jupyter Notebooks.
+    default: oracle-ai
+    required: true
+    visible: ${deploy_jupyterhub}
+
+  jupyter_admin_password:
+    type: password
+    pattern: "^[\\S]{6,16}$"
+    title: Helm | JupyterHub - Admin Password
+    description: "The admin password to connect to the Jupyter Notebooks. (min: 6, max: 16 characters)"
+    confirmation: true
+    required: true
+    visible: ${deploy_jupyterhub}
+
+  jupyter_playbooks_repo:
+    type: string
+    title: Helm | JupyterHub - Playbooks Git Repo
+    description: "Git Repository with Jupyter plabooks examples."
+    default: "https://github.com/ionut-sturzu/nim_notebooks.git"
+    visible: ${deploy_jupyterhub}
+
+  deploy_nim:
+    type: boolean
+    default: true
+    title: Helm | Deploy nVidia NIM LLM
+    description: NIM is NVIDIA's set of accelerated inference microservices that allow organizations to run AI models on NVIDIA GPUs anywhere.
+    visible: true
+
+  nim_user_values_override:
+    type: file
+    title: Helm | NIM helm chart values override
+    description: Override the values for the <a href="https://github.com/NVIDIA/nim-deploy/tree/main/helm/nim-llm">NIM Helm chart</a> .
+    visible: ${deploy_nim}
+
+  nim_image_repository:
+    type: string
+    title: Helm | NIM - Container image repo
+    description: The NIM container image repository.
+    default: "nvcr.io/nim/meta/llama3-8b-instruct"
+    visible: ${deploy_nim}
+    required: true
+
+  nim_image_tag:
+    type: string
+    title: Helm | NIM - Container image tag
+    description: The NIM container image tag.
+    default: "latest"
+    visible: ${deploy_nim}
+    required: true
+
+  NGC_API_KEY:
+    type: password
+    title: Helm | NIM - NGC API KEY
+    description: API key to authenticate to the NGC service.
+    visible: ${deploy_nim}
+
+outputs:
+  bastion:
+    title: Bastion public IP
+    description: The bastion host public IP address.
+    type: copyableString
+  
+  operator:
+    title: Operator public IP
+    description: The operator host public IP address.
+    sensitive: true
+    type: copyableString
+    visible: false
+
+  ssh_to_operator:
+    title: Command to connect to operator host.
+    description: The ssh command to connect to the operator host via the bastion.
+    sensitive: true
+    type: copyableString
+
+  jupyter_hub_url:
+    title: URL to access JupyterHub
+    type: link
+    displayText: URL to access JupyterHub
+  
+outputGroups:
+- title: "Access details"
+  outputs:
+    - ${bastion}
+    - ${operator}
+    - ${ssh_to_operator}
+    - ${jupyter_hub_url}
