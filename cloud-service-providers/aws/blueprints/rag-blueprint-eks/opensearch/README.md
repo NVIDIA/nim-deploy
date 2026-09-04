@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained AWS samples are available at <https://github.com/NVIDIA/nvidia-aws-samples>.
+
 # OpenSearch Integration Guide for Enterprise RAG Blueprint on EKS
 
 This guide covers the integration of Amazon OpenSearch Serverless with the NVIDIA Enterprise RAG Blueprint on Amazon EKS.

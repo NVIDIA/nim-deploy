@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained AWS samples are available at <https://github.com/NVIDIA/nvidia-aws-samples>.
+
 # Deploy RAG application using NVIDIA LLM and NeMo Retriever NIMs on Amazon Elastic Kubernetes Service (EKS) Workshop
 
 ## Table of Contents

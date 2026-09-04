@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained AWS samples are available at <https://github.com/NVIDIA/nvidia-aws-samples>.
+
 # NVIDIA NIM Deployment on SageMaker with S3 NIM Storage
 
 ## Overview
