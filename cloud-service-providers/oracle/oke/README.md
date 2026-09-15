@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained OCI samples are available at <https://github.com/NVIDIA/nvidia-oci-samples>.
+
 # NVIDIA NIM Deployment on Oracle Kubernetes Engine (OKE)
 
 This guide provides step-by-step instructions for deploying NVIDIA NIM (NVIDIA Inference Microservices) on Oracle Cloud Infrastructure (OCI) using Oracle Kubernetes Engine (OKE) and GPU instances. NIM allows you to easily deploy and serve AI models with production-ready APIs, scalability, and GPU optimization.

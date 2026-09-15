@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> These samples are deprecated and are no longer the canonical reference. New and maintained OCI samples are available at <https://github.com/NVIDIA/nvidia-oci-samples>.
+
 # NVIDIA AI Blueprints on Oracle Cloud Infrastructure (OCI)
 
 Deploy NVIDIA AI Blueprints on Oracle Kubernetes Engine (OKE) with GPU instances.

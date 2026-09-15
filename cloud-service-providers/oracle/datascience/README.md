@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This sample is deprecated and is no longer the canonical reference. New and maintained OCI samples are available at <https://github.com/NVIDIA/nvidia-oci-samples>.
+
 # Deploy an NVIDIA NIM Microservice on Oracle Data Science Service
 
 This guide provides step-by-step instructions for deploying and managing containerized AI models using NVIDIA NIM on Oracle Cloud Infrastructure (OCI) Data Science Service.
