@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> These samples are deprecated and are no longer the canonical reference. New and maintained OCI samples are available at <https://github.com/NVIDIA/nvidia-oci-samples>.
+
 # NVIDIA AI Workshops on Oracle Cloud Infrastructure (OCI)
 
 Hands-on workshops for deploying NVIDIA AI on OCI: most use **Oracle Kubernetes Engine (OKE)** with GPU instances; one uses **OCI Data Science Service** for NIM deployment.
