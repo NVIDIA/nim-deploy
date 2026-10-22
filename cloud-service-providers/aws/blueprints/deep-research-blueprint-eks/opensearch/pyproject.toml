@@ -14,7 +14,7 @@ authors = [
 requires-python = ">=3.12"
 
 dependencies = [
-    "bleach==6.2.0",
+    "bleach==6.4.0",
     "dataclass-wizard==0.27.0",
     "fastapi==0.115.5",
     "langchain>=0.3.27",
