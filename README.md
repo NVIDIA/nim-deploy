@@ -35,6 +35,10 @@ This repo showcases different ways NVIDIA NIMs can be deployed. This repo contai
 |                                    | | [GKE Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/gke)                             |             |
 |                                    | | [Google Cloud Vertex AI](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/vertexai/python)               |             |
 |                                    | | [Cloud Run](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/google-cloud/cloudrun)                             |             |
+|                                    | **Oracle Cloud Infrastructure**                             |             |
+|                                    | | [OKE Managed Kubernetes](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/oracle/oke)                             |             |
+|                                    | | [OCI Data Science](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/oracle/datascience)                             |             |
+|                                    | | [NVIDIA AI Blueprints on OKE](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/oracle/blueprints)                             |             |
 |                                    | **NVIDIA DGX Cloud**                                        |             |
 |                                    | | [NVIDIA Cloud Functions](https://github.com/NVIDIA/nim-deploy/tree/main/cloud-service-providers/nvidia/nvcf)                             |             |
 | **Documents**         | **Deployment Guide**                                                    |             |
